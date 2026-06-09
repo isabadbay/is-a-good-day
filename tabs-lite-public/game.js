@@ -42,6 +42,9 @@ const skillPoisonSlime = document.querySelector("#skillPoisonSlime");
 const skillSlimeChance = document.querySelector("#skillSlimeChance");
 const skillSummonOnKill = document.querySelector("#skillSummonOnKill");
 const skillSummonChance = document.querySelector("#skillSummonChance");
+const skillSummonInheritPercent = document.querySelector("#skillSummonInheritPercent");
+const skillSummonInheritSkills = document.querySelector("#skillSummonInheritSkills");
+const skillSummonInheritSecond = document.querySelector("#skillSummonInheritSecond");
 const skillDamageOnKill = document.querySelector("#skillDamageOnKill");
 const skillDamageGain = document.querySelector("#skillDamageGain");
 const skillDamageAura = document.querySelector("#skillDamageAura");
@@ -51,6 +54,8 @@ const skillTornado = document.querySelector("#skillTornado");
 const skillFireBreath = document.querySelector("#skillFireBreath");
 const skillFireball = document.querySelector("#skillFireball");
 const skillHolyShield = document.querySelector("#skillHolyShield");
+const skillHolyShieldRange = document.querySelector("#skillHolyShieldRange");
+const skillHolyShieldReduction = document.querySelector("#skillHolyShieldReduction");
 const skillFreezeAttack = document.querySelector("#skillFreezeAttack");
 const skillBlockRanged = document.querySelector("#skillBlockRanged");
 const skillBerserkHp = document.querySelector("#skillBerserkHp");
@@ -121,6 +126,9 @@ const translations = {
       skillSlimeChance: "喷出概率",
       skillSummonOnKill: "击杀召唤棍兵",
       skillSummonChance: "召唤概率",
+      skillSummonInheritPercent: "继承敌人数值%",
+      skillSummonInheritSkills: "继承特殊技能",
+      skillSummonInheritSecond: "继承第二攻击",
       skillDamageOnKill: "击杀加伤害",
       skillDamageGain: "每次加多少伤害",
       skillDamageAura: "每秒范围伤害",
@@ -130,6 +138,8 @@ const translations = {
       skillFireBreath: "喷火",
       skillFireball: "火球术",
       skillHolyShield: "圣光护盾",
+      skillHolyShieldRange: "圣光护盾范围",
+      skillHolyShieldReduction: "圣光护盾减伤%",
       skillFreezeAttack: "攻击冰冻",
       skillBlockRanged: "格挡远程概率",
       skillBerserkHp: "狂暴触发血量",
@@ -238,6 +248,9 @@ const translations = {
       skillSlimeChance: "Spray Chance",
       skillSummonOnKill: "Summon Clubber On Kill",
       skillSummonChance: "Summon Chance",
+      skillSummonInheritPercent: "Inherit Enemy Stats %",
+      skillSummonInheritSkills: "Inherit Special Skills",
+      skillSummonInheritSecond: "Inherit Second Attack",
       skillDamageOnKill: "Gain Damage On Kill",
       skillDamageGain: "Damage Gain",
       skillDamageAura: "Damage Aura",
@@ -247,6 +260,8 @@ const translations = {
       skillFireBreath: "Fire Breath",
       skillFireball: "Fireball",
       skillHolyShield: "Holy Shield",
+      skillHolyShieldRange: "Holy Shield Range",
+      skillHolyShieldReduction: "Holy Shield Damage Reduction %",
       skillFreezeAttack: "Freeze Attack",
       skillBlockRanged: "Block Ranged Chance",
       skillBerserkHp: "Berserk Trigger HP",
@@ -707,7 +722,7 @@ const unitTypes = [
     cooldown: 0.82,
     knockback: 3,
     weapon: "spear",
-    skills: { holyShield: true, blockRangedChance: 0.42, berserkHp: 70, berserkDamage: 0.45, berserkHeal: 70 },
+    skills: { holyShield: true, holyShieldRange: 160, holyShieldReduction: 0.45, blockRangedChance: 0.42, berserkHp: 70, berserkDamage: 0.45, berserkHeal: 70 },
     color: "#7db0ff",
   },
   {
@@ -857,6 +872,9 @@ function createCustomUnitType() {
     slimeChance: clamp(Number(skillSlimeChance.value) || 35, 0, CUSTOM_LIMIT) / 100,
     summonOnKill: skillSummonOnKill.checked,
     summonChance: clamp(Number(skillSummonChance.value) || 35, 0, CUSTOM_LIMIT) / 100,
+    summonInheritPercent: clamp(Number(skillSummonInheritPercent.value) || 50, 0, CUSTOM_LIMIT) / 100,
+    summonInheritSkills: skillSummonInheritSkills.checked,
+    summonInheritSecond: skillSummonInheritSecond.checked,
     damageOnKill: skillDamageOnKill.checked,
     damageGain: clamp(Number(skillDamageGain.value) || 5, 0, CUSTOM_LIMIT),
     damageAura: skillDamageAura.checked,
@@ -866,6 +884,8 @@ function createCustomUnitType() {
     fireBreath: skillFireBreath.checked,
     fireball: skillFireball.checked,
     holyShield: skillHolyShield.checked,
+    holyShieldRange: clamp(Number(skillHolyShieldRange.value) || 160, 0, CUSTOM_LIMIT),
+    holyShieldReduction: clamp(Number(skillHolyShieldReduction.value) || 45, 0, CUSTOM_LIMIT) / 100,
     freezeAttack: skillFreezeAttack.checked,
     blockRangedChance: clamp(Number(skillBlockRanged.value) || 0, 0, CUSTOM_LIMIT) / 100,
     berserkHp: clamp(Number(skillBerserkHp.value) || 0, 0, CUSTOM_LIMIT),
@@ -912,7 +932,7 @@ function createCustomUnitType() {
       (skills.tornado ? 260 : 0) +
       (skills.fireBreath ? 150 : 0) +
       (skills.fireball ? 230 : 0) +
-      (skills.holyShield ? 260 : 0) +
+      (skills.holyShield ? 140 + skills.holyShieldRange * 0.45 + skills.holyShieldReduction * 320 : 0) +
       (skills.freezeAttack ? 140 : 0) +
       skills.blockRangedChance * 220 +
       (skills.berserkHp > 0 ? skills.berserkDamage * 180 + skills.berserkHeal * 0.8 : 0) +
@@ -1111,13 +1131,15 @@ function castFireball(unit, target) {
 }
 
 function holyShieldReduction(target) {
-  const radius = 160;
-  return state.units.some((unit) => {
-    if (unit.dead || unit.team !== target.team || !unit.skills.holyShield) return false;
-    return Math.hypot(unit.x - target.x, unit.y - target.y) <= radius + target.radius;
-  })
-    ? 0.45
-    : 0;
+  let bestReduction = 0;
+  for (const unit of state.units) {
+    if (unit.dead || unit.team !== target.team || !unit.skills.holyShield) continue;
+    const radius = unit.skills.holyShieldRange ?? 160;
+    if (Math.hypot(unit.x - target.x, unit.y - target.y) <= radius + target.radius) {
+      bestReduction = Math.max(bestReduction, unit.skills.holyShieldReduction ?? 0.45);
+    }
+  }
+  return bestReduction;
 }
 
 function spawnSlime(x, y, team, radius = 48) {
@@ -1163,12 +1185,29 @@ function handleKillEffects(killer, target) {
   if (killer.skills.summonOnKill && Math.random() < (killer.skills.summonChance || 0)) {
     const angle = Math.random() * Math.PI * 2;
     const distance = killer.radius + 26;
-    addUnit(
+    const summoned = addUnit(
       "clubber",
       killer.team,
       clamp(target.x + Math.cos(angle) * distance, 18, canvas.width - 18),
       clamp(target.y + Math.sin(angle) * distance, 18, canvas.height - 18),
     );
+    const inherit = Math.max(0, killer.skills.summonInheritPercent ?? 0.5);
+    summoned.name = "Inherited Clubber";
+    summoned.maxHp = Math.max(20, target.maxHp * inherit);
+    summoned.hp = summoned.maxHp;
+    summoned.damage = Math.max(1, target.damage * inherit);
+    summoned.range = Math.max(8, target.range * inherit);
+    summoned.stopDistance = Math.max(0, target.stopDistance * inherit);
+    summoned.speed = Math.max(8, target.speed * inherit);
+    summoned.radius = Math.max(8, Math.min(48, target.radius * inherit));
+    summoned.cooldownTime = Math.max(0.08, target.cooldownTime);
+    summoned.projectileSpeed = 0;
+    summoned.splash = 0;
+    summoned.areaAttack = target.areaAttack
+      ? { range: target.areaAttack.range * inherit, damage: target.areaAttack.damage * inherit }
+      : null;
+    summoned.skills = killer.skills.summonInheritSkills ? { ...target.skills } : {};
+    summoned.secondAttack = killer.skills.summonInheritSecond && target.secondAttack ? { ...target.secondAttack } : null;
     state.particles.push({ x: target.x, y: target.y, life: 0.65, color: "#78bbff", size: 48 });
   }
   if (killer.skills.damageOnKill && killer.skills.damageGain > 0) {
@@ -1804,11 +1843,12 @@ function drawUnit(unit) {
   ctx.ellipse(3, unit.radius * 0.86, unit.radius * 1.1, unit.radius * 0.42, 0, 0, Math.PI * 2);
   ctx.fill();
   if (!unit.dead && unit.skills.holyShield) {
+    const shieldRange = unit.skills.holyShieldRange ?? 160;
     ctx.save();
     ctx.globalAlpha = 0.16;
     ctx.fillStyle = "#ffeaa0";
     ctx.beginPath();
-    ctx.arc(0, 0, 160, 0, Math.PI * 2);
+    ctx.arc(0, 0, shieldRange, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 0.7;
     ctx.strokeStyle = "#fff0a8";
