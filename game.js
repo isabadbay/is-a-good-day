@@ -75,10 +75,10 @@ const weaponProfiles = {
 };
 
 const CUSTOM_LIMIT = 500000000;
-const ITEM_RADIUS = 120;
+const ITEM_RADIUS = 150;
 const ITEM_BUFF_SECONDS = 120;
 const itemTypes = {
-  fireball: { cost: 120, damage: 50, color: "#ff7838" },
+  fireball: { cost: 120, damage: 80, color: "#ff7838" },
   defense: { cost: 180, buff: "defensePotionTimer", color: "#ffeaa0" },
   power: { cost: 180, buff: "powerPotionTimer", color: "#ff6d6d" },
   speed: { cost: 160, buff: "speedPotionTimer", color: "#7cff9c" },
@@ -1308,6 +1308,49 @@ function addRingParticle(x, y, color, size = ITEM_RADIUS) {
   state.particles.push({ x, y, life: 0.75, startLife: 0.75, color, size });
 }
 
+function itemCastOrigin(team) {
+  const units = state.units.filter((unit) => unit.team === team && !unit.dead);
+  if (units.length) {
+    const avgX = units.reduce((sum, unit) => sum + unit.x, 0) / units.length;
+    const avgY = units.reduce((sum, unit) => sum + unit.y, 0) / units.length;
+    return { x: avgX, y: avgY };
+  }
+  return team === "blue" ? { x: 60, y: canvas.height / 2 } : { x: canvas.width - 60, y: canvas.height / 2 };
+}
+
+function explodeItemFireball(projectile) {
+  for (const unit of state.units) {
+    if (unit.dead || unit.team === projectile.team) continue;
+    const distance = Math.hypot(unit.x - projectile.x, unit.y - projectile.y);
+    if (distance > projectile.splash + unit.radius) continue;
+    const falloff = Math.max(0.5, 1 - distance / projectile.splash);
+    hurt(unit, projectile.damage * falloff, {
+      x: projectile.x,
+      y: projectile.y,
+      knockback: 4.2,
+      ignoreDodge: true,
+      isRanged: true,
+      applyBurn: true,
+    });
+    burnUnit(unit, 4);
+  }
+  for (let i = 0; i < 42; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 100 + Math.random() * 250;
+    state.particles.push({
+      x: projectile.x,
+      y: projectile.y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.45 + Math.random() * 0.35,
+      startLife: 0.8,
+      color: Math.random() < 0.5 ? "#ff7838" : "#ffd15a",
+      size: 20 + Math.random() * 26,
+    });
+  }
+  addRingParticle(projectile.x, projectile.y, "#ff7838", projectile.splash);
+}
+
 function castItemAt(itemId, point) {
   const text = translations[state.language] || translations.en;
   const item = itemTypes[itemId];
@@ -1322,35 +1365,34 @@ function castItemAt(itemId, point) {
   }
   const team = itemTeam();
   if (itemId === "fireball") {
-    for (const unit of state.units) {
-      if (unit.dead || unit.team === team) continue;
-      const distance = Math.hypot(unit.x - point.x, unit.y - point.y);
-      if (distance > ITEM_RADIUS + unit.radius) continue;
-      const falloff = Math.max(0.55, 1 - distance / ITEM_RADIUS);
-      hurt(unit, item.damage * falloff, {
-        x: point.x,
-        y: point.y,
-        knockback: 3.4,
-        ignoreDodge: true,
-        isRanged: true,
-      });
-      burnUnit(unit, 2);
-    }
-    for (let i = 0; i < 22; i += 1) {
+    const origin = itemCastOrigin(team);
+    state.projectiles.push({
+      x: origin.x,
+      y: origin.y,
+      targetX: point.x,
+      targetY: point.y,
+      team,
+      damage: item.damage,
+      speed: 620,
+      splash: ITEM_RADIUS,
+      radius: 13,
+      itemFireball: true,
+      fireball: true,
+      life: 1.8,
+    });
+    for (let i = 0; i < 10; i += 1) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 90 + Math.random() * 160;
       state.particles.push({
-        x: point.x,
-        y: point.y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 0.35 + Math.random() * 0.3,
-        startLife: 0.65,
+        x: origin.x,
+        y: origin.y,
+        vx: Math.cos(angle) * 80,
+        vy: Math.sin(angle) * 80,
+        life: 0.35,
+        startLife: 0.35,
         color: Math.random() < 0.5 ? "#ff7838" : "#ffd15a",
-        size: 18 + Math.random() * 18,
+        size: 14 + Math.random() * 16,
       });
     }
-    addRingParticle(point.x, point.y, item.color, ITEM_RADIUS);
   } else {
     let affected = 0;
     for (const unit of state.units) {
@@ -1375,12 +1417,16 @@ function castItemAt(itemId, point) {
       });
     }
     addRingParticle(point.x, point.y, item.color, ITEM_RADIUS);
-    if (!affected) setToast(state.language === "zh" ? "没有喷中友军" : "No friendly units hit");
+    if (!affected) {
+      setToast(state.language === "zh" ? "没有喷中友军" : "No friendly units hit");
+    } else {
+      setToast(`${text.itemCast}: ${affected}`);
+    }
   }
   spendForItem(item);
   state.selectedItem = null;
   updateUi();
-  setToast(text.itemCast);
+  if (itemId === "fireball") setToast(text.itemCast);
 }
 
 function spawnFireBreathParticles(from, to, count = 14) {
@@ -1986,6 +2032,29 @@ function resolveCrowding() {
 
 function updateProjectiles(dt) {
   for (const projectile of state.projectiles) {
+    if (projectile.itemFireball) {
+      projectile.life -= dt;
+      const angle = Math.atan2(projectile.targetY - projectile.y, projectile.targetX - projectile.x);
+      projectile.x += Math.cos(angle) * projectile.speed * dt;
+      projectile.y += Math.sin(angle) * projectile.speed * dt;
+      state.particles.push({
+        x: projectile.x + (Math.random() - 0.5) * 10,
+        y: projectile.y + (Math.random() - 0.5) * 10,
+        vx: -Math.cos(angle) * (45 + Math.random() * 90),
+        vy: -Math.sin(angle) * (45 + Math.random() * 90),
+        life: 0.2 + Math.random() * 0.18,
+        startLife: 0.38,
+        color: Math.random() < 0.5 ? "#ff7838" : "#ffd15a",
+        size: 18 + Math.random() * 14,
+      });
+      if (Math.hypot(projectile.targetX - projectile.x, projectile.targetY - projectile.y) < 18 || projectile.life <= 0) {
+        projectile.x = projectile.targetX;
+        projectile.y = projectile.targetY;
+        explodeItemFireball(projectile);
+        projectile.life = 0;
+      }
+      continue;
+    }
     const target = state.units.find((unit) => unit.id === projectile.tx && !unit.dead);
     projectile.life -= dt;
     if (!target) {
