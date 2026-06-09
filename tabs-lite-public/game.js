@@ -62,6 +62,8 @@ const skillBerserkHp = document.querySelector("#skillBerserkHp");
 const skillBerserkDamage = document.querySelector("#skillBerserkDamage");
 const skillBerserkHeal = document.querySelector("#skillBerserkHeal");
 const languageSelect = document.querySelector("#languageSelect");
+const itemsTitle = document.querySelector("#itemsTitle");
+const itemButtons = document.querySelectorAll("[data-item]");
 
 const weaponProfiles = {
   club: { tag: "鏈ㄦ", range: 34, radius: 15, knockback: 2.3, projectileSpeed: 0, splash: 0 },
@@ -73,6 +75,14 @@ const weaponProfiles = {
 };
 
 const CUSTOM_LIMIT = 500000000;
+const ITEM_RADIUS = 120;
+const ITEM_BUFF_SECONDS = 120;
+const itemTypes = {
+  fireball: { cost: 120, damage: 50, color: "#ff7838" },
+  defense: { cost: 180, buff: "defensePotionTimer", color: "#ffeaa0" },
+  power: { cost: 180, buff: "powerPotionTimer", color: "#ff6d6d" },
+  speed: { cost: 160, buff: "speedPotionTimer", color: "#7cff9c" },
+};
 const UNIT_PACK_2_IDS = new Set([
   "knight",
   "assassin",
@@ -93,6 +103,7 @@ const UNIT_PACK_2_IDS = new Set([
   "flameknight",
   "frostgiant",
   "sharpshooter",
+  "portalmage",
   "unit67",
 ]);
 
@@ -119,6 +130,17 @@ const translations = {
     fight: "战斗",
     paused: "暂停",
     ended: "结束",
+    items: "道具",
+    itemUseHint: "选择道具后点击战场释放",
+    itemNeedBattle: "开战后才能使用道具",
+    itemNoGold: "金币不够买这个道具",
+    itemCast: "道具已释放",
+    itemNames: {
+      fireball: "火球",
+      defense: "防御药水",
+      power: "力量药水",
+      speed: "速度药水",
+    },
     form: {
       customName: "名字",
       customHp: "血量",
@@ -205,6 +227,7 @@ const translations = {
       flameknight: ["火焰骑士", "火球"],
       frostgiant: ["冰霜巨人", "冻结"],
       sharpshooter: ["神射手", "远狙"],
+      portalmage: ["传送门法师", "召兵"],
       unit67: ["67", "凝视定身"],
     },
     tags: {
@@ -247,6 +270,17 @@ const translations = {
     fight: "Battle",
     paused: "Paused",
     ended: "Ended",
+    items: "Items",
+    itemUseHint: "Select an item, then click the battlefield",
+    itemNeedBattle: "Items can be used after battle starts",
+    itemNoGold: "Not enough gold for this item",
+    itemCast: "Item used",
+    itemNames: {
+      fireball: "Fireball",
+      defense: "Defense Potion",
+      power: "Power Potion",
+      speed: "Speed Potion",
+    },
     form: {
       customName: "Name",
       customHp: "Health",
@@ -333,6 +367,7 @@ const translations = {
       flameknight: ["Flame Knight", "Fireball"],
       frostgiant: ["Frost Giant", "Freeze"],
       sharpshooter: ["Sharpshooter", "Snipe"],
+      portalmage: ["Portal Mage", "Spawner"],
       unit67: ["67", "Stasis Gaze"],
     },
     tags: {
@@ -889,6 +924,24 @@ const unitTypes = [
     color: "#d7efff",
   },
   {
+    id: "portalmage",
+    name: "Portal Mage",
+    tag: "Spawner",
+    glyph: "P+",
+    price: 560,
+    hp: 95,
+    damage: 12,
+    range: 210,
+    stopDistance: 165,
+    speed: 22,
+    radius: 18,
+    cooldown: 1.25,
+    projectileSpeed: 330,
+    weapon: "bow",
+    skills: { randomSpawn: true, randomSpawnInterval: 5 },
+    color: "#c48cff",
+  },
+  {
     id: "unit67",
     name: "67",
     tag: "Stasis Gaze",
@@ -912,6 +965,7 @@ let customUnitCounter = 1;
 const state = {
   phase: "setup",
   selected: unitTypes[0].id,
+  selectedItem: null,
   placeTeam: "blue",
   sandbox: false,
   language: "en",
@@ -1150,9 +1204,13 @@ function addUnit(typeId, team, x, y) {
     burnTick: 0,
     freezeTimer: 0,
     stasisTimer: 0,
+    defensePotionTimer: 0,
+    powerPotionTimer: 0,
+    speedPotionTimer: 0,
     stasisSourceId: null,
     stasisCooldown: 1 + Math.random() * 2,
     fireballCooldown: 1.5 + Math.random() * 2,
+    randomSpawnCooldown: type.skills?.randomSpawn ? type.skills.randomSpawnInterval || 5 : 0,
     damageAuraPulse: 0,
     slimeCooldown: 0,
     tornadoCooldown: 1 + Math.random() * 1.5,
@@ -1230,6 +1288,99 @@ function burnUnit(unit, seconds = 5) {
 function freezeUnit(unit, seconds = 2.4) {
   if (unit.dead) return;
   unit.freezeTimer = Math.max(unit.freezeTimer || 0, seconds);
+}
+
+function itemTeam() {
+  return state.sandbox ? state.placeTeam : "blue";
+}
+
+function canPayForItem(item) {
+  return state.sandbox || state.budget >= item.cost;
+}
+
+function spendForItem(item) {
+  if (state.sandbox) return;
+  state.budget -= item.cost;
+  updateUi();
+}
+
+function addRingParticle(x, y, color, size = ITEM_RADIUS) {
+  state.particles.push({ x, y, life: 0.75, startLife: 0.75, color, size });
+}
+
+function castItemAt(itemId, point) {
+  const text = translations[state.language] || translations.en;
+  const item = itemTypes[itemId];
+  if (!item) return;
+  if (state.phase !== "battle") {
+    setToast(text.itemNeedBattle);
+    return;
+  }
+  if (!canPayForItem(item)) {
+    setToast(text.itemNoGold);
+    return;
+  }
+  const team = itemTeam();
+  if (itemId === "fireball") {
+    for (const unit of state.units) {
+      if (unit.dead || unit.team === team) continue;
+      const distance = Math.hypot(unit.x - point.x, unit.y - point.y);
+      if (distance > ITEM_RADIUS + unit.radius) continue;
+      const falloff = Math.max(0.55, 1 - distance / ITEM_RADIUS);
+      hurt(unit, item.damage * falloff, {
+        x: point.x,
+        y: point.y,
+        knockback: 3.4,
+        ignoreDodge: true,
+        isRanged: true,
+      });
+      burnUnit(unit, 2);
+    }
+    for (let i = 0; i < 22; i += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 90 + Math.random() * 160;
+      state.particles.push({
+        x: point.x,
+        y: point.y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0.35 + Math.random() * 0.3,
+        startLife: 0.65,
+        color: Math.random() < 0.5 ? "#ff7838" : "#ffd15a",
+        size: 18 + Math.random() * 18,
+      });
+    }
+    addRingParticle(point.x, point.y, item.color, ITEM_RADIUS);
+  } else {
+    let affected = 0;
+    for (const unit of state.units) {
+      if (unit.dead || unit.team !== team) continue;
+      const distance = Math.hypot(unit.x - point.x, unit.y - point.y);
+      if (distance > ITEM_RADIUS + unit.radius) continue;
+      unit[item.buff] = Math.max(unit[item.buff] || 0, ITEM_BUFF_SECONDS);
+      affected += 1;
+    }
+    for (let i = 0; i < 18; i += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = Math.random() * ITEM_RADIUS;
+      state.particles.push({
+        x: point.x + Math.cos(angle) * distance,
+        y: point.y + Math.sin(angle) * distance,
+        vx: Math.cos(angle) * 35,
+        vy: Math.sin(angle) * 35,
+        life: 0.55 + Math.random() * 0.35,
+        startLife: 0.9,
+        color: item.color,
+        size: 12 + Math.random() * 14,
+      });
+    }
+    addRingParticle(point.x, point.y, item.color, ITEM_RADIUS);
+    if (!affected) setToast(state.language === "zh" ? "没有喷中友军" : "No friendly units hit");
+  }
+  spendForItem(item);
+  state.selectedItem = null;
+  updateUi();
+  setToast(text.itemCast);
 }
 
 function spawnFireBreathParticles(from, to, count = 14) {
@@ -1409,6 +1560,7 @@ function spawnEnemyArmy() {
     "flameknight",
     "frostgiant",
     "sharpshooter",
+    "portalmage",
     "unit67",
   ];
   for (let i = 0; i < count; i += 1) {
@@ -1429,6 +1581,7 @@ function resetGame(keepEnemies = false) {
   state.slimes = [];
   state.tornadoes = [];
   state.dragging = null;
+  state.selectedItem = null;
   state.winnerShown = false;
   if (!keepEnemies) spawnEnemyArmy();
   setToast(state.sandbox ? "Sandbox: choose a team and place units anywhere" : "Click the blue half to place units");
@@ -1468,6 +1621,7 @@ function randomFormation() {
     "flameknight",
     "frostgiant",
     "sharpshooter",
+    "portalmage",
     "unit67",
   ];
   const team = state.sandbox ? state.placeTeam : "blue";
@@ -1530,6 +1684,9 @@ function findTarget(unit) {
 }
 
 function damageFor(unit, amount) {
+  if (unit.powerPotionTimer > 0) {
+    amount *= 1.55;
+  }
   if (unit.berserked) {
     return amount * (1 + unit.skills.berserkDamage);
   }
@@ -1591,6 +1748,35 @@ function applyDamageAura(unit, dt) {
   }
 }
 
+function spawnRandomUnit(unit) {
+  if (!unit.skills.randomSpawn || unit.dead) return;
+  const candidates = unitTypes.filter((type) => !type.id.startsWith("custom-") && type.id !== "portalmage");
+  if (!candidates.length) return;
+  const type = candidates[Math.floor(Math.random() * candidates.length)];
+  const angle = Math.random() * Math.PI * 2;
+  const distance = unit.radius + 34 + Math.random() * 22;
+  const x = clamp(unit.x + Math.cos(angle) * distance, 24, canvas.width - 24);
+  const y = clamp(unit.y + Math.sin(angle) * distance, 24, canvas.height - 24);
+  const summoned = addUnit(type.id, unit.team, x, y);
+  summoned.vx += Math.cos(angle) * 80;
+  summoned.vy += Math.sin(angle) * 80;
+  for (let i = 0; i < 18; i += 1) {
+    const a = Math.random() * Math.PI * 2;
+    const speed = 40 + Math.random() * 110;
+    state.particles.push({
+      x,
+      y,
+      vx: Math.cos(a) * speed,
+      vy: Math.sin(a) * speed,
+      life: 0.45 + Math.random() * 0.35,
+      startLife: 0.8,
+      color: Math.random() < 0.5 ? "#c48cff" : "#78bbff",
+      size: 14 + Math.random() * 18,
+    });
+  }
+  state.particles.push({ x, y, life: 0.9, startLife: 0.9, color: "#c48cff", size: 58 });
+}
+
 function hurt(target, amount, source) {
   const killer = source.owner || source;
   if (source.isRanged && target.skills.blockRangedChance > 0 && Math.random() < target.skills.blockRangedChance) {
@@ -1605,6 +1791,10 @@ function hurt(target, amount, source) {
   if (shieldReduction > 0) {
     amount *= 1 - shieldReduction;
     state.particles.push({ x: target.x, y: target.y, life: 0.45, color: "#ffeaa0", size: target.radius * 2.4 });
+  }
+  if (target.defensePotionTimer > 0) {
+    amount *= 0.45;
+    state.particles.push({ x: target.x, y: target.y, life: 0.38, color: "#ffeaa0", size: target.radius * 2.1 });
   }
   if (source.applyBurn) burnUnit(target, 5);
   if (source.applyFreeze) freezeUnit(target, 2.4);
@@ -1678,6 +1868,7 @@ function updateUnit(unit, dt) {
   unit.tornadoCooldown = Math.max(0, unit.tornadoCooldown - dt);
   unit.stasisCooldown = Math.max(0, unit.stasisCooldown - dt);
   unit.fireballCooldown = Math.max(0, unit.fireballCooldown - dt);
+  unit.randomSpawnCooldown = Math.max(0, unit.randomSpawnCooldown - dt);
   unit.wobble += dt * (5 + unit.speed / 25);
   updateBerserk(unit);
   if (!unit.dead && unit.poisonTimer > 0) {
@@ -1700,6 +1891,9 @@ function updateUnit(unit, dt) {
   }
   unit.freezeTimer = Math.max(0, unit.freezeTimer - dt);
   unit.stasisTimer = Math.max(0, unit.stasisTimer - dt);
+  unit.defensePotionTimer = Math.max(0, unit.defensePotionTimer - dt);
+  unit.powerPotionTimer = Math.max(0, unit.powerPotionTimer - dt);
+  unit.speedPotionTimer = Math.max(0, unit.speedPotionTimer - dt);
   if (unit.dead) {
     unit.vx *= 0.972;
     unit.vy *= 0.972;
@@ -1708,6 +1902,10 @@ function updateUnit(unit, dt) {
     return;
   }
   applyDamageAura(unit, dt);
+  if (unit.skills.randomSpawn && unit.randomSpawnCooldown <= 0) {
+    spawnRandomUnit(unit);
+    unit.randomSpawnCooldown = unit.skills.randomSpawnInterval || 5;
+  }
   if (unit.stasisTimer > 0) {
     unit.vx = 0;
     unit.vy = 0;
@@ -1738,7 +1936,7 @@ function updateUnit(unit, dt) {
   const canSecondAttack = Boolean(second && secondEngagementDistance <= secondAttackDistance);
   const attackDistance = Math.max(primaryAttackDistance, secondAttackDistance);
   const stopDistance = isRanged ? unit.stopDistance : Math.min(unit.stopDistance, attackDistance);
-  const speedFactor = unit.freezeTimer > 0 ? 0.45 : 1;
+  const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1);
   if (engagementDistance > stopDistance) {
     unit.vx += Math.cos(angle) * unit.speed * speedFactor * dt * 2.8;
     unit.vy += Math.sin(angle) * unit.speed * speedFactor * dt * 2.8;
@@ -2038,6 +2236,27 @@ function drawUnit(unit) {
     ctx.arc(0, 0, unit.radius + 10, 0, Math.PI * 2);
     ctx.stroke();
   }
+  if (!unit.dead && unit.defensePotionTimer > 0) {
+    ctx.strokeStyle = "#ffeaa0";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, unit.radius + 13, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  if (!unit.dead && unit.powerPotionTimer > 0) {
+    ctx.strokeStyle = "#ff6d6d";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, unit.radius + 16, Math.PI * 0.12, Math.PI * 1.75);
+    ctx.stroke();
+  }
+  if (!unit.dead && unit.speedPotionTimer > 0) {
+    ctx.strokeStyle = "#7cff9c";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, unit.radius + 19, Math.PI * 1.25, Math.PI * 0.75);
+    ctx.stroke();
+  }
   if (!unit.dead && unit.stasisTimer > 0) {
     ctx.strokeStyle = "#80c8ff";
     ctx.lineWidth = 4;
@@ -2316,6 +2535,138 @@ function drawUnitSkin(unit) {
     ctx.arc(0, 0, r * 0.42, Math.PI * 0.1, Math.PI * 1.55);
     ctx.stroke();
   }
+  if (unit.typeId === "frostmage") {
+    ctx.fillStyle = "#d7f7ff";
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 1.1);
+    ctx.lineTo(r * 0.72, r * 0.25);
+    ctx.lineTo(0, r * 0.7);
+    ctx.lineTo(-r * 0.72, r * 0.25);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#5bc8ff";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i += 1) {
+      const a = (Math.PI * 2 * i) / 6;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.cos(a) * r * 0.82, Math.sin(a) * r * 0.82);
+      ctx.stroke();
+    }
+  }
+  if (unit.typeId === "necromancer") {
+    ctx.fillStyle = "#21162e";
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.75, r * 0.62);
+    ctx.lineTo(0, -r * 1.15);
+    ctx.lineTo(r * 0.75, r * 0.62);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#d8ffe8";
+    ctx.beginPath();
+    ctx.arc(0, -r * 0.18, r * 0.34, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#9f7cff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.9, r * 0.54);
+    ctx.lineTo(r * 0.9, r * 0.54);
+    ctx.stroke();
+  }
+  if (unit.typeId === "bannerlord") {
+    ctx.fillStyle = "#f6d56d";
+    ctx.fillRect(-r * 0.12, -r * 1.3, r * 0.24, r * 1.9);
+    ctx.fillStyle = unit.team === "blue" ? "#4da3ff" : "#ff625f";
+    ctx.beginPath();
+    ctx.moveTo(r * 0.12, -r * 1.25);
+    ctx.lineTo(r * 1.1, -r * 0.98);
+    ctx.lineTo(r * 0.12, -r * 0.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#fff0a8";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.9, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  if (unit.typeId === "flameknight") {
+    ctx.fillStyle = "#2f1b18";
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.72, r * 0.55);
+    ctx.lineTo(0, -r * 1.05);
+    ctx.lineTo(r * 0.72, r * 0.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#ffcf5f";
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 1.22);
+    ctx.quadraticCurveTo(r * 0.5, -r * 0.58, 0, -r * 0.22);
+    ctx.quadraticCurveTo(-r * 0.38, -r * 0.58, 0, -r * 1.22);
+    ctx.fill();
+    ctx.strokeStyle = "#ff7a38";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.82, Math.PI * 0.05, Math.PI * 1.65);
+    ctx.stroke();
+  }
+  if (unit.typeId === "frostgiant") {
+    ctx.fillStyle = "rgba(215, 247, 255, 0.68)";
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 1.2);
+    ctx.lineTo(r * 0.36, -r * 0.28);
+    ctx.lineTo(r * 1.06, -r * 0.15);
+    ctx.lineTo(r * 0.45, r * 0.32);
+    ctx.lineTo(r * 0.72, r * 1.02);
+    ctx.lineTo(0, r * 0.56);
+    ctx.lineTo(-r * 0.72, r * 1.02);
+    ctx.lineTo(-r * 0.45, r * 0.32);
+    ctx.lineTo(-r * 1.06, -r * 0.15);
+    ctx.lineTo(-r * 0.36, -r * 0.28);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#5bc8ff";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+  if (unit.typeId === "sharpshooter") {
+    ctx.fillStyle = "#1c2732";
+    ctx.fillRect(-r * 0.72, -r * 0.7, r * 1.44, r * 0.34);
+    ctx.strokeStyle = "#d7efff";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.78, r * 0.44);
+    ctx.lineTo(r * 1.75, -r * 0.42);
+    ctx.stroke();
+    ctx.strokeStyle = "#ffcf5f";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.72, -0.4, 0.4);
+    ctx.stroke();
+  }
+  if (unit.typeId === "portalmage") {
+    ctx.strokeStyle = "#d9b8ff";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.92, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "#78bbff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.58, Math.PI * 0.2, Math.PI * 1.65);
+    ctx.stroke();
+    ctx.fillStyle = "#291d40";
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.72, r * 0.58);
+    ctx.lineTo(0, -r * 1.08);
+    ctx.lineTo(r * 0.72, r * 0.58);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#f0dcff";
+    ctx.font = `${Math.max(10, r * 0.6)}px Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("+", 0, -r * 0.05);
+  }
   if (unit.typeId === "unit67") {
     ctx.fillStyle = "#d8f0ff";
     ctx.beginPath();
@@ -2437,6 +2788,16 @@ function updateUi() {
   blueTeamBtn.disabled = !state.sandbox || state.phase !== "setup";
   redTeamBtn.disabled = !state.sandbox || state.phase !== "setup";
   sandboxToggle.checked = state.sandbox;
+  if (itemsTitle) itemsTitle.textContent = text.items;
+  for (const button of itemButtons) {
+    const itemId = button.dataset.item;
+    const item = itemTypes[itemId];
+    if (!item) continue;
+    const name = text.itemNames[itemId] || itemId;
+    button.classList.toggle("selected", state.selectedItem === itemId);
+    button.disabled = state.phase !== "battle";
+    button.innerHTML = `<b>${name}</b><small>${item.cost} ${text.budget}</small>`;
+  }
 }
 
 function renderUnitList() {
@@ -2481,6 +2842,10 @@ function renderUnitList() {
 
 canvas.addEventListener("pointerdown", (event) => {
   const point = worldPoint(event);
+  if (state.phase === "battle" && state.selectedItem) {
+    castItemAt(state.selectedItem, point);
+    return;
+  }
   if (state.phase !== "setup") return;
   const existing = nearestUnit(point, state.sandbox ? null : "blue");
   if (existing) {
@@ -2513,6 +2878,18 @@ startBtn.addEventListener("click", startBattle);
 pauseBtn.addEventListener("click", pauseBattle);
 resetBtn.addEventListener("click", () => resetGame(false));
 randomBtn.addEventListener("click", randomFormation);
+for (const button of itemButtons) {
+  button.addEventListener("click", () => {
+    const text = translations[state.language] || translations.en;
+    if (state.phase !== "battle") {
+      setToast(text.itemNeedBattle);
+      return;
+    }
+    state.selectedItem = state.selectedItem === button.dataset.item ? null : button.dataset.item;
+    updateUi();
+    setToast(text.itemUseHint);
+  });
+}
 eraseBtn.addEventListener("click", () => {
   state.selected = state.selected === "erase" ? unitTypes[0].id : "erase";
   renderUnitList();
