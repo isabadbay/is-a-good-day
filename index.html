@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TABS Lite</title>
+    <link rel="stylesheet" href="./styles.css?v=20260609-holy-shield-config" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar" aria-label="Game status">
+        <div class="brand">
+          <span class="brand-mark">TL</span>
+          <div>
+            <h1>TABS Lite</h1>
+            <p>Place units, start battle, watch chaos</p>
+          </div>
+        </div>
+        <div class="battle-actions">
+          <select id="languageSelect" class="language-select" aria-label="Language">
+            <option value="zh">中文</option>
+            <option value="en" selected>English</option>
+          </select>
+          <button id="startBtn" class="primary">Start</button>
+          <button id="pauseBtn">Pause</button>
+          <button id="resetBtn">Reset</button>
+        </div>
+      </section>
+
+      <section class="game-layout">
+        <aside class="panel roster" aria-label="Unit selection">
+          <div class="panel-title">
+            <h2>Units</h2>
+            <span id="budgetText">Gold 900</span>
+          </div>
+          <label class="toggle-row">
+            <input id="sandboxToggle" type="checkbox" />
+            Sandbox
+          </label>
+          <div class="team-picker" aria-label="Placement team">
+            <button id="blueTeamBtn" class="active" data-team="blue">Blue</button>
+            <button id="redTeamBtn" data-team="red">Red</button>
+          </div>
+          <div id="unitList" class="unit-list"></div>
+
+          <details class="custom-builder">
+            <summary>Custom Unit</summary>
+            <label>
+              Name
+              <input id="customName" type="text" value="Custom" maxlength="8" />
+            </label>
+            <div class="builder-grid">
+              <label>
+                Health
+                <input id="customHp" type="number" min="20" max="500000000" value="120" />
+              </label>
+              <label>
+                Damage
+                <input id="customDamage" type="number" min="1" max="500000000" value="22" />
+              </label>
+              <label>
+                Attack Speed
+                <input id="customAttackSpeed" type="number" min="0.2" max="500000000" step="0.1" value="1.2" />
+              </label>
+              <label>
+                Move Speed
+                <input id="customMoveSpeed" type="number" min="8" max="500000000" value="48" />
+              </label>
+              <label>
+                Size
+                <input id="customSize" type="number" min="8" max="500000000" value="16" />
+              </label>
+              <label>
+                Attack Range
+                <input id="customRange" type="number" min="8" max="500000000" value="40" />
+              </label>
+              <label>
+                Stop Distance
+                <input id="customStopDistance" type="number" min="0" max="500000000" value="30" />
+              </label>
+              <label>
+                Dodge Chance
+                <input id="customDodge" type="number" min="0" max="500000000" value="0" />
+              </label>
+            </div>
+
+            <label>
+              Weapon
+              <select id="customWeapon">
+                <option value="club">Club</option>
+                <option value="spear">Spear</option>
+                <option value="hammer">Hammer</option>
+                <option value="bow">Bow</option>
+                <option value="musket">Musket</option>
+                <option value="cannon">Cannon</option>
+              </select>
+            </label>
+            <label class="toggle-row inline-toggle">
+              <input id="customRanged" type="checkbox" />
+              Ranged Attack
+            </label>
+
+            <div class="skill-box">
+              <h3>Area Attack</h3>
+              <label class="toggle-row inline-toggle">
+                <input id="customAreaAttack" type="checkbox" />
+                Use Area Attack
+              </label>
+              <label>
+                Area Radius
+                <input id="customAreaRange" type="number" min="0" max="500000000" value="0" />
+              </label>
+              <label>
+                Area Damage
+                <input id="customAreaDamage" type="number" min="0" max="500000000" value="0" />
+              </label>
+            </div>
+
+            <div class="skill-box">
+              <h3>Second Attack</h3>
+              <label>
+                Second Weapon
+                <select id="customSecondWeapon">
+                  <option value="none">None</option>
+                  <option value="club">Club</option>
+                  <option value="spear">Spear</option>
+                  <option value="hammer">Hammer</option>
+                  <option value="bow">Bow</option>
+                  <option value="musket">Musket</option>
+                  <option value="cannon">Cannon</option>
+                </select>
+              </label>
+              <label>
+                Second Range
+                <input id="customSecondRange" type="number" min="0" max="500000000" value="0" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="customSecondRanged" type="checkbox" />
+                Second Attack Is Ranged
+              </label>
+              <label>
+                Second Damage
+                <input id="customSecondDamage" type="number" min="0" max="500000000" value="0" />
+              </label>
+            </div>
+
+            <div class="skill-box">
+              <h3>Special Skills</h3>
+              <label class="toggle-row inline-toggle">
+                <input id="skillExplode" type="checkbox" />
+                Death Explosion
+              </label>
+              <label>
+                Explosion Damage
+                <input id="skillExplodeDamage" type="number" min="10" max="500000000" value="120" />
+              </label>
+              <label>
+                Explosion Range
+                <input id="skillExplodeRange" type="number" min="20" max="500000000" value="90" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillPoisonSlime" type="checkbox" />
+                Poison Slime
+              </label>
+              <label>
+                Spray Chance
+                <input id="skillSlimeChance" type="number" min="0" max="500000000" value="35" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillSummonOnKill" type="checkbox" />
+                Summon Clubber On Kill
+              </label>
+              <label>
+                Summon Chance
+                <input id="skillSummonChance" type="number" min="0" max="500000000" value="35" />
+              </label>
+              <label>
+                Inherit Enemy Stats %
+                <input id="skillSummonInheritPercent" type="number" min="0" max="500000000" value="50" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillSummonInheritSkills" type="checkbox" />
+                Inherit Special Skills
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillSummonInheritSecond" type="checkbox" />
+                Inherit Second Attack
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillDamageOnKill" type="checkbox" />
+                Gain Damage On Kill
+              </label>
+              <label>
+                Damage Gain
+                <input id="skillDamageGain" type="number" min="0" max="500000000" value="5" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillDamageAura" type="checkbox" />
+                Damage Aura
+              </label>
+              <label>
+                Aura Range
+                <input id="skillDamageAuraRange" type="number" min="0" max="500000000" value="120" />
+              </label>
+              <label>
+                Aura Damage Per Second
+                <input id="skillDamageAuraDamage" type="number" min="0" max="500000000" value="10" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillTornado" type="checkbox" />
+                Tornado
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillFireBreath" type="checkbox" />
+                Fire Breath
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillFireball" type="checkbox" />
+                Fireball
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillHolyShield" type="checkbox" />
+                Holy Shield
+              </label>
+              <label>
+                Holy Shield Range
+                <input id="skillHolyShieldRange" type="number" min="0" max="500000000" value="160" />
+              </label>
+              <label>
+                Holy Shield Damage Reduction %
+                <input id="skillHolyShieldReduction" type="number" min="0" max="500000000" value="45" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillFreezeAttack" type="checkbox" />
+                Freeze Attack
+              </label>
+              <label>
+                Block Ranged Chance
+                <input id="skillBlockRanged" type="number" min="0" max="500000000" value="0" />
+              </label>
+              <label>
+                Berserk Trigger HP
+                <input id="skillBerserkHp" type="number" min="0" max="500000000" value="0" />
+              </label>
+              <label>
+                Berserk Damage%
+                <input id="skillBerserkDamage" type="number" min="0" max="500000000" value="50" />
+              </label>
+              <label>
+                Berserk Heal
+                <input id="skillBerserkHeal" type="number" min="0" max="500000000" value="0" />
+              </label>
+            </div>
+            <button id="createCustomBtn" class="wide-button">Create Unit</button>
+          </details>
+
+          <div class="compact-tools">
+            <button id="eraseBtn">Erase</button>
+            <button id="randomBtn">Random</button>
+          </div>
+        </aside>
+
+        <section class="battlefield-wrap" aria-label="Battlefield">
+          <canvas id="battlefield" width="1280" height="760"></canvas>
+          <div id="toast" class="toast">Click the blue half to place units</div>
+        </section>
+
+        <aside class="panel inspector" aria-label="Battle status">
+          <div class="panel-title">
+            <h2>Battle</h2>
+            <span id="phaseText">Setup</span>
+          </div>
+          <div class="score-grid">
+            <div>
+              <span>Blue</span>
+              <strong id="blueCount">0</strong>
+            </div>
+            <div>
+              <span>Red</span>
+              <strong id="redCount">0</strong>
+            </div>
+          </div>
+          <label class="range-row">
+            Enemy Size
+            <input id="enemySlider" type="range" min="4" max="18" value="9" />
+          </label>
+          <label class="range-row">
+            Camera Speed
+            <input id="speedSlider" type="range" min="60" max="180" value="100" />
+          </label>
+          <div class="tips">
+            <p>Your units can only be placed in the blue zone.</p>
+            <p>Drag placed units to adjust the formation.</p>
+            <p>The winner is the side with units left standing.</p>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="./game.js?v=20260609-holy-shield-config"></script>
+  </body>
+</html>
