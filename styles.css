@@ -372,6 +372,45 @@ canvas {
   font-size: 28px;
 }
 
+.item-box {
+  margin: 14px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(36, 43, 52, 0.64);
+  padding: 10px;
+}
+
+.item-box h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.item-bar {
+  display: grid;
+  gap: 8px;
+}
+
+.item-bar button {
+  display: grid;
+  min-height: 48px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.item-bar button.selected {
+  border-color: var(--gold);
+  background: #3a3329;
+}
+
+.item-bar button b {
+  font-size: 13px;
+}
+
+.item-bar button small {
+  color: var(--gold);
+  font-weight: 800;
+}
+
 .range-row {
   display: grid;
   gap: 8px;
