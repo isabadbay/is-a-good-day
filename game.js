@@ -135,6 +135,9 @@ const translations = {
     itemNeedBattle: "开战后才能使用道具",
     itemNoGold: "金币不够买这个道具",
     itemCast: "道具已释放",
+    itemHit: "喷中友军",
+    blueWin: "蓝队胜利",
+    redWin: "红队胜利",
     itemNames: {
       fireball: "火球",
       defense: "防御药水",
@@ -275,6 +278,9 @@ const translations = {
     itemNeedBattle: "Items can be used after battle starts",
     itemNoGold: "Not enough gold for this item",
     itemCast: "Item used",
+    itemHit: "Friendly units hit",
+    blueWin: "Blue wins",
+    redWin: "Red wins",
     itemNames: {
       fireball: "Fireball",
       defense: "Defense Potion",
@@ -1420,11 +1426,10 @@ function castItemAt(itemId, point) {
     if (!affected) {
       setToast(state.language === "zh" ? "没有喷中友军" : "No friendly units hit");
     } else {
-      setToast(`${text.itemCast}: ${affected}`);
+      setToast(`${text.itemHit}: ${affected}`);
     }
   }
   spendForItem(item);
-  state.selectedItem = null;
   updateUi();
   if (itemId === "fireball") setToast(text.itemCast);
 }
@@ -2199,7 +2204,8 @@ function checkWinner() {
   if (blueAlive && redAlive) return;
   state.winnerShown = true;
   setPhase("ended");
-  setToast(blueAlive ? "钃濋槦鑳滃埄" : "绾㈤槦鑳滃埄");
+  const text = translations[state.language] || translations.en;
+  setToast(blueAlive ? text.blueWin : text.redWin);
 }
 
 function update(dt) {
@@ -2956,7 +2962,12 @@ for (const button of itemButtons) {
     }
     state.selectedItem = state.selectedItem === button.dataset.item ? null : button.dataset.item;
     updateUi();
-    setToast(text.itemUseHint);
+    if (state.selectedItem) {
+      const name = text.itemNames[state.selectedItem] || state.selectedItem;
+      setToast(`${name}: ${text.itemUseHint}`);
+    } else {
+      setToast(state.language === "zh" ? "已取消道具" : "Item canceled");
+    }
   });
 }
 eraseBtn.addEventListener("click", () => {
