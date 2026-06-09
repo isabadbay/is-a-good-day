@@ -1,5 +1,6 @@
 ﻿const canvas = document.querySelector("#battlefield");
 const ctx = canvas.getContext("2d");
+const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
 const blueCount = document.querySelector("#blueCount");
@@ -2863,6 +2864,7 @@ function updateUi() {
   blueTeamBtn.disabled = !state.sandbox || state.phase !== "setup";
   redTeamBtn.disabled = !state.sandbox || state.phase !== "setup";
   sandboxToggle.checked = state.sandbox;
+  if (battlefieldWrap) battlefieldWrap.classList.toggle("item-aiming", state.phase === "battle" && Boolean(state.selectedItem));
   if (itemsTitle) itemsTitle.textContent = text.items;
   for (const button of itemButtons) {
     const itemId = button.dataset.item;
@@ -2870,7 +2872,8 @@ function updateUi() {
     if (!item) continue;
     const name = text.itemNames[itemId] || itemId;
     button.classList.toggle("selected", state.selectedItem === itemId);
-    button.disabled = state.phase !== "battle";
+    button.classList.toggle("locked", state.phase !== "battle");
+    button.disabled = false;
     button.innerHTML = `<b>${name}</b><small>${item.cost} ${text.budget}</small>`;
   }
 }
