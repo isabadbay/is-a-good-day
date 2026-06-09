@@ -1,4 +1,4 @@
-const canvas = document.querySelector("#battlefield");
+﻿const canvas = document.querySelector("#battlefield");
 const ctx = canvas.getContext("2d");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
@@ -64,15 +64,37 @@ const skillBerserkHeal = document.querySelector("#skillBerserkHeal");
 const languageSelect = document.querySelector("#languageSelect");
 
 const weaponProfiles = {
-  club: { tag: "木棒", range: 34, radius: 15, knockback: 2.3, projectileSpeed: 0, splash: 0 },
-  spear: { tag: "长矛", range: 58, radius: 15, knockback: 2.7, projectileSpeed: 0, splash: 0 },
-  hammer: { tag: "战锤", range: 38, radius: 19, knockback: 4.2, projectileSpeed: 0, splash: 0 },
-  bow: { tag: "弓箭", range: 220, radius: 14, knockback: 2.3, projectileSpeed: 420, splash: 0 },
-  musket: { tag: "火枪", range: 310, radius: 15, knockback: 2.5, projectileSpeed: 620, splash: 0 },
-  cannon: { tag: "火炮", range: 285, radius: 21, knockback: 3.8, projectileSpeed: 320, splash: 62 },
+  club: { tag: "鏈ㄦ", range: 34, radius: 15, knockback: 2.3, projectileSpeed: 0, splash: 0 },
+  spear: { tag: "闀跨煕", range: 58, radius: 15, knockback: 2.7, projectileSpeed: 0, splash: 0 },
+  hammer: { tag: "鎴橀敜", range: 38, radius: 19, knockback: 4.2, projectileSpeed: 0, splash: 0 },
+  bow: { tag: "寮撶", range: 220, radius: 14, knockback: 2.3, projectileSpeed: 420, splash: 0 },
+  musket: { tag: "鐏灙", range: 310, radius: 15, knockback: 2.5, projectileSpeed: 620, splash: 0 },
+  cannon: { tag: "鐏偖", range: 285, radius: 21, knockback: 3.8, projectileSpeed: 320, splash: 62 },
 };
 
 const CUSTOM_LIMIT = 500000000;
+const UNIT_PACK_2_IDS = new Set([
+  "knight",
+  "assassin",
+  "crossbow",
+  "poisoner",
+  "stormcaller",
+  "bomber",
+  "giant",
+  "wolf",
+  "slimebeast",
+  "dragonling",
+  "firebeast",
+  "paladin",
+  "plaguewizard",
+  "frostmage",
+  "necromancer",
+  "bannerlord",
+  "flameknight",
+  "frostgiant",
+  "sharpshooter",
+  "unit67",
+]);
 
 const translations = {
   zh: {
@@ -158,7 +180,7 @@ const translations = {
     unitsMap: {
       clubber: ["棍兵", "近战"],
       shield: ["盾卫", "抗线"],
-      spear: ["长矛", "穿刺"],
+      spear: ["长矛兵", "穿刺"],
       archer: ["弓手", "远程"],
       berserker: ["狂战士", "高速"],
       hammer: ["锤兵", "击退"],
@@ -177,6 +199,12 @@ const translations = {
       firebeast: ["火炮兽", "范围"],
       paladin: ["圣骑士", "格挡"],
       plaguewizard: ["瘟疫法师", "毒风"],
+      frostmage: ["冰法师", "冰冻"],
+      necromancer: ["死灵术士", "召唤"],
+      bannerlord: ["战旗手", "光环"],
+      flameknight: ["火焰骑士", "火球"],
+      frostgiant: ["冰霜巨人", "冻结"],
+      sharpshooter: ["神射手", "远狙"],
       unit67: ["67", "凝视定身"],
     },
     tags: {
@@ -299,6 +327,12 @@ const translations = {
       firebeast: ["Blast Beast", "Area"],
       paladin: ["Paladin", "Guard"],
       plaguewizard: ["Plague Wizard", "Poison Storm"],
+      frostmage: ["Frost Mage", "Freeze"],
+      necromancer: ["Necromancer", "Summon"],
+      bannerlord: ["Banner Lord", "Aura"],
+      flameknight: ["Flame Knight", "Fireball"],
+      frostgiant: ["Frost Giant", "Freeze"],
+      sharpshooter: ["Sharpshooter", "Snipe"],
       unit67: ["67", "Stasis Gaze"],
     },
     tags: {
@@ -390,8 +424,8 @@ function syncLanguage() {
 const unitTypes = [
   {
     id: "clubber",
-    name: "棍兵",
-    tag: "近战",
+    name: "Clubber",
+    tag: "Melee",
     glyph: "C",
     price: 80,
     hp: 74,
@@ -406,8 +440,8 @@ const unitTypes = [
   },
   {
     id: "shield",
-    name: "盾卫",
-    tag: "抗线",
+    name: "Shield Guard",
+    tag: "Tank",
     glyph: "S",
     price: 130,
     hp: 140,
@@ -422,8 +456,8 @@ const unitTypes = [
   },
   {
     id: "spear",
-    name: "长矛",
-    tag: "穿刺",
+    name: "Spearman",
+    tag: "Pierce",
     glyph: "P",
     price: 150,
     hp: 86,
@@ -438,8 +472,8 @@ const unitTypes = [
   },
   {
     id: "archer",
-    name: "弓手",
-    tag: "远程",
+    name: "Archer",
+    tag: "Ranged",
     glyph: "A",
     price: 170,
     hp: 58,
@@ -454,8 +488,8 @@ const unitTypes = [
   },
   {
     id: "berserker",
-    name: "狂战士",
-    tag: "高速",
+    name: "Berserker",
+    tag: "Fast",
     glyph: "B",
     price: 115,
     hp: 68,
@@ -470,8 +504,8 @@ const unitTypes = [
   },
   {
     id: "hammer",
-    name: "锤兵",
-    tag: "击退",
+    name: "Hammerer",
+    tag: "Knockback",
     glyph: "H",
     price: 210,
     hp: 130,
@@ -486,8 +520,8 @@ const unitTypes = [
   },
   {
     id: "musketeer",
-    name: "火枪手",
-    tag: "远射",
+    name: "Musketeer",
+    tag: "Long Shot",
     glyph: "M",
     price: 260,
     hp: 64,
@@ -502,8 +536,8 @@ const unitTypes = [
   },
   {
     id: "cannon",
-    name: "炮手",
-    tag: "爆炸",
+    name: "Cannoneer",
+    tag: "Explosive",
     glyph: "K",
     price: 420,
     hp: 115,
@@ -620,8 +654,8 @@ const unitTypes = [
   },
   {
     id: "giant",
-    name: "巨汉",
-    tag: "重击",
+    name: "Giant",
+    tag: "Heavy",
     glyph: "G",
     price: 320,
     hp: 250,
@@ -743,6 +777,116 @@ const unitTypes = [
     areaAttack: { range: 62, damage: 12 },
     skills: { poisonSlime: true, slimeChance: 0.5, tornado: true },
     color: "#9ddc6e",
+  },
+  {
+    id: "frostmage",
+    name: "Frost Mage",
+    tag: "Freeze",
+    glyph: "I",
+    price: 310,
+    hp: 72,
+    damage: 16,
+    range: 245,
+    stopDistance: 185,
+    speed: 25,
+    radius: 16,
+    cooldown: 1.05,
+    projectileSpeed: 390,
+    weapon: "bow",
+    areaAttack: { range: 52, damage: 8 },
+    skills: { freezeAttack: true, damageAura: true, damageAuraRange: 70, damageAuraDamage: 4 },
+    color: "#8ee8ff",
+  },
+  {
+    id: "necromancer",
+    name: "Necromancer",
+    tag: "Summon",
+    glyph: "V",
+    price: 390,
+    hp: 86,
+    damage: 21,
+    range: 225,
+    stopDistance: 175,
+    speed: 24,
+    radius: 17,
+    cooldown: 1.18,
+    projectileSpeed: 360,
+    weapon: "bow",
+    skills: { summonOnKill: true, summonChance: 0.85, summonInheritPercent: 0.45, summonInheritSkills: false, summonInheritSecond: false, damageOnKill: true, damageGain: 3 },
+    color: "#a77be8",
+  },
+  {
+    id: "bannerlord",
+    name: "Banner Lord",
+    tag: "Aura",
+    glyph: "J",
+    price: 410,
+    hp: 190,
+    damage: 20,
+    range: 42,
+    speed: 32,
+    radius: 21,
+    cooldown: 0.85,
+    knockback: 2.7,
+    weapon: "spear",
+    skills: { holyShield: true, holyShieldRange: 210, holyShieldReduction: 0.3, blockRangedChance: 0.2, berserkHp: 80, berserkDamage: 0.25, berserkHeal: 45 },
+    color: "#f2cb62",
+  },
+  {
+    id: "flameknight",
+    name: "Flame Knight",
+    tag: "Fireball",
+    glyph: "U",
+    price: 440,
+    hp: 170,
+    damage: 30,
+    range: 48,
+    speed: 50,
+    radius: 20,
+    cooldown: 0.78,
+    knockback: 3,
+    weapon: "spear",
+    areaAttack: { range: 48, damage: 10 },
+    secondAttack: { weapon: "bow", range: 260, damage: 22, ranged: true, projectileSpeed: 420, splash: 0, cooldown: 1.15 },
+    skills: { fireBreath: true, fireball: true, berserkHp: 65, berserkDamage: 0.55, berserkHeal: 55 },
+    color: "#ff794f",
+  },
+  {
+    id: "frostgiant",
+    name: "Frost Giant",
+    tag: "Freeze",
+    glyph: "E",
+    price: 520,
+    hp: 310,
+    damage: 42,
+    range: 50,
+    speed: 22,
+    radius: 27,
+    cooldown: 1.35,
+    knockback: 4.1,
+    weapon: "hammer",
+    areaAttack: { range: 90, damage: 18 },
+    skills: { freezeAttack: true, damageAura: true, damageAuraRange: 95, damageAuraDamage: 6, blockRangedChance: 0.18 },
+    color: "#9fd8ff",
+  },
+  {
+    id: "sharpshooter",
+    name: "Sharpshooter",
+    tag: "Snipe",
+    glyph: "!",
+    price: 360,
+    hp: 55,
+    damage: 66,
+    range: 360,
+    stopDistance: 270,
+    speed: 26,
+    radius: 14,
+    cooldown: 1.85,
+    projectileSpeed: 720,
+    weapon: "musket",
+    secondAttack: { weapon: "club", range: 34, damage: 12, ranged: false, projectileSpeed: 0, splash: 0, cooldown: 0.55 },
+    skills: { damageOnKill: true, damageGain: 6 },
+    color: "#d7efff",
   },
   {
     id: "unit67",
@@ -909,7 +1053,7 @@ function createCustomUnitType() {
           cooldown: Math.max(0.25, 1 / attackSpeed),
         }
       : null;
-  const cleanName = customName.value.trim() || `自定义${customUnitCounter}`;
+  const cleanName = customName.value.trim() || `鑷畾涔?{customUnitCounter}`;
   const glyph = cleanName.slice(0, 1).toUpperCase();
   const palette = ["#f2a65a", "#d77fa1", "#77c1d2", "#a7d977", "#c4a7e7", "#f2d36b"];
   const projectileSpeed = ranged ? profile.projectileSpeed || 390 : 0;
@@ -968,7 +1112,7 @@ function createCustomUnitType() {
   state.selected = type.id;
   renderUnitList();
   updateUi();
-  setToast(`${type.name} 已加入兵种列表`);
+  setToast(`${type.name} added to unit list`);
 }
 
 function addUnit(typeId, team, x, y) {
@@ -1039,17 +1183,17 @@ function placePlayerUnit(point) {
   const type = typeById(state.selected);
   if (!type) return;
   if (!state.sandbox && point.x > blueZone() - 18) {
-    setToast("只能在左侧蓝色半场布阵");
+    setToast("Only place blue units on the left side");
     return;
   }
   if (!state.sandbox && state.budget < type.price) {
-    setToast("金币不够，换个便宜点的兵种");
+    setToast("Not enough gold. Pick a cheaper unit");
     return;
   }
   const team = state.sandbox ? state.placeTeam : "blue";
   addUnit(type.id, team, point.x, point.y);
   spendFor(type);
-  setToast(`${team === "blue" ? "蓝队" : "红队"} ${type.name} 已部署`);
+  setToast(`${team === "blue" ? "Blue" : "Red"} ${type.name} deployed`);
 }
 
 function nearestUnit(point, team = "blue") {
@@ -1259,6 +1403,12 @@ function spawnEnemyArmy() {
     "firebeast",
     "paladin",
     "plaguewizard",
+    "frostmage",
+    "necromancer",
+    "bannerlord",
+    "flameknight",
+    "frostgiant",
+    "sharpshooter",
     "unit67",
   ];
   for (let i = 0; i < count; i += 1) {
@@ -1281,7 +1431,7 @@ function resetGame(keepEnemies = false) {
   state.dragging = null;
   state.winnerShown = false;
   if (!keepEnemies) spawnEnemyArmy();
-  setToast(state.sandbox ? "沙盒模式：选择队伍后可在全场放置单位" : "点击蓝色半场放置单位");
+  setToast(state.sandbox ? "Sandbox: choose a team and place units anywhere" : "Click the blue half to place units");
   updateUi();
 }
 
@@ -1312,6 +1462,12 @@ function randomFormation() {
     "firebeast",
     "paladin",
     "plaguewizard",
+    "frostmage",
+    "necromancer",
+    "bannerlord",
+    "flameknight",
+    "frostgiant",
+    "sharpshooter",
     "unit67",
   ];
   const team = state.sandbox ? state.placeTeam : "blue";
@@ -1327,7 +1483,7 @@ function randomFormation() {
     spendFor(type);
     guard += 1;
   }
-  setToast(`${team === "blue" ? "蓝队" : "红队"}随机阵型已生成`);
+  setToast(`${team === "blue" ? "Blue" : "Red"} random formation created`);
 }
 
 function setPhase(phase) {
@@ -1338,7 +1494,7 @@ function setPhase(phase) {
 function startBattle() {
   if (state.phase === "battle") return;
   if (!state.units.some((unit) => unit.team === "blue")) {
-    setToast("先放几个蓝队单位");
+    setToast("Place some blue units first");
     return;
   }
   if (!state.units.some((unit) => unit.team === "red")) {
@@ -1346,16 +1502,16 @@ function startBattle() {
   }
   state.winnerShown = false;
   setPhase("battle");
-  setToast("开战");
+  setToast("Battle started");
 }
 
 function pauseBattle() {
   if (state.phase === "battle") {
     setPhase("paused");
-    setToast("已暂停");
+    setToast("Paused");
   } else if (state.phase === "paused") {
     setPhase("battle");
-    setToast("继续战斗");
+    setToast("Battle resumed");
   }
 }
 
@@ -1776,7 +1932,7 @@ function checkWinner() {
   if (blueAlive && redAlive) return;
   state.winnerShown = true;
   setPhase("ended");
-  setToast(blueAlive ? "蓝队胜利" : "红队胜利");
+  setToast(blueAlive ? "钃濋槦鑳滃埄" : "绾㈤槦鑳滃埄");
 }
 
 function update(dt) {
@@ -2285,24 +2441,43 @@ function updateUi() {
 
 function renderUnitList() {
   unitList.innerHTML = "";
-  for (const type of unitTypes) {
-    const display = displayType(type);
-    const button = document.createElement("button");
-    button.className = `unit-card ${state.selected === type.id ? "selected" : ""}`;
-    button.innerHTML = `
-      <span class="icon">${type.glyph}</span>
-      <span><b>${display.name}</b><small>${display.tag}</small></span>
-      <span class="price">${type.price}</span>
-    `;
-    button.addEventListener("click", () => {
-      state.selected = type.id;
-      eraseBtn.textContent = "橡皮擦";
-      renderUnitList();
-      setToast(`已选择 ${type.name}`);
-    });
-    unitList.appendChild(button);
+  const text = translations[state.language] || translations.en;
+  const packs = [
+    {
+      title: state.language === "zh" ? "兵种包 1" : "Unit Pack 1",
+      types: unitTypes.filter((type) => !UNIT_PACK_2_IDS.has(type.id) && !type.id.startsWith("custom-")),
+    },
+    {
+      title: state.language === "zh" ? "兵种包 2" : "Unit Pack 2",
+      types: unitTypes.filter((type) => UNIT_PACK_2_IDS.has(type.id) || type.id.startsWith("custom-")),
+    },
+  ];
+  for (const pack of packs) {
+    if (!pack.types.length) continue;
+    const heading = document.createElement("div");
+    heading.className = "unit-pack-title";
+    heading.textContent = pack.title;
+    unitList.appendChild(heading);
+    for (const type of pack.types) {
+      const display = displayType(type);
+      const button = document.createElement("button");
+      button.className = `unit-card ${state.selected === type.id ? "selected" : ""}`;
+      button.innerHTML = `
+        <span class="icon">${type.glyph}</span>
+        <span><b>${display.name}</b><small>${display.tag}</small></span>
+        <span class="price">${type.price}</span>
+      `;
+      button.addEventListener("click", () => {
+        state.selected = type.id;
+        eraseBtn.textContent = text.erase;
+        renderUnitList();
+        setToast(`${state.language === "zh" ? "已选择" : "Selected"} ${display.name}`);
+      });
+      unitList.appendChild(button);
+    }
   }
 }
+
 
 canvas.addEventListener("pointerdown", (event) => {
   const point = worldPoint(event);
@@ -2311,7 +2486,7 @@ canvas.addEventListener("pointerdown", (event) => {
   if (existing) {
     if (state.selected === "erase") {
       removeUnit(existing);
-      setToast("单位已移除");
+      setToast("Unit removed");
       return;
     }
     state.dragging = existing;
@@ -2341,8 +2516,8 @@ randomBtn.addEventListener("click", randomFormation);
 eraseBtn.addEventListener("click", () => {
   state.selected = state.selected === "erase" ? unitTypes[0].id : "erase";
   renderUnitList();
-  eraseBtn.textContent = state.selected === "erase" ? "停止擦除" : "橡皮擦";
-  setToast(state.selected === "erase" ? "点击单位即可移除" : "继续布阵");
+  eraseBtn.textContent = state.selected === "erase" ? "Stop Erasing" : "Erase";
+  setToast(state.selected === "erase" ? "Click a unit to remove it" : "Continue placing units");
 });
 enemySlider.addEventListener("input", () => {
   if (state.phase === "setup") {
@@ -2355,22 +2530,22 @@ sandboxToggle.addEventListener("change", () => {
   state.sandbox = sandboxToggle.checked;
   state.placeTeam = state.sandbox ? state.placeTeam : "blue";
   if (state.sandbox) {
-    setToast("沙盒模式已开启：无限金币，可放红队和蓝队");
+    setToast("Sandbox on: infinite gold, red and blue placement enabled");
   } else {
-    setToast("普通模式：蓝队左半场，金币有限");
+    setToast("Normal mode: blue left side, limited gold");
   }
   updateUi();
 });
 blueTeamBtn.addEventListener("click", () => {
   if (!state.sandbox || state.phase !== "setup") return;
   state.placeTeam = "blue";
-  setToast("当前放置：蓝队");
+  setToast("Placing team: Blue");
   updateUi();
 });
 redTeamBtn.addEventListener("click", () => {
   if (!state.sandbox || state.phase !== "setup") return;
   state.placeTeam = "red";
-  setToast("当前放置：红队");
+  setToast("Placing team: Red");
   updateUi();
 });
 customWeapon.addEventListener("change", () => {
