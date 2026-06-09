@@ -170,6 +170,16 @@ h1 {
   padding-right: 2px;
 }
 
+.unit-pack-title {
+  margin-top: 4px;
+  padding: 6px 2px 2px;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
 .unit-card {
   display: grid;
   grid-template-columns: 38px 1fr auto;
