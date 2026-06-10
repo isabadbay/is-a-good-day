@@ -20,6 +20,8 @@ const redTeamBtn = document.querySelector("#redTeamBtn");
 const wallToolBtn = document.querySelector("#wallToolBtn");
 const eraseWallBtn = document.querySelector("#eraseWallBtn");
 const clearWallsBtn = document.querySelector("#clearWallsBtn");
+const wallDirection = document.querySelector("#wallDirection");
+const wallLength = document.querySelector("#wallLength");
 const customName = document.querySelector("#customName");
 const customHp = document.querySelector("#customHp");
 const customDamage = document.querySelector("#customDamage");
@@ -1079,11 +1081,13 @@ function addWall(point) {
     setToast(state.language === "zh" ? "布阵阶段才能放墙" : "Walls can be placed during setup");
     return;
   }
+  const length = clamp(Number(wallLength?.value) || 120, 60, 260);
+  const horizontal = (wallDirection?.value || "horizontal") === "horizontal";
   state.walls.push({
     x: clamp(point.x, 30, canvas.width - 30),
     y: clamp(point.y, 30, canvas.height - 30),
-    w: 96,
-    h: 28,
+    w: horizontal ? length : 28,
+    h: horizontal ? 28 : length,
   });
   setToast(state.language === "zh" ? "已放置墙" : "Wall placed");
 }
@@ -1117,6 +1121,56 @@ function pushOutOfWalls(unit) {
 
 function projectileHitsWall(projectile) {
   return state.walls.some((wall) => projectile.x >= wall.x - wall.w / 2 && projectile.x <= wall.x + wall.w / 2 && projectile.y >= wall.y - wall.h / 2 && projectile.y <= wall.y + wall.h / 2);
+}
+
+function segmentHitsWall(x1, y1, x2, y2, wall, padding = 20) {
+  const minX = wall.x - wall.w / 2 - padding;
+  const maxX = wall.x + wall.w / 2 + padding;
+  const minY = wall.y - wall.h / 2 - padding;
+  const maxY = wall.y + wall.h / 2 + padding;
+  for (let i = 0; i <= 10; i += 1) {
+    const t = i / 10;
+    const x = x1 + (x2 - x1) * t;
+    const y = y1 + (y2 - y1) * t;
+    if (x >= minX && x <= maxX && y >= minY && y <= maxY) return true;
+  }
+  return false;
+}
+
+function wallAvoidancePoint(unit, target) {
+  const lookX = unit.x + (target.x - unit.x) * 0.42;
+  const lookY = unit.y + (target.y - unit.y) * 0.42;
+  let blocker = null;
+  for (const wall of state.walls) {
+    if (segmentHitsWall(unit.x, unit.y, lookX, lookY, wall, unit.radius + 10)) {
+      blocker = wall;
+      break;
+    }
+  }
+  if (!blocker) return target;
+  const margin = unit.radius + 32;
+  const candidates =
+    blocker.w >= blocker.h
+      ? [
+          { x: blocker.x, y: blocker.y - blocker.h / 2 - margin },
+          { x: blocker.x, y: blocker.y + blocker.h / 2 + margin },
+        ]
+      : [
+          { x: blocker.x - blocker.w / 2 - margin, y: blocker.y },
+          { x: blocker.x + blocker.w / 2 + margin, y: blocker.y },
+        ];
+  let best = candidates[0];
+  let bestScore = Infinity;
+  for (const candidate of candidates) {
+    const x = clamp(candidate.x, unit.radius, canvas.width - unit.radius);
+    const y = clamp(candidate.y, unit.radius, canvas.height - unit.radius);
+    const score = Math.hypot(unit.x - x, unit.y - y) + Math.hypot(target.x - x, target.y - y);
+    if (score < bestScore) {
+      best = { x, y };
+      bestScore = score;
+    }
+  }
+  return best;
 }
 
 function selectItem(itemId) {
@@ -2077,7 +2131,8 @@ function attack(unit, target, mode = null) {
     noKnockback: unit.skills.fireBreath,
   });
   applyAreaAttack(unit, target.x, target.y);
-  const angle = Math.atan2(target.y - unit.y, target.x - unit.x);
+  const moveTarget = wallAvoidancePoint(unit, target);
+  const angle = Math.atan2(moveTarget.y - unit.y, moveTarget.x - unit.x);
   unit.vx -= Math.cos(angle) * 28;
   unit.vy -= Math.sin(angle) * 28;
 }

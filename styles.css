@@ -149,6 +149,26 @@ h1 {
   grid-column: 1 / -1;
 }
 
+.map-tools label {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.map-tools select,
+.map-tools input {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #151a21;
+  color: var(--text);
+  padding: 5px 8px;
+}
+
 .battle-actions button {
   min-width: 82px;
 }
