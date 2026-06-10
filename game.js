@@ -847,7 +847,7 @@ const unitTypes = [
     damage: 58,
     range: 290,
     stopDistance: 210,
-    speed: 24,
+    speed: 38,
     radius: 38,
     cooldown: 1.45,
     projectileSpeed: 340,
@@ -856,7 +856,21 @@ const unitTypes = [
     weapon: "cannon",
     areaAttack: { range: 115, damage: 28 },
     secondAttack: { weapon: "club", range: 82, damage: 74, ranged: false, projectileSpeed: 0, splash: 0, cooldown: 0.95 },
-    skills: { fireBreath: true, fireball: true, meleeKnockbackWithFire: true, berserkHp: 210, berserkDamage: 0.35, berserkHeal: 80 },
+    skills: {
+      fireBreath: true,
+      fireball: true,
+      meleeKnockbackWithFire: true,
+      damageAura: true,
+      damageAuraRange: 90,
+      damageAuraDamage: 15,
+      explode: true,
+      explodeDamage: 120,
+      explodeRange: 120,
+      burnImmune: true,
+      berserkHp: 400,
+      berserkDamage: 0.5,
+      berserkHeal: 80,
+    },
     color: "#d94f36",
   },
   {
@@ -1628,6 +1642,11 @@ function poisonUnit(unit, seconds = 5) {
 
 function burnUnit(unit, seconds = 5) {
   if (unit.dead) return;
+  if (unit.skills?.burnImmune) {
+    unit.burnTimer = 0;
+    unit.burnTick = 0;
+    return;
+  }
   unit.burnTimer = Math.max(unit.burnTimer || 0, seconds);
   unit.burnTick = Math.min(unit.burnTick || 1, 1);
 }
@@ -1894,16 +1913,18 @@ function castItemAt(itemId, point) {
 
 function spawnFireBreathParticles(from, to, count = 14) {
   const angle = Math.atan2(to.y - from.y, to.x - from.x);
-  const distance = Math.min(95, Math.hypot(to.x - from.x, to.y - from.y));
-  for (let i = 0; i < count; i += 1) {
-    const t = (i + Math.random() * 0.7) / count;
-    const spread = (Math.random() - 0.5) * 0.65;
-    const speed = 90 + Math.random() * 150;
-    const size = 12 + Math.random() * 18;
-    const life = 0.26 + Math.random() * 0.28;
+  const scale = from.typeId === "adultdragon" ? 2.15 : Math.max(1, from.radius / 22);
+  const flameCount = Math.ceil(count * scale);
+  const distance = Math.min(95 * scale, Math.hypot(to.x - from.x, to.y - from.y));
+  for (let i = 0; i < flameCount; i += 1) {
+    const t = (i + Math.random() * 0.7) / flameCount;
+    const spread = (Math.random() - 0.5) * (0.65 + scale * 0.12);
+    const speed = 90 + Math.random() * 150 * scale;
+    const size = (12 + Math.random() * 18) * scale;
+    const life = 0.26 + Math.random() * 0.28 + (scale - 1) * 0.08;
     state.particles.push({
-      x: from.x + Math.cos(angle) * distance * t + (Math.random() - 0.5) * 10,
-      y: from.y + Math.sin(angle) * distance * t + (Math.random() - 0.5) * 10,
+      x: from.x + Math.cos(angle) * distance * t + (Math.random() - 0.5) * 10 * scale,
+      y: from.y + Math.sin(angle) * distance * t + (Math.random() - 0.5) * 10 * scale,
       vx: Math.cos(angle + spread) * speed,
       vy: Math.sin(angle + spread) * speed,
       life,
