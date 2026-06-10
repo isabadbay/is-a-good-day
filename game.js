@@ -27,6 +27,7 @@ const clearWallsBtn = document.querySelector("#clearWallsBtn");
 const customName = document.querySelector("#customName");
 const customHp = document.querySelector("#customHp");
 const customDamage = document.querySelector("#customDamage");
+const customKnockback = document.querySelector("#customKnockback");
 const customAttackSpeed = document.querySelector("#customAttackSpeed");
 const customMoveSpeed = document.querySelector("#customMoveSpeed");
 const customSize = document.querySelector("#customSize");
@@ -108,6 +109,7 @@ const UNIT_PACK_2_IDS = new Set([
   "wolf",
   "slimebeast",
   "dragonling",
+  "adultdragon",
   "firebeast",
   "paladin",
   "plaguewizard",
@@ -184,6 +186,7 @@ const translations = {
       customName: "名字",
       customHp: "血量",
       customDamage: "伤害",
+      customKnockback: "击退",
       customAttackSpeed: "攻速",
       customMoveSpeed: "移速",
       customSize: "大小",
@@ -258,6 +261,7 @@ const translations = {
       wolf: ["战狼", "扑咬"],
       slimebeast: ["毒史莱姆", "毒液"],
       dragonling: ["幼龙", "火焰"],
+      adultdragon: ["成年龙", "火球巨兽"],
       firebeast: ["火炮兽", "范围"],
       paladin: ["圣骑士", "格挡"],
       plaguewizard: ["瘟疫法师", "毒风"],
@@ -350,6 +354,7 @@ const translations = {
       customName: "Name",
       customHp: "Health",
       customDamage: "Damage",
+      customKnockback: "Knockback",
       customAttackSpeed: "Attack Speed",
       customMoveSpeed: "Move Speed",
       customSize: "Size",
@@ -424,6 +429,7 @@ const translations = {
       wolf: ["War Wolf", "Pounce"],
       slimebeast: ["Slime Beast", "Poison"],
       dragonling: ["Dragonling", "Fire"],
+      adultdragon: ["Adult Dragon", "Fire Tyrant"],
       firebeast: ["Blast Beast", "Area"],
       paladin: ["Paladin", "Guard"],
       plaguewizard: ["Plague Wizard", "Poison Storm"],
@@ -830,6 +836,28 @@ const unitTypes = [
     secondAttack: { weapon: "club", range: 38, damage: 22, ranged: false, projectileSpeed: 0, splash: 0, cooldown: 0.72 },
     skills: { fireBreath: true, fireball: true },
     color: "#f47b55",
+  },
+  {
+    id: "adultdragon",
+    name: "Adult Dragon",
+    tag: "Fire Tyrant",
+    glyph: "D",
+    price: 980,
+    hp: 750,
+    damage: 58,
+    range: 290,
+    stopDistance: 210,
+    speed: 24,
+    radius: 38,
+    cooldown: 1.45,
+    projectileSpeed: 340,
+    splash: 105,
+    knockback: 12.5,
+    weapon: "cannon",
+    areaAttack: { range: 115, damage: 28 },
+    secondAttack: { weapon: "club", range: 82, damage: 74, ranged: false, projectileSpeed: 0, splash: 0, cooldown: 0.95 },
+    skills: { fireBreath: true, fireball: true, meleeKnockbackWithFire: true, berserkHp: 210, berserkDamage: 0.35, berserkHeal: 80 },
+    color: "#d94f36",
   },
   {
     id: "firebeast",
@@ -1363,6 +1391,7 @@ function createCustomUnitType() {
   const profile = weaponProfiles[customWeapon.value] || weaponProfiles.club;
   const hp = clamp(Number(customHp.value) || 120, 20, CUSTOM_LIMIT);
   const damage = clamp(Number(customDamage.value) || 22, 1, CUSTOM_LIMIT);
+  const knockback = clamp(Number(customKnockback.value) || 2.3, 0, CUSTOM_LIMIT);
   const attackSpeed = clamp(Number(customAttackSpeed.value) || 1.2, 0.2, CUSTOM_LIMIT);
   const speed = clamp(Number(customMoveSpeed.value) || 48, 8, CUSTOM_LIMIT);
   const areaAttack =
@@ -1429,8 +1458,9 @@ function createCustomUnitType() {
   const splash = ranged && customWeapon.value === "cannon" ? profile.splash : 0;
   const range = customAttackRange;
   const price = Math.round(
-    hp * 0.7 +
+      hp * 0.7 +
       damage * 7 +
+      knockback * 18 +
       attackSpeed * 34 +
       speed * 1.4 +
       size * 3 +
@@ -1469,7 +1499,7 @@ function createCustomUnitType() {
     projectileSpeed,
     splash,
     areaAttack,
-    knockback: profile.knockback,
+    knockback,
     dodgeChance,
     weapon: customWeapon.value,
     isRangedCustom: ranged,
@@ -2030,6 +2060,7 @@ function spawnEnemyArmy() {
     "wolf",
     "slimebeast",
     "dragonling",
+    "adultdragon",
     "firebeast",
     "paladin",
     "plaguewizard",
@@ -2097,6 +2128,7 @@ function randomFormation() {
     "wolf",
     "slimebeast",
     "dragonling",
+    "adultdragon",
     "firebeast",
     "paladin",
     "plaguewizard",
@@ -2383,7 +2415,7 @@ function attack(unit, target, mode = null) {
     ...unit,
     applyBurn: unit.skills.fireBreath,
     applyFreeze: unit.skills.freezeAttack,
-    noKnockback: unit.skills.fireBreath,
+    noKnockback: unit.skills.fireBreath && !unit.skills.meleeKnockbackWithFire,
   });
   applyAreaAttack(unit, target.x, target.y);
   const moveTarget = wallAvoidancePoint(unit, target);
@@ -2493,7 +2525,9 @@ function updateUnit(unit, dt) {
     unit.vy += Math.sin(angle) * unit.speed * speedFactor * dt * 2.8;
   }
   if (unit.cooldown <= 0) {
-    if (canPrimaryAttack) {
+    if (canSecondAttack && second && !second.ranged) {
+      attack(unit, target, second);
+    } else if (canPrimaryAttack) {
       attack(unit, target);
     } else if (canSecondAttack) {
       attack(unit, target, second);
@@ -3183,6 +3217,57 @@ function drawUnitSkin(unit) {
     ctx.arc(r * 0.18, -r * 0.52, r * 0.08, 0, Math.PI * 2);
     ctx.fill();
   }
+  if (unit.typeId === "adultdragon") {
+    ctx.fillStyle = "#4a0f16";
+    ctx.beginPath();
+    ctx.moveTo(-r * 2.15, -r * 0.15);
+    ctx.lineTo(-r * 0.62, -r * 1.28);
+    ctx.lineTo(-r * 0.25, r * 0.42);
+    ctx.closePath();
+    ctx.moveTo(r * 2.15, -r * 0.15);
+    ctx.lineTo(r * 0.62, -r * 1.28);
+    ctx.lineTo(r * 0.25, r * 0.42);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#ffb15f";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-r * 1.6, -r * 0.18);
+    ctx.lineTo(-r * 0.55, -r * 0.72);
+    ctx.moveTo(r * 1.6, -r * 0.18);
+    ctx.lineTo(r * 0.55, -r * 0.72);
+    ctx.stroke();
+    ctx.strokeStyle = "#2a0910";
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(0, r * 0.48);
+    ctx.quadraticCurveTo(-r * 0.78, r * 1.26, -r * 1.85, r * 0.82);
+    ctx.stroke();
+    ctx.fillStyle = "#2a0910";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.78, r * 1.02, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#e34227";
+    ctx.beginPath();
+    ctx.ellipse(0, -r * 0.48, r * 0.58, r * 0.42, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ffd15a";
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.4, -r * 0.98);
+    ctx.lineTo(-r * 0.16, -r * 1.52);
+    ctx.lineTo(-r * 0.04, -r * 0.88);
+    ctx.closePath();
+    ctx.moveTo(r * 0.4, -r * 0.98);
+    ctx.lineTo(r * 0.16, -r * 1.52);
+    ctx.lineTo(r * 0.04, -r * 0.88);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#fff0a8";
+    ctx.beginPath();
+    ctx.arc(-r * 0.22, -r * 0.56, r * 0.09, 0, Math.PI * 2);
+    ctx.arc(r * 0.22, -r * 0.56, r * 0.09, 0, Math.PI * 2);
+    ctx.fill();
+  }
   if (unit.typeId === "firebeast") {
     ctx.fillStyle = "#2d3036";
     ctx.fillRect(-r * 0.92, -r * 0.2, r * 1.84, r * 0.5);
@@ -3775,6 +3860,7 @@ customWeapon.addEventListener("change", () => {
   customRange.value = rangedWeapon ? profile.range : profile.range;
   customStopDistance.value = rangedWeapon ? Math.max(110, Math.round(profile.range * 0.72)) : Math.min(profile.range, 42);
   customSize.value = profile.radius;
+  customKnockback.value = profile.knockback;
 });
 customSecondWeapon.addEventListener("change", () => {
   if (customSecondWeapon.value === "none") {
