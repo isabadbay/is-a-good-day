@@ -21,6 +21,7 @@ const wallToolBtn = document.querySelector("#wallToolBtn");
 const thickWallToolBtn = document.querySelector("#thickWallToolBtn");
 const arrowWallToolBtn = document.querySelector("#arrowWallToolBtn");
 const commandToolBtn = document.querySelector("#commandToolBtn");
+const focusToolBtn = document.querySelector("#focusToolBtn");
 const eraseWallBtn = document.querySelector("#eraseWallBtn");
 const clearWallsBtn = document.querySelector("#clearWallsBtn");
 const customName = document.querySelector("#customName");
@@ -157,6 +158,7 @@ const translations = {
     mapThickWall: "厚墙",
     mapArrowWall: "透射墙",
     mapCommand: "指挥",
+    mapFocus: "集火",
     mapEraseWall: "删除墙",
     mapClearWalls: "清空墙",
     wallDirection: "方向",
@@ -167,6 +169,7 @@ const translations = {
     wallNeedGold: "金币不够放这面墙",
     wallStartHint: "再点一下确认墙的长度和方向",
     commandHint: "点击战场，命令当前队伍移动",
+    focusHint: "点击一个敌人，当前队伍会优先攻击它",
     itemNames: {
       fireball: "火球",
       defense: "防御药水",
@@ -321,6 +324,7 @@ const translations = {
     mapThickWall: "Thick Wall",
     mapArrowWall: "Arrow Wall",
     mapCommand: "Command",
+    mapFocus: "Focus",
     mapEraseWall: "Erase Wall",
     mapClearWalls: "Clear Walls",
     wallDirection: "Direction",
@@ -331,6 +335,7 @@ const translations = {
     wallNeedGold: "Not enough gold for this wall",
     wallStartHint: "Click again to set wall length and direction",
     commandHint: "Click the battlefield to command the current team",
+    focusHint: "Click an enemy to make the current team focus it",
     itemNames: {
       fireball: "Fireball",
       defense: "Defense Potion",
@@ -473,6 +478,7 @@ function applyLanguage(lang) {
   thickWallToolBtn.textContent = text.mapThickWall;
   arrowWallToolBtn.textContent = text.mapArrowWall;
   commandToolBtn.textContent = text.mapCommand;
+  focusToolBtn.textContent = text.mapFocus;
   eraseWallBtn.textContent = text.mapEraseWall;
   clearWallsBtn.textContent = text.mapClearWalls;
   setText(".custom-builder summary", text.custom);
@@ -1047,6 +1053,7 @@ const state = {
   tornadoes: [],
   walls: [],
   commands: { blue: null, red: null },
+  focusTargets: { blue: null, red: null },
   nextId: 1,
   dragging: null,
   lastTime: performance.now(),
@@ -1314,6 +1321,28 @@ function updateCommands(dt) {
     if (!command) continue;
     command.timer -= dt;
     if (command.timer <= 0) state.commands[team] = null;
+  }
+}
+
+function issueFocus(point) {
+  const team = state.placeTeam;
+  const enemyTeam = team === "blue" ? "red" : "blue";
+  const target = nearestUnit(point, enemyTeam);
+  if (!target) {
+    setToast(state.language === "zh" ? "没有点中敌人" : "No enemy target selected");
+    return;
+  }
+  state.focusTargets[team] = { id: target.id, timer: 12 };
+  setToast(state.language === "zh" ? `${team === "blue" ? "蓝队" : "红队"}集火 ${target.name}` : `${team === "blue" ? "Blue" : "Red"} focusing ${target.name}`);
+}
+
+function updateFocusTargets(dt) {
+  for (const team of ["blue", "red"]) {
+    const focus = state.focusTargets[team];
+    if (!focus) continue;
+    focus.timer -= dt;
+    const target = state.units.find((unit) => unit.id === focus.id && !unit.dead);
+    if (!target || target.team === team || focus.timer <= 0) state.focusTargets[team] = null;
   }
 }
 
@@ -2032,6 +2061,7 @@ function resetGame(keepEnemies = false) {
   state.tornadoes = [];
   state.walls = [];
   state.commands = { blue: null, red: null };
+  state.focusTargets = { blue: null, red: null };
   state.dragging = null;
   state.wallStart = null;
   state.pointer = null;
@@ -2110,6 +2140,7 @@ function startBattle() {
     spawnEnemyArmy();
   }
   state.commands = { blue: null, red: null };
+  state.focusTargets = { blue: null, red: null };
   state.winnerShown = false;
   setPhase("battle");
   setToast("Battle started");
@@ -2126,6 +2157,16 @@ function pauseBattle() {
 }
 
 function findTarget(unit) {
+  const focus = state.focusTargets[unit.team];
+  if (focus) {
+    const focused = state.units.find((other) => other.id === focus.id && !other.dead && other.team !== unit.team);
+    if (focused) {
+      const distance = Math.hypot(focused.x - unit.x, focused.y - unit.y);
+      const wallInfo = wallTargetNear(unit, focused);
+      if (wallInfo) return wallInfo;
+      return { target: focused, distance };
+    }
+  }
   let best = null;
   let bestDistance = Infinity;
   for (const other of state.units) {
@@ -2703,6 +2744,7 @@ function update(dt) {
   const scaledDt = Math.min(0.033, dt * speed);
   if (state.phase === "battle") {
     updateCommands(scaledDt);
+    updateFocusTargets(scaledDt);
     for (const unit of state.units) updateUnit(unit, scaledDt);
     resolveCrowding();
     updateProjectiles(scaledDt);
@@ -2788,6 +2830,31 @@ function drawWalls() {
     ctx.lineTo(0, 8);
     ctx.lineTo(18, 2);
     ctx.lineTo(0, -6);
+    ctx.stroke();
+    ctx.restore();
+  }
+  for (const [team, focus] of Object.entries(state.focusTargets)) {
+    if (!focus) continue;
+    const target = state.units.find((unit) => unit.id === focus.id && !unit.dead);
+    if (!target) continue;
+    ctx.save();
+    ctx.translate(target.x, target.y - target.radius - 18);
+    ctx.strokeStyle = team === "blue" ? "#6bbcff" : "#ff706c";
+    ctx.fillStyle = "rgba(10, 13, 18, 0.52)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-21, 0);
+    ctx.lineTo(-8, 0);
+    ctx.moveTo(8, 0);
+    ctx.lineTo(21, 0);
+    ctx.moveTo(0, -21);
+    ctx.lineTo(0, -8);
+    ctx.moveTo(0, 8);
+    ctx.lineTo(0, 21);
     ctx.stroke();
     ctx.restore();
   }
@@ -3441,16 +3508,18 @@ function updateUi() {
   thickWallToolBtn.classList.toggle("active", state.mapTool === "thickWall");
   arrowWallToolBtn.classList.toggle("active", state.mapTool === "arrowWall");
   commandToolBtn.classList.toggle("active", state.mapTool === "command");
+  focusToolBtn.classList.toggle("active", state.mapTool === "focus");
   eraseWallBtn.classList.toggle("active", state.mapTool === "eraseWall");
   wallToolBtn.disabled = state.phase !== "setup";
   thickWallToolBtn.disabled = state.phase !== "setup";
   arrowWallToolBtn.disabled = state.phase !== "setup";
   commandToolBtn.disabled = state.phase !== "battle";
+  focusToolBtn.disabled = state.phase !== "battle";
   eraseWallBtn.disabled = state.phase !== "setup";
   clearWallsBtn.disabled = state.phase !== "setup" || state.walls.length === 0;
   blueTeamBtn.classList.toggle("active", state.placeTeam === "blue");
   redTeamBtn.classList.toggle("active", state.placeTeam === "red");
-  const canPickTeam = state.sandbox || Boolean(state.selectedItem) || state.mapTool === "command";
+  const canPickTeam = state.sandbox || Boolean(state.selectedItem) || state.mapTool === "command" || state.mapTool === "focus";
   blueTeamBtn.disabled = !canPickTeam;
   redTeamBtn.disabled = !canPickTeam;
   sandboxToggle.checked = state.sandbox;
@@ -3534,6 +3603,11 @@ canvas.addEventListener("pointerdown", (event) => {
     updateUi();
     return;
   }
+  if (state.phase === "battle" && state.mapTool === "focus") {
+    issueFocus(point);
+    updateUi();
+    return;
+  }
   if (state.phase === "setup" && state.mapTool === "eraseWall") {
     eraseWall(point);
     updateUi();
@@ -3613,6 +3687,15 @@ commandToolBtn.addEventListener("click", () => {
   updateUi();
   setToast(state.mapTool === "command" ? (translations[state.language] || translations.en).commandHint : (state.language === "zh" ? "指挥关闭" : "Command off"));
 });
+focusToolBtn.addEventListener("click", () => {
+  if (state.phase !== "battle") return;
+  state.mapTool = state.mapTool === "focus" ? null : "focus";
+  state.wallStart = null;
+  state.pointer = null;
+  state.selectedItem = null;
+  updateUi();
+  setToast(state.mapTool === "focus" ? (translations[state.language] || translations.en).focusHint : (state.language === "zh" ? "集火关闭" : "Focus off"));
+});
 eraseWallBtn.addEventListener("click", () => {
   if (state.phase !== "setup") return;
   state.mapTool = state.mapTool === "eraseWall" ? null : "eraseWall";
@@ -3673,16 +3756,16 @@ sandboxToggle.addEventListener("change", () => {
 });
 blueTeamBtn.addEventListener("pointerdown", (event) => {
   event.preventDefault();
-  if (!state.sandbox && !state.selectedItem && state.mapTool !== "command") return;
+  if (!state.sandbox && !state.selectedItem && state.mapTool !== "command" && state.mapTool !== "focus") return;
   state.placeTeam = "blue";
-  setToast(state.mapTool === "command" ? "Command team: Blue" : state.selectedItem ? "Item team: Blue" : "Placing team: Blue");
+  setToast(state.mapTool === "focus" ? "Focus team: Blue" : state.mapTool === "command" ? "Command team: Blue" : state.selectedItem ? "Item team: Blue" : "Placing team: Blue");
   updateUi();
 });
 redTeamBtn.addEventListener("pointerdown", (event) => {
   event.preventDefault();
-  if (!state.sandbox && !state.selectedItem && state.mapTool !== "command") return;
+  if (!state.sandbox && !state.selectedItem && state.mapTool !== "command" && state.mapTool !== "focus") return;
   state.placeTeam = "red";
-  setToast(state.mapTool === "command" ? "Command team: Red" : state.selectedItem ? "Item team: Red" : "Placing team: Red");
+  setToast(state.mapTool === "focus" ? "Focus team: Red" : state.mapTool === "command" ? "Command team: Red" : state.selectedItem ? "Item team: Red" : "Placing team: Red");
   updateUi();
 });
 customWeapon.addEventListener("change", () => {
