@@ -1120,7 +1120,7 @@ function addWall(start, end) {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const horizontal = Math.abs(dx) >= Math.abs(dy);
-  const length = clamp(horizontal ? Math.abs(dx) : Math.abs(dy), 36, 420);
+  const length = Math.max(36, horizontal ? Math.abs(dx) : Math.abs(dy));
   const wall = {
     x: clamp(horizontal ? (start.x + end.x) / 2 : start.x, 30, canvas.width - 30),
     y: clamp(horizontal ? start.y : (start.y + end.y) / 2, 30, canvas.height - 30),
