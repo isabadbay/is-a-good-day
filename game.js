@@ -1107,6 +1107,10 @@ function wallCost(wall) {
   return Math.ceil((40 + Math.max(wall.w, wall.h) * 0.4) * 2);
 }
 
+function wallMaxHp(wall) {
+  return Math.ceil(100 + Math.max(wall.w, wall.h) * 0.9);
+}
+
 function addWall(start, end) {
   if (state.phase !== "setup") {
     setToast(state.language === "zh" ? "布阵阶段才能放墙" : "Walls can be placed during setup");
@@ -1122,9 +1126,9 @@ function addWall(start, end) {
     y: clamp(horizontal ? start.y : (start.y + end.y) / 2, 30, canvas.height - 30),
     w: horizontal ? length : 28,
     h: horizontal ? 28 : length,
-    hp: 100,
-    maxHp: 100,
   };
+  wall.maxHp = wallMaxHp(wall);
+  wall.hp = wall.maxHp;
   const cost = wallCost(wall);
   if (!state.sandbox && state.budget < cost) {
     setToast(text.wallNeedGold);
@@ -1152,20 +1156,24 @@ function eraseWall(point) {
 
 function damageWallsAt(x, y, radius, damage) {
   for (const wall of state.walls) {
+    wall.maxHp ??= wallMaxHp(wall);
+    wall.hp ??= wall.maxHp;
     const closestX = clamp(x, wall.x - wall.w / 2, wall.x + wall.w / 2);
     const closestY = clamp(y, wall.y - wall.h / 2, wall.y + wall.h / 2);
     const distance = Math.hypot(x - closestX, y - closestY);
     if (distance > radius) continue;
-    wall.hp = (wall.hp ?? 100) - damage;
+    wall.hp -= damage;
     state.particles.push({ x: closestX, y: closestY, life: 0.45, startLife: 0.45, color: "#d8d0a8", size: 30 });
   }
-  state.walls = state.walls.filter((wall) => (wall.hp ?? 100) > 0);
+  state.walls = state.walls.filter((wall) => (wall.hp ?? wallMaxHp(wall)) > 0);
 }
 
 function damageWall(wall, damage, x = wall.x, y = wall.y) {
-  wall.hp = (wall.hp ?? 100) - damage;
+  wall.maxHp ??= wallMaxHp(wall);
+  wall.hp ??= wall.maxHp;
+  wall.hp -= damage;
   state.particles.push({ x, y, life: 0.45, startLife: 0.45, color: "#d8d0a8", size: 26 });
-  state.walls = state.walls.filter((candidate) => (candidate.hp ?? 100) > 0);
+  state.walls = state.walls.filter((candidate) => (candidate.hp ?? wallMaxHp(candidate)) > 0);
 }
 
 function wallTargetNear(unit, target = null) {
@@ -2526,6 +2534,14 @@ function updateTornadoes(dt) {
     tornado.y += tornado.vy * dt;
     tornado.vx *= 0.992;
     tornado.vy *= 0.992;
+    for (const wall of state.walls) {
+      const closestX = clamp(tornado.x, wall.x - wall.w / 2, wall.x + wall.w / 2);
+      const closestY = clamp(tornado.y, wall.y - wall.h / 2, wall.y + wall.h / 2);
+      const distance = Math.hypot(tornado.x - closestX, tornado.y - closestY);
+      if (distance > tornado.radius) continue;
+      const effect = Math.max(0.25, 1 - distance / tornado.radius);
+      damageWall(wall, 18 * effect * dt, closestX, closestY);
+    }
     for (const unit of state.units) {
       if (unit.team === tornado.team || unit.dead) continue;
       const dx = tornado.x - unit.x;
@@ -2641,7 +2657,7 @@ function drawWalls() {
       ctx.lineTo(x - 12, wall.h / 2);
       ctx.stroke();
     }
-    const health = Math.max(0, (wall.hp ?? 100) / (wall.maxHp ?? 100));
+    const health = Math.max(0, (wall.hp ?? wallMaxHp(wall)) / (wall.maxHp ?? wallMaxHp(wall)));
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
     ctx.fillRect(-wall.w / 2, -wall.h / 2 - 8, wall.w, 4);
