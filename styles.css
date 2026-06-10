@@ -435,6 +435,17 @@ canvas {
   opacity: 0.74;
 }
 
+.item-bar [data-item-cancel] {
+  min-height: 42px;
+  background: #20262f;
+}
+
+.item-bar [data-item-cancel].selected {
+  border-color: var(--line);
+  background: #20262f;
+  box-shadow: none;
+}
+
 .item-bar button b {
   font-size: 13px;
 }

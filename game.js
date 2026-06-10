@@ -138,6 +138,8 @@ const translations = {
     itemNoGold: "金币不够买这个道具",
     itemCast: "道具已释放",
     itemHit: "喷中友军",
+    itemCancel: "取消道具",
+    itemCancelHint: "停止瞄准",
     blueWin: "蓝队胜利",
     redWin: "红队胜利",
     itemNames: {
@@ -281,6 +283,8 @@ const translations = {
     itemNoGold: "Not enough gold for this item",
     itemCast: "Item used",
     itemHit: "Friendly units hit",
+    itemCancel: "Cancel Item",
+    itemCancelHint: "stop aiming",
     blueWin: "Blue wins",
     redWin: "Red wins",
     itemNames: {
@@ -2888,8 +2892,8 @@ function updateUi() {
   pauseBtn.disabled = state.phase === "setup" || state.phase === "ended";
   blueTeamBtn.classList.toggle("active", state.placeTeam === "blue");
   redTeamBtn.classList.toggle("active", state.placeTeam === "red");
-  blueTeamBtn.disabled = !state.sandbox || state.phase !== "setup";
-  redTeamBtn.disabled = !state.sandbox || state.phase !== "setup";
+  blueTeamBtn.disabled = !state.sandbox;
+  redTeamBtn.disabled = !state.sandbox;
   sandboxToggle.checked = state.sandbox;
   if (battlefieldWrap) battlefieldWrap.classList.toggle("item-aiming", state.phase === "battle" && Boolean(state.selectedItem));
   if (itemsTitle) itemsTitle.textContent = text.items;
@@ -2902,6 +2906,11 @@ function updateUi() {
     button.classList.toggle("locked", state.phase !== "battle");
     button.disabled = false;
     button.innerHTML = `<b>${name}</b><small>${item.cost} ${text.budget}</small>`;
+  }
+  const cancelButton = itemBar?.querySelector("[data-item-cancel]");
+  if (cancelButton) {
+    cancelButton.classList.toggle("selected", !state.selectedItem);
+    cancelButton.innerHTML = `<b>${text.itemCancel}</b><small>${text.itemCancelHint}</small>`;
   }
 }
 
@@ -2985,6 +2994,14 @@ resetBtn.addEventListener("click", () => resetGame(false));
 randomBtn.addEventListener("click", randomFormation);
 if (itemBar) {
   itemBar.addEventListener("pointerdown", (event) => {
+    const cancelButton = event.target.closest("[data-item-cancel]");
+    if (cancelButton) {
+      event.preventDefault();
+      state.selectedItem = null;
+      updateUi();
+      setToast((translations[state.language] || translations.en).itemCancel);
+      return;
+    }
     const button = event.target.closest("[data-item]");
     if (!button) return;
     event.preventDefault();
@@ -3016,15 +3033,15 @@ sandboxToggle.addEventListener("change", () => {
   updateUi();
 });
 blueTeamBtn.addEventListener("click", () => {
-  if (!state.sandbox || state.phase !== "setup") return;
+  if (!state.sandbox) return;
   state.placeTeam = "blue";
-  setToast("Placing team: Blue");
+  setToast(state.phase === "battle" ? "Item team: Blue" : "Placing team: Blue");
   updateUi();
 });
 redTeamBtn.addEventListener("click", () => {
-  if (!state.sandbox || state.phase !== "setup") return;
+  if (!state.sandbox) return;
   state.placeTeam = "red";
-  setToast("Placing team: Red");
+  setToast(state.phase === "battle" ? "Item team: Red" : "Placing team: Red");
   updateUi();
 });
 customWeapon.addEventListener("change", () => {
