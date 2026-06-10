@@ -84,6 +84,10 @@ const itemTypes = {
   defense: { cost: 180, buff: "defensePotionTimer", color: "#ffeaa0" },
   power: { cost: 180, buff: "powerPotionTimer", color: "#ff6d6d" },
   speed: { cost: 160, buff: "speedPotionTimer", color: "#7cff9c" },
+  heal: { cost: 170, heal: 90, color: "#70e8a0" },
+  meteor: { cost: 260, damage: 150, radius: 190, color: "#ff5d2e" },
+  wall: { cost: 220, color: "#9bdcff" },
+  lightning: { cost: 240, damage: 70, chains: 5, color: "#bde7ff" },
 };
 const UNIT_PACK_2_IDS = new Set([
   "knight",
@@ -147,6 +151,10 @@ const translations = {
       defense: "防御药水",
       power: "力量药水",
       speed: "速度药水",
+      heal: "治疗药水",
+      meteor: "陨石",
+      wall: "召唤墙",
+      lightning: "闪电链",
     },
     form: {
       customName: "名字",
@@ -292,6 +300,10 @@ const translations = {
       defense: "Defense Potion",
       power: "Power Potion",
       speed: "Speed Potion",
+      heal: "Healing Potion",
+      meteor: "Meteor",
+      wall: "Summon Wall",
+      lightning: "Chain Lightning",
     },
     form: {
       customName: "Name",
@@ -1376,6 +1388,82 @@ function explodeItemFireball(projectile) {
   addRingParticle(projectile.x, projectile.y, "#ff7838", projectile.splash);
 }
 
+function healItemAt(point, team, item) {
+  let affected = 0;
+  for (const unit of state.units) {
+    if (unit.dead || unit.team !== team) continue;
+    const distance = Math.hypot(unit.x - point.x, unit.y - point.y);
+    if (distance > ITEM_RADIUS + unit.radius) continue;
+    unit.hp = Math.min(unit.maxHp, unit.hp + item.heal);
+    affected += 1;
+    state.particles.push({ x: unit.x, y: unit.y, life: 0.55, startLife: 0.55, color: item.color, size: unit.radius * 2.6 });
+  }
+  addRingParticle(point.x, point.y, item.color, ITEM_RADIUS);
+  return affected;
+}
+
+function meteorItemAt(point, team, item) {
+  for (let i = 0; i < 34; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const distance = Math.random() * item.radius;
+    state.particles.push({
+      x: point.x + Math.cos(angle) * distance,
+      y: point.y - 180 - Math.random() * 120,
+      vx: Math.cos(angle) * 25,
+      vy: 260 + Math.random() * 160,
+      life: 0.55 + Math.random() * 0.35,
+      startLife: 0.9,
+      color: Math.random() < 0.5 ? "#ff5d2e" : "#ffd15a",
+      size: 20 + Math.random() * 28,
+    });
+  }
+  for (const unit of state.units) {
+    if (unit.dead || unit.team === team) continue;
+    const distance = Math.hypot(unit.x - point.x, unit.y - point.y);
+    if (distance > item.radius + unit.radius) continue;
+    const falloff = Math.max(0.45, 1 - distance / item.radius);
+    hurt(unit, item.damage * falloff, { x: point.x, y: point.y, knockback: 5.2, ignoreDodge: true, applyBurn: true });
+    burnUnit(unit, 5);
+  }
+  addRingParticle(point.x, point.y, item.color, item.radius);
+}
+
+function wallItemAt(point, team) {
+  const count = 5;
+  const spacing = 34;
+  for (let i = 0; i < count; i += 1) {
+    const offset = (i - (count - 1) / 2) * spacing;
+    const unit = addUnit("shield", team, clamp(point.x, 30, canvas.width - 30), clamp(point.y + offset, 30, canvas.height - 30));
+    unit.maxHp *= 1.25;
+    unit.hp = unit.maxHp;
+    unit.speed *= 0.55;
+    unit.damage *= 0.65;
+    unit.name = "Wall Guard";
+    state.particles.push({ x: unit.x, y: unit.y, life: 0.6, startLife: 0.6, color: "#9bdcff", size: 36 });
+  }
+  addRingParticle(point.x, point.y, "#9bdcff", 95);
+}
+
+function lightningItemAt(point, team, item) {
+  const hit = [];
+  let current = state.units
+    .filter((unit) => !unit.dead && unit.team !== team)
+    .sort((a, b) => Math.hypot(a.x - point.x, a.y - point.y) - Math.hypot(b.x - point.x, b.y - point.y))[0];
+  let from = { x: point.x, y: point.y };
+  for (let i = 0; i < item.chains && current; i += 1) {
+    hit.push(current);
+    hurt(current, item.damage * Math.max(0.45, 1 - i * 0.12), { x: from.x, y: from.y, knockback: 1.7, ignoreDodge: true, isRanged: true });
+    state.particles.push({ x: current.x, y: current.y, life: 0.55, startLife: 0.55, color: item.color, size: 44 });
+    state.particles.push({ x: from.x, y: from.y, x2: current.x, y2: current.y, life: 0.24, startLife: 0.24, color: item.color, line: true });
+    from = current;
+    current = state.units
+      .filter((unit) => !unit.dead && unit.team !== team && !hit.includes(unit) && Math.hypot(unit.x - from.x, unit.y - from.y) <= 170)
+      .sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y))[0];
+  }
+  addRingParticle(point.x, point.y, item.color, 80);
+  return hit.length;
+}
+
 function castItemAt(itemId, point) {
   const text = translations[state.language] || translations.en;
   const item = itemTypes[itemId];
@@ -1418,6 +1506,18 @@ function castItemAt(itemId, point) {
         size: 14 + Math.random() * 16,
       });
     }
+  } else if (itemId === "heal") {
+    const affected = healItemAt(point, team, item);
+    setToast(affected ? `${text.itemHit}: ${affected}` : state.language === "zh" ? "没有喷中友军" : "No friendly units hit");
+  } else if (itemId === "meteor") {
+    meteorItemAt(point, team, item);
+    setToast(text.itemCast);
+  } else if (itemId === "wall") {
+    wallItemAt(point, team);
+    setToast(text.itemCast);
+  } else if (itemId === "lightning") {
+    const affected = lightningItemAt(point, team, item);
+    setToast(affected ? `${text.itemCast}: ${affected}` : state.language === "zh" ? "没有击中敌人" : "No enemies hit");
   } else {
     let affected = 0;
     for (const unit of state.units) {
@@ -2863,6 +2963,15 @@ function drawParticles() {
     const startLife = particle.startLife || 0.5;
     const age = 1 - Math.max(0, particle.life) / startLife;
     ctx.globalAlpha = Math.max(0, Math.min(1, particle.life * 2.5));
+    if (particle.line) {
+      ctx.strokeStyle = particle.color;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(particle.x, particle.y);
+      ctx.lineTo(particle.x2, particle.y2);
+      ctx.stroke();
+      continue;
+    }
     ctx.fillStyle = particle.color;
     ctx.beginPath();
     ctx.arc(particle.x, particle.y, (particle.size || 20) * Math.max(0.18, age), 0, Math.PI * 2);
