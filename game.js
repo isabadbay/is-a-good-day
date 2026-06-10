@@ -1316,7 +1316,7 @@ function freezeUnit(unit, seconds = 2.4) {
 }
 
 function itemTeam() {
-  return state.sandbox ? state.placeTeam : "blue";
+  return state.selectedItem ? state.placeTeam : state.sandbox ? state.placeTeam : "blue";
 }
 
 function canPayForItem(item) {
@@ -2892,8 +2892,9 @@ function updateUi() {
   pauseBtn.disabled = state.phase === "setup" || state.phase === "ended";
   blueTeamBtn.classList.toggle("active", state.placeTeam === "blue");
   redTeamBtn.classList.toggle("active", state.placeTeam === "red");
-  blueTeamBtn.disabled = !state.sandbox;
-  redTeamBtn.disabled = !state.sandbox;
+  const canPickTeam = state.sandbox || Boolean(state.selectedItem);
+  blueTeamBtn.disabled = !canPickTeam;
+  redTeamBtn.disabled = !canPickTeam;
   sandboxToggle.checked = state.sandbox;
   if (battlefieldWrap) battlefieldWrap.classList.toggle("item-aiming", state.phase === "battle" && Boolean(state.selectedItem));
   if (itemsTitle) itemsTitle.textContent = text.items;
@@ -3032,16 +3033,18 @@ sandboxToggle.addEventListener("change", () => {
   }
   updateUi();
 });
-blueTeamBtn.addEventListener("click", () => {
-  if (!state.sandbox) return;
+blueTeamBtn.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  if (!state.sandbox && !state.selectedItem) return;
   state.placeTeam = "blue";
-  setToast(state.phase === "battle" ? "Item team: Blue" : "Placing team: Blue");
+  setToast(state.selectedItem ? "Item team: Blue" : "Placing team: Blue");
   updateUi();
 });
-redTeamBtn.addEventListener("click", () => {
-  if (!state.sandbox) return;
+redTeamBtn.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  if (!state.sandbox && !state.selectedItem) return;
   state.placeTeam = "red";
-  setToast(state.phase === "battle" ? "Item team: Red" : "Placing team: Red");
+  setToast(state.selectedItem ? "Item team: Red" : "Placing team: Red");
   updateUi();
 });
 customWeapon.addEventListener("change", () => {
