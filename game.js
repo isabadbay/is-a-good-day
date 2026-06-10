@@ -1162,6 +1162,29 @@ function damageWallsAt(x, y, radius, damage) {
   state.walls = state.walls.filter((wall) => (wall.hp ?? 100) > 0);
 }
 
+function damageWall(wall, damage, x = wall.x, y = wall.y) {
+  wall.hp = (wall.hp ?? 100) - damage;
+  state.particles.push({ x, y, life: 0.45, startLife: 0.45, color: "#d8d0a8", size: 26 });
+  state.walls = state.walls.filter((candidate) => (candidate.hp ?? 100) > 0);
+}
+
+function wallTargetNear(unit, target = null) {
+  let best = null;
+  let bestDistance = Infinity;
+  for (const wall of state.walls) {
+    const closestX = clamp(unit.x, wall.x - wall.w / 2, wall.x + wall.w / 2);
+    const closestY = clamp(unit.y, wall.y - wall.h / 2, wall.y + wall.h / 2);
+    const distance = Math.hypot(unit.x - closestX, unit.y - closestY);
+    const blocked = target ? segmentHitsWall(unit.x, unit.y, target.x, target.y, wall, unit.radius + 12) : false;
+    if (!blocked && distance > unit.radius + 18) continue;
+    if (distance < bestDistance) {
+      best = { kind: "wall", wall, x: closestX, y: closestY, radius: 0, dead: false };
+      bestDistance = distance;
+    }
+  }
+  return best ? { target: best, distance: bestDistance } : null;
+}
+
 function pushOutOfWalls(unit) {
   if (unit.dead) return;
   for (const wall of state.walls) {
@@ -2021,7 +2044,12 @@ function findTarget(unit) {
       bestDistance = distance;
     }
   }
-  return best ? { target: best, distance: bestDistance } : null;
+  if (best) {
+    const wallInfo = wallTargetNear(unit, best);
+    if (wallInfo) return wallInfo;
+    return { target: best, distance: bestDistance };
+  }
+  return wallTargetNear(unit);
 }
 
 function damageFor(unit, amount) {
@@ -2165,6 +2193,32 @@ function attack(unit, target, mode = null) {
     cooldown: unit.cooldownTime,
   };
   unit.cooldown = active.cooldown || unit.cooldownTime;
+  if (target.kind === "wall") {
+    if (active.ranged && active.projectileSpeed) {
+      state.projectiles.push({
+        x: unit.x,
+        y: unit.y,
+        targetWall: target.wall,
+        targetX: target.x,
+        targetY: target.y,
+        team: unit.team,
+        ownerId: unit.id,
+        damage: damageFor(unit, active.damage),
+        speed: active.projectileSpeed,
+        splash: active.splash || 0,
+        radius: active.weapon === "cannon" ? 7 : 4,
+        isRanged: true,
+        life: active.weapon === "musket" ? 0.85 : 1.6,
+      });
+      return;
+    }
+    damageWall(target.wall, damageFor(unit, active.damage * (0.85 + Math.random() * 0.3)), target.x, target.y);
+    applyAreaAttack(unit, target.x, target.y);
+    const angle = Math.atan2(target.y - unit.y, target.x - unit.x);
+    unit.vx -= Math.cos(angle) * 20;
+    unit.vy -= Math.sin(angle) * 20;
+    return;
+  }
   if (unit.skills.poisonSlime && unit.slimeCooldown <= 0 && Math.random() < unit.skills.slimeChance) {
     spawnSlime(target.x, target.y, unit.team);
     unit.slimeCooldown = 1.2;
@@ -2259,7 +2313,7 @@ function updateUnit(unit, dt) {
   if (unit.skills.stasisGaze && unit.stasisCooldown <= 0) {
     triggerStasisGaze(unit);
   }
-  if (unit.skills.fireball && unit.fireballCooldown <= 0 && distance <= 320) {
+  if (target.kind !== "wall" && unit.skills.fireball && unit.fireballCooldown <= 0 && distance <= 320) {
     castFireball(unit, target);
   }
   if (unit.skills.tornado && unit.tornadoCooldown <= 0) {
@@ -2348,6 +2402,22 @@ function updateProjectiles(dt) {
         projectile.x = projectile.targetX;
         projectile.y = projectile.targetY;
         explodeItemFireball(projectile);
+        projectile.life = 0;
+      }
+      continue;
+    }
+    if (projectile.targetWall) {
+      projectile.life -= dt;
+      if (!state.walls.includes(projectile.targetWall)) {
+        projectile.life = 0;
+        continue;
+      }
+      const angle = Math.atan2(projectile.targetY - projectile.y, projectile.targetX - projectile.x);
+      projectile.x += Math.cos(angle) * projectile.speed * dt;
+      projectile.y += Math.sin(angle) * projectile.speed * dt;
+      if (Math.hypot(projectile.targetX - projectile.x, projectile.targetY - projectile.y) < 12 || projectileHitsWall(projectile)) {
+        damageWall(projectile.targetWall, projectile.damage, projectile.x, projectile.y);
+        if (projectile.splash) damageWallsAt(projectile.x, projectile.y, projectile.splash, projectile.damage * 0.45);
         projectile.life = 0;
       }
       continue;
