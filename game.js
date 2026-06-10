@@ -1104,7 +1104,7 @@ function setToast(message) {
 }
 
 function wallCost(wall) {
-  return Math.ceil(40 + Math.max(wall.w, wall.h) * 0.4);
+  return Math.ceil((40 + Math.max(wall.w, wall.h) * 0.4) * 2);
 }
 
 function addWall(start, end) {
@@ -1122,6 +1122,8 @@ function addWall(start, end) {
     y: clamp(horizontal ? start.y : (start.y + end.y) / 2, 30, canvas.height - 30),
     w: horizontal ? length : 28,
     h: horizontal ? 28 : length,
+    hp: 100,
+    maxHp: 100,
   };
   const cost = wallCost(wall);
   if (!state.sandbox && state.budget < cost) {
@@ -1146,6 +1148,18 @@ function eraseWall(point) {
     return !(point.x >= wall.x - wall.w / 2 && point.x <= wall.x + wall.w / 2 && point.y >= wall.y - wall.h / 2 && point.y <= wall.y + wall.h / 2);
   });
   if (state.walls.length !== before) setToast(state.language === "zh" ? "墙已删除" : "Wall removed");
+}
+
+function damageWallsAt(x, y, radius, damage) {
+  for (const wall of state.walls) {
+    const closestX = clamp(x, wall.x - wall.w / 2, wall.x + wall.w / 2);
+    const closestY = clamp(y, wall.y - wall.h / 2, wall.y + wall.h / 2);
+    const distance = Math.hypot(x - closestX, y - closestY);
+    if (distance > radius) continue;
+    wall.hp = (wall.hp ?? 100) - damage;
+    state.particles.push({ x: closestX, y: closestY, life: 0.45, startLife: 0.45, color: "#d8d0a8", size: 30 });
+  }
+  state.walls = state.walls.filter((wall) => (wall.hp ?? 100) > 0);
 }
 
 function pushOutOfWalls(unit) {
@@ -1508,6 +1522,7 @@ function itemCastOrigin(team) {
 }
 
 function explodeItemFireball(projectile) {
+  damageWallsAt(projectile.x, projectile.y, projectile.splash, 25);
   for (const unit of state.units) {
     if (unit.dead || unit.team === projectile.team) continue;
     const distance = Math.hypot(unit.x - projectile.x, unit.y - projectile.y);
@@ -2556,6 +2571,12 @@ function drawWalls() {
       ctx.lineTo(x - 12, wall.h / 2);
       ctx.stroke();
     }
+    const health = Math.max(0, (wall.hp ?? 100) / (wall.maxHp ?? 100));
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.fillRect(-wall.w / 2, -wall.h / 2 - 8, wall.w, 4);
+    ctx.fillStyle = health > 0.45 ? "#63d28a" : "#e8bd57";
+    ctx.fillRect(-wall.w / 2, -wall.h / 2 - 8, wall.w * health, 4);
     ctx.restore();
   }
   if (state.mapTool === "wall" && state.wallStart && state.pointer) {
