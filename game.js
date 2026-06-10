@@ -18,6 +18,7 @@ const sandboxToggle = document.querySelector("#sandboxToggle");
 const blueTeamBtn = document.querySelector("#blueTeamBtn");
 const redTeamBtn = document.querySelector("#redTeamBtn");
 const wallToolBtn = document.querySelector("#wallToolBtn");
+const thickWallToolBtn = document.querySelector("#thickWallToolBtn");
 const eraseWallBtn = document.querySelector("#eraseWallBtn");
 const clearWallsBtn = document.querySelector("#clearWallsBtn");
 const customName = document.querySelector("#customName");
@@ -150,6 +151,7 @@ const translations = {
     blueWin: "蓝队胜利",
     redWin: "红队胜利",
     mapWall: "墙",
+    mapThickWall: "厚墙",
     mapEraseWall: "删除墙",
     mapClearWalls: "清空墙",
     wallDirection: "方向",
@@ -309,6 +311,7 @@ const translations = {
     blueWin: "Blue wins",
     redWin: "Red wins",
     mapWall: "Wall",
+    mapThickWall: "Thick Wall",
     mapEraseWall: "Erase Wall",
     mapClearWalls: "Clear Walls",
     wallDirection: "Direction",
@@ -456,6 +459,7 @@ function applyLanguage(lang) {
   blueTeamBtn.textContent = text.blue;
   redTeamBtn.textContent = text.red;
   wallToolBtn.textContent = text.mapWall;
+  thickWallToolBtn.textContent = text.mapThickWall;
   eraseWallBtn.textContent = text.mapEraseWall;
   clearWallsBtn.textContent = text.mapClearWalls;
   setText(".custom-builder summary", text.custom);
@@ -1104,11 +1108,14 @@ function setToast(message) {
 }
 
 function wallCost(wall) {
-  return Math.ceil((40 + Math.max(wall.w, wall.h) * 0.4) * 2);
+  const thickMultiplier = wall.type === "thick" ? 2.35 : 1;
+  return Math.ceil((40 + Math.max(wall.w, wall.h) * 0.4) * 2 * thickMultiplier);
 }
 
 function wallMaxHp(wall) {
-  return Math.ceil(100 + Math.max(wall.w, wall.h) * 0.9);
+  const length = Math.max(wall.w, wall.h);
+  if (wall.type === "thick") return Math.ceil(260 + length * 3.2);
+  return Math.ceil(120 + length * 1.55);
 }
 
 function addWall(start, end) {
@@ -1121,11 +1128,14 @@ function addWall(start, end) {
   const dy = end.y - start.y;
   const horizontal = Math.abs(dx) >= Math.abs(dy);
   const length = Math.max(36, horizontal ? Math.abs(dx) : Math.abs(dy));
+  const thick = state.mapTool === "thickWall";
+  const thickness = thick ? 48 : 28;
   const wall = {
     x: clamp(horizontal ? (start.x + end.x) / 2 : start.x, 30, canvas.width - 30),
     y: clamp(horizontal ? start.y : (start.y + end.y) / 2, 30, canvas.height - 30),
-    w: horizontal ? length : 28,
-    h: horizontal ? 28 : length,
+    w: horizontal ? length : thickness,
+    h: horizontal ? thickness : length,
+    type: thick ? "thick" : "normal",
   };
   wall.maxHp = wallMaxHp(wall);
   wall.hp = wall.maxHp;
@@ -1623,6 +1633,7 @@ function meteorItemAt(point, team, item) {
     hurt(unit, item.damage * falloff, { x: point.x, y: point.y, knockback: 5.2, ignoreDodge: true, applyBurn: true });
     burnUnit(unit, 5);
   }
+  damageWallsAt(point.x, point.y, item.radius, item.damage * 0.75);
   addRingParticle(point.x, point.y, item.color, item.radius);
 }
 
@@ -1642,21 +1653,48 @@ function wallItemAt(point, team) {
   addRingParticle(point.x, point.y, "#9bdcff", 95);
 }
 
+function wallLightningCandidates(from, hitWalls, chainRange = Infinity) {
+  return state.walls
+    .filter((wall) => !hitWalls.includes(wall))
+    .map((wall) => {
+      const x = clamp(from.x, wall.x - wall.w / 2, wall.x + wall.w / 2);
+      const y = clamp(from.y, wall.y - wall.h / 2, wall.y + wall.h / 2);
+      return { kind: "wall", wall, x, y, distance: Math.hypot(x - from.x, y - from.y) };
+    })
+    .filter((target) => target.distance <= chainRange);
+}
+
 function lightningItemAt(point, team, item) {
   const hit = [];
-  let current = state.units
-    .filter((unit) => !unit.dead && unit.team !== team)
-    .sort((a, b) => Math.hypot(a.x - point.x, a.y - point.y) - Math.hypot(b.x - point.x, b.y - point.y))[0];
+  const hitWalls = [];
   let from = { x: point.x, y: point.y };
+  let candidates = [
+    ...state.units
+      .filter((unit) => !unit.dead && unit.team !== team)
+      .map((unit) => ({ kind: "unit", unit, x: unit.x, y: unit.y, distance: Math.hypot(unit.x - from.x, unit.y - from.y) })),
+    ...wallLightningCandidates(from, hitWalls),
+  ];
+  let current = candidates.sort((a, b) => a.distance - b.distance)[0];
   for (let i = 0; i < item.chains && current; i += 1) {
     hit.push(current);
-    hurt(current, item.damage * Math.max(0.45, 1 - i * 0.12), { x: from.x, y: from.y, knockback: 1.7, ignoreDodge: true, isRanged: true });
+    const damage = item.damage * Math.max(0.45, 1 - i * 0.12);
+    if (current.kind === "wall") {
+      hitWalls.push(current.wall);
+      damageWall(current.wall, damage, current.x, current.y);
+    } else {
+      hurt(current.unit, damage, { x: from.x, y: from.y, knockback: 1.7, ignoreDodge: true, isRanged: true });
+    }
     state.particles.push({ x: current.x, y: current.y, life: 0.55, startLife: 0.55, color: item.color, size: 44 });
     state.particles.push({ x: from.x, y: from.y, x2: current.x, y2: current.y, life: 0.24, startLife: 0.24, color: item.color, line: true });
-    from = current;
-    current = state.units
-      .filter((unit) => !unit.dead && unit.team !== team && !hit.includes(unit) && Math.hypot(unit.x - from.x, unit.y - from.y) <= 170)
-      .sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y))[0];
+    from = { x: current.x, y: current.y };
+    candidates = [
+      ...state.units
+        .filter((unit) => !unit.dead && unit.team !== team && !hit.some((target) => target.unit === unit))
+        .map((unit) => ({ kind: "unit", unit, x: unit.x, y: unit.y, distance: Math.hypot(unit.x - from.x, unit.y - from.y) }))
+        .filter((target) => target.distance <= 170),
+      ...wallLightningCandidates(from, hitWalls, 170),
+    ];
+    current = candidates.sort((a, b) => a.distance - b.distance)[0];
   }
   addRingParticle(point.x, point.y, item.color, 80);
   return hit.length;
@@ -2644,10 +2682,10 @@ function drawWalls() {
   for (const wall of state.walls) {
     ctx.save();
     ctx.translate(wall.x, wall.y);
-    ctx.fillStyle = "#5a564b";
+    ctx.fillStyle = wall.type === "thick" ? "#4b4940" : "#5a564b";
     ctx.fillRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h);
-    ctx.strokeStyle = "#d8d0a8";
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = wall.type === "thick" ? "#f0dfae" : "#d8d0a8";
+    ctx.lineWidth = wall.type === "thick" ? 5 : 3;
     ctx.strokeRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h);
     ctx.globalAlpha = 0.35;
     ctx.strokeStyle = "#211f1a";
@@ -2665,14 +2703,14 @@ function drawWalls() {
     ctx.fillRect(-wall.w / 2, -wall.h / 2 - 8, wall.w * health, 4);
     ctx.restore();
   }
-  if (state.mapTool === "wall" && state.wallStart && state.pointer) {
+  if ((state.mapTool === "wall" || state.mapTool === "thickWall") && state.wallStart && state.pointer) {
     const dx = state.pointer.x - state.wallStart.x;
     const dy = state.pointer.y - state.wallStart.y;
     const horizontal = Math.abs(dx) >= Math.abs(dy);
     const end = horizontal ? { x: state.pointer.x, y: state.wallStart.y } : { x: state.wallStart.x, y: state.pointer.y };
     ctx.save();
-    ctx.strokeStyle = "#e8bd57";
-    ctx.lineWidth = 5;
+    ctx.strokeStyle = state.mapTool === "thickWall" ? "#d8d0a8" : "#e8bd57";
+    ctx.lineWidth = state.mapTool === "thickWall" ? 10 : 5;
     ctx.setLineDash([10, 8]);
     ctx.beginPath();
     ctx.moveTo(state.wallStart.x, state.wallStart.y);
@@ -3312,8 +3350,10 @@ function updateUi() {
   startBtn.disabled = state.phase === "battle";
   pauseBtn.disabled = state.phase === "setup" || state.phase === "ended";
   wallToolBtn.classList.toggle("active", state.mapTool === "wall");
+  thickWallToolBtn.classList.toggle("active", state.mapTool === "thickWall");
   eraseWallBtn.classList.toggle("active", state.mapTool === "eraseWall");
   wallToolBtn.disabled = state.phase !== "setup";
+  thickWallToolBtn.disabled = state.phase !== "setup";
   eraseWallBtn.disabled = state.phase !== "setup";
   clearWallsBtn.disabled = state.phase !== "setup" || state.walls.length === 0;
   blueTeamBtn.classList.toggle("active", state.placeTeam === "blue");
@@ -3383,7 +3423,7 @@ function renderUnitList() {
 
 canvas.addEventListener("pointerdown", (event) => {
   const point = worldPoint(event);
-  if (state.phase === "setup" && state.mapTool === "wall") {
+  if (state.phase === "setup" && (state.mapTool === "wall" || state.mapTool === "thickWall")) {
     if (!state.wallStart) {
       state.wallStart = point;
       state.pointer = point;
@@ -3424,7 +3464,7 @@ canvas.addEventListener("pointerdown", (event) => {
 
 canvas.addEventListener("pointermove", (event) => {
   state.pointer = worldPoint(event);
-  if (state.mapTool === "wall" && state.wallStart) return;
+  if ((state.mapTool === "wall" || state.mapTool === "thickWall") && state.wallStart) return;
   if (!state.dragging) return;
   const point = state.pointer;
   const maxX = state.sandbox ? canvas.width - state.dragging.radius : blueZone() - 18;
@@ -3448,6 +3488,15 @@ wallToolBtn.addEventListener("click", () => {
   state.selectedItem = null;
   updateUi();
   setToast(state.mapTool === "wall" ? (state.language === "zh" ? "点一下起点，再点一下终点放墙" : "Click a start point, then an end point") : (state.language === "zh" ? "墙工具关闭" : "Wall tool off"));
+});
+thickWallToolBtn.addEventListener("click", () => {
+  if (state.phase !== "setup") return;
+  state.mapTool = state.mapTool === "thickWall" ? null : "thickWall";
+  state.wallStart = null;
+  state.pointer = null;
+  state.selectedItem = null;
+  updateUi();
+  setToast(state.mapTool === "thickWall" ? (state.language === "zh" ? "点一下起点，再点一下终点放厚墙" : "Click a start point, then an end point for a thick wall") : (state.language === "zh" ? "厚墙工具关闭" : "Thick wall tool off"));
 });
 eraseWallBtn.addEventListener("click", () => {
   if (state.phase !== "setup") return;
