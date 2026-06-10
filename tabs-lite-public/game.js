@@ -1,5 +1,6 @@
 ﻿const canvas = document.querySelector("#battlefield");
 const ctx = canvas.getContext("2d");
+const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
 const blueCount = document.querySelector("#blueCount");
@@ -75,10 +76,10 @@ const weaponProfiles = {
 };
 
 const CUSTOM_LIMIT = 500000000;
-const ITEM_RADIUS = 120;
+const ITEM_RADIUS = 150;
 const ITEM_BUFF_SECONDS = 120;
 const itemTypes = {
-  fireball: { cost: 120, damage: 50, color: "#ff7838" },
+  fireball: { cost: 120, damage: 80, color: "#ff7838" },
   defense: { cost: 180, buff: "defensePotionTimer", color: "#ffeaa0" },
   power: { cost: 180, buff: "powerPotionTimer", color: "#ff6d6d" },
   speed: { cost: 160, buff: "speedPotionTimer", color: "#7cff9c" },
@@ -135,6 +136,9 @@ const translations = {
     itemNeedBattle: "开战后才能使用道具",
     itemNoGold: "金币不够买这个道具",
     itemCast: "道具已释放",
+    itemHit: "喷中友军",
+    blueWin: "蓝队胜利",
+    redWin: "红队胜利",
     itemNames: {
       fireball: "火球",
       defense: "防御药水",
@@ -275,6 +279,9 @@ const translations = {
     itemNeedBattle: "Items can be used after battle starts",
     itemNoGold: "Not enough gold for this item",
     itemCast: "Item used",
+    itemHit: "Friendly units hit",
+    blueWin: "Blue wins",
+    redWin: "Red wins",
     itemNames: {
       fireball: "Fireball",
       defense: "Defense Potion",
@@ -1308,6 +1315,49 @@ function addRingParticle(x, y, color, size = ITEM_RADIUS) {
   state.particles.push({ x, y, life: 0.75, startLife: 0.75, color, size });
 }
 
+function itemCastOrigin(team) {
+  const units = state.units.filter((unit) => unit.team === team && !unit.dead);
+  if (units.length) {
+    const avgX = units.reduce((sum, unit) => sum + unit.x, 0) / units.length;
+    const avgY = units.reduce((sum, unit) => sum + unit.y, 0) / units.length;
+    return { x: avgX, y: avgY };
+  }
+  return team === "blue" ? { x: 60, y: canvas.height / 2 } : { x: canvas.width - 60, y: canvas.height / 2 };
+}
+
+function explodeItemFireball(projectile) {
+  for (const unit of state.units) {
+    if (unit.dead || unit.team === projectile.team) continue;
+    const distance = Math.hypot(unit.x - projectile.x, unit.y - projectile.y);
+    if (distance > projectile.splash + unit.radius) continue;
+    const falloff = Math.max(0.5, 1 - distance / projectile.splash);
+    hurt(unit, projectile.damage * falloff, {
+      x: projectile.x,
+      y: projectile.y,
+      knockback: 4.2,
+      ignoreDodge: true,
+      isRanged: true,
+      applyBurn: true,
+    });
+    burnUnit(unit, 4);
+  }
+  for (let i = 0; i < 42; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 100 + Math.random() * 250;
+    state.particles.push({
+      x: projectile.x,
+      y: projectile.y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.45 + Math.random() * 0.35,
+      startLife: 0.8,
+      color: Math.random() < 0.5 ? "#ff7838" : "#ffd15a",
+      size: 20 + Math.random() * 26,
+    });
+  }
+  addRingParticle(projectile.x, projectile.y, "#ff7838", projectile.splash);
+}
+
 function castItemAt(itemId, point) {
   const text = translations[state.language] || translations.en;
   const item = itemTypes[itemId];
@@ -1322,35 +1372,34 @@ function castItemAt(itemId, point) {
   }
   const team = itemTeam();
   if (itemId === "fireball") {
-    for (const unit of state.units) {
-      if (unit.dead || unit.team === team) continue;
-      const distance = Math.hypot(unit.x - point.x, unit.y - point.y);
-      if (distance > ITEM_RADIUS + unit.radius) continue;
-      const falloff = Math.max(0.55, 1 - distance / ITEM_RADIUS);
-      hurt(unit, item.damage * falloff, {
-        x: point.x,
-        y: point.y,
-        knockback: 3.4,
-        ignoreDodge: true,
-        isRanged: true,
-      });
-      burnUnit(unit, 2);
-    }
-    for (let i = 0; i < 22; i += 1) {
+    const origin = itemCastOrigin(team);
+    state.projectiles.push({
+      x: origin.x,
+      y: origin.y,
+      targetX: point.x,
+      targetY: point.y,
+      team,
+      damage: item.damage,
+      speed: 620,
+      splash: ITEM_RADIUS,
+      radius: 13,
+      itemFireball: true,
+      fireball: true,
+      life: 1.8,
+    });
+    for (let i = 0; i < 10; i += 1) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 90 + Math.random() * 160;
       state.particles.push({
-        x: point.x,
-        y: point.y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 0.35 + Math.random() * 0.3,
-        startLife: 0.65,
+        x: origin.x,
+        y: origin.y,
+        vx: Math.cos(angle) * 80,
+        vy: Math.sin(angle) * 80,
+        life: 0.35,
+        startLife: 0.35,
         color: Math.random() < 0.5 ? "#ff7838" : "#ffd15a",
-        size: 18 + Math.random() * 18,
+        size: 14 + Math.random() * 16,
       });
     }
-    addRingParticle(point.x, point.y, item.color, ITEM_RADIUS);
   } else {
     let affected = 0;
     for (const unit of state.units) {
@@ -1375,12 +1424,15 @@ function castItemAt(itemId, point) {
       });
     }
     addRingParticle(point.x, point.y, item.color, ITEM_RADIUS);
-    if (!affected) setToast(state.language === "zh" ? "没有喷中友军" : "No friendly units hit");
+    if (!affected) {
+      setToast(state.language === "zh" ? "没有喷中友军" : "No friendly units hit");
+    } else {
+      setToast(`${text.itemHit}: ${affected}`);
+    }
   }
   spendForItem(item);
-  state.selectedItem = null;
   updateUi();
-  setToast(text.itemCast);
+  if (itemId === "fireball") setToast(text.itemCast);
 }
 
 function spawnFireBreathParticles(from, to, count = 14) {
@@ -1986,6 +2038,29 @@ function resolveCrowding() {
 
 function updateProjectiles(dt) {
   for (const projectile of state.projectiles) {
+    if (projectile.itemFireball) {
+      projectile.life -= dt;
+      const angle = Math.atan2(projectile.targetY - projectile.y, projectile.targetX - projectile.x);
+      projectile.x += Math.cos(angle) * projectile.speed * dt;
+      projectile.y += Math.sin(angle) * projectile.speed * dt;
+      state.particles.push({
+        x: projectile.x + (Math.random() - 0.5) * 10,
+        y: projectile.y + (Math.random() - 0.5) * 10,
+        vx: -Math.cos(angle) * (45 + Math.random() * 90),
+        vy: -Math.sin(angle) * (45 + Math.random() * 90),
+        life: 0.2 + Math.random() * 0.18,
+        startLife: 0.38,
+        color: Math.random() < 0.5 ? "#ff7838" : "#ffd15a",
+        size: 18 + Math.random() * 14,
+      });
+      if (Math.hypot(projectile.targetX - projectile.x, projectile.targetY - projectile.y) < 18 || projectile.life <= 0) {
+        projectile.x = projectile.targetX;
+        projectile.y = projectile.targetY;
+        explodeItemFireball(projectile);
+        projectile.life = 0;
+      }
+      continue;
+    }
     const target = state.units.find((unit) => unit.id === projectile.tx && !unit.dead);
     projectile.life -= dt;
     if (!target) {
@@ -2130,7 +2205,8 @@ function checkWinner() {
   if (blueAlive && redAlive) return;
   state.winnerShown = true;
   setPhase("ended");
-  setToast(blueAlive ? "钃濋槦鑳滃埄" : "绾㈤槦鑳滃埄");
+  const text = translations[state.language] || translations.en;
+  setToast(blueAlive ? text.blueWin : text.redWin);
 }
 
 function update(dt) {
@@ -2684,17 +2760,30 @@ function drawUnitSkin(unit) {
     ctx.stroke();
   }
   if (unit.typeId.startsWith("custom-")) {
-    ctx.strokeStyle = "#ffffff";
-    ctx.globalAlpha = 0.72;
-    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.86;
+    ctx.lineWidth = Math.max(2, r * 0.16);
+    ctx.strokeStyle = "#f4f0e8";
+    ctx.fillStyle = "#2b3038";
     if (unit.weapon === "cannon") {
-      ctx.strokeRect(-r * 0.72, -r * 0.4, r * 1.44, r * 0.8);
+      ctx.fillRect(-r * 0.18, -r * 0.34, r * 1.42, r * 0.68);
+      ctx.strokeRect(-r * 0.18, -r * 0.34, r * 1.42, r * 0.68);
+      ctx.fillStyle = "#f2d36b";
+      ctx.beginPath();
+      ctx.arc(r * 1.24, 0, r * 0.22, 0, Math.PI * 2);
+      ctx.fill();
     } else if (unit.weapon === "hammer") {
       ctx.beginPath();
       ctx.moveTo(-r * 0.4, -r * 0.9);
       ctx.lineTo(r * 0.4, -r * 0.9);
       ctx.moveTo(0, -r * 0.9);
       ctx.lineTo(0, r * 0.6);
+      ctx.stroke();
+    } else if (unit.weapon === "musket") {
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.42, -r * 0.12);
+      ctx.lineTo(r * 1.45, -r * 0.12);
+      ctx.moveTo(-r * 0.2, r * 0.16);
+      ctx.lineTo(r * 0.42, r * 0.42);
       ctx.stroke();
     } else if (unit.projectileSpeed) {
       ctx.beginPath();
@@ -2788,6 +2877,7 @@ function updateUi() {
   blueTeamBtn.disabled = !state.sandbox || state.phase !== "setup";
   redTeamBtn.disabled = !state.sandbox || state.phase !== "setup";
   sandboxToggle.checked = state.sandbox;
+  if (battlefieldWrap) battlefieldWrap.classList.toggle("item-aiming", state.phase === "battle" && Boolean(state.selectedItem));
   if (itemsTitle) itemsTitle.textContent = text.items;
   for (const button of itemButtons) {
     const itemId = button.dataset.item;
@@ -2795,7 +2885,8 @@ function updateUi() {
     if (!item) continue;
     const name = text.itemNames[itemId] || itemId;
     button.classList.toggle("selected", state.selectedItem === itemId);
-    button.disabled = state.phase !== "battle";
+    button.classList.toggle("locked", state.phase !== "battle");
+    button.disabled = false;
     button.innerHTML = `<b>${name}</b><small>${item.cost} ${text.budget}</small>`;
   }
 }
@@ -2880,14 +2971,17 @@ resetBtn.addEventListener("click", () => resetGame(false));
 randomBtn.addEventListener("click", randomFormation);
 for (const button of itemButtons) {
   button.addEventListener("click", () => {
+    button.blur();
     const text = translations[state.language] || translations.en;
-    if (state.phase !== "battle") {
-      setToast(text.itemNeedBattle);
-      return;
-    }
     state.selectedItem = state.selectedItem === button.dataset.item ? null : button.dataset.item;
     updateUi();
-    setToast(text.itemUseHint);
+    if (state.selectedItem) {
+      const name = text.itemNames[state.selectedItem] || state.selectedItem;
+      const hint = state.phase === "battle" ? text.itemUseHint : text.itemNeedBattle;
+      setToast(`${name}: ${hint}`);
+    } else {
+      setToast(state.language === "zh" ? "已取消道具" : "Item canceled");
+    }
   });
 }
 eraseBtn.addEventListener("click", () => {

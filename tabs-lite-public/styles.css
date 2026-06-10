@@ -57,6 +57,11 @@ button:active {
   transform: translateY(0);
 }
 
+button:focus,
+button:focus-visible {
+  outline: none;
+}
+
 button.primary {
   border-color: #d49b28;
   background: linear-gradient(180deg, #f1c764, #b97823);
@@ -337,6 +342,17 @@ canvas {
   height: 100%;
 }
 
+.battlefield-wrap.item-aiming {
+  border-color: rgba(232, 189, 87, 0.9);
+  box-shadow:
+    0 0 0 2px rgba(232, 189, 87, 0.28),
+    0 22px 50px rgba(0, 0, 0, 0.28);
+}
+
+.battlefield-wrap.item-aiming canvas {
+  cursor: crosshair;
+}
+
 .toast {
   position: absolute;
   left: 50%;
@@ -392,14 +408,29 @@ canvas {
 
 .item-bar button {
   display: grid;
-  min-height: 48px;
-  padding: 8px 10px;
+  min-height: 58px;
+  padding: 10px 12px;
   text-align: left;
+  outline: none;
+}
+
+.item-bar button:focus,
+.item-bar button:focus-visible {
+  outline: none;
+  border-color: var(--line);
+  box-shadow: none;
 }
 
 .item-bar button.selected {
   border-color: var(--gold);
-  background: #3a3329;
+  background: linear-gradient(180deg, #4b3d24, #2e291f);
+  box-shadow:
+    0 0 0 2px rgba(232, 189, 87, 0.34) inset,
+    0 0 16px rgba(232, 189, 87, 0.18);
+}
+
+.item-bar button.locked:not(.selected) {
+  opacity: 0.74;
 }
 
 .item-bar button b {
