@@ -57,6 +57,11 @@ button:active {
   transform: translateY(0);
 }
 
+button:focus,
+button:focus-visible {
+  outline: none;
+}
+
 button.primary {
   border-color: #d49b28;
   background: linear-gradient(180deg, #f1c764, #b97823);
@@ -399,6 +404,7 @@ canvas {
 .item-bar {
   display: grid;
   gap: 8px;
+  touch-action: manipulation;
 }
 
 .item-bar button {
@@ -406,15 +412,26 @@ canvas {
   min-height: 58px;
   padding: 10px 12px;
   text-align: left;
+  outline: none;
+  user-select: none;
+}
+
+.item-bar button:focus,
+.item-bar button:focus-visible {
+  outline: none;
+  border-color: var(--line);
+  box-shadow: none;
 }
 
 .item-bar button.selected {
   border-color: var(--gold);
   background: linear-gradient(180deg, #4b3d24, #2e291f);
-  box-shadow: 0 0 0 2px rgba(232, 189, 87, 0.24) inset;
+  box-shadow:
+    0 0 0 2px rgba(232, 189, 87, 0.34) inset,
+    0 0 16px rgba(232, 189, 87, 0.18);
 }
 
-.item-bar button.locked {
+.item-bar button.locked:not(.selected) {
   opacity: 0.74;
 }
 

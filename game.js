@@ -64,6 +64,7 @@ const skillBerserkDamage = document.querySelector("#skillBerserkDamage");
 const skillBerserkHeal = document.querySelector("#skillBerserkHeal");
 const languageSelect = document.querySelector("#languageSelect");
 const itemsTitle = document.querySelector("#itemsTitle");
+const itemBar = document.querySelector("#itemBar");
 const itemButtons = document.querySelectorAll("[data-item]");
 
 const weaponProfiles = {
@@ -1050,6 +1051,19 @@ function worldPoint(event) {
 
 function setToast(message) {
   toast.textContent = message;
+}
+
+function selectItem(itemId) {
+  const text = translations[state.language] || translations.en;
+  state.selectedItem = state.selectedItem === itemId ? null : itemId;
+  updateUi();
+  if (state.selectedItem) {
+    const name = text.itemNames[state.selectedItem] || state.selectedItem;
+    const hint = state.phase === "battle" ? text.itemUseHint : text.itemNeedBattle;
+    setToast(`${name}: ${hint}`);
+  } else {
+    setToast(state.language === "zh" ? "已取消道具" : "Item canceled");
+  }
 }
 
 function createCustomUnitType() {
@@ -2760,17 +2774,30 @@ function drawUnitSkin(unit) {
     ctx.stroke();
   }
   if (unit.typeId.startsWith("custom-")) {
-    ctx.strokeStyle = "#ffffff";
-    ctx.globalAlpha = 0.72;
-    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.86;
+    ctx.lineWidth = Math.max(2, r * 0.16);
+    ctx.strokeStyle = "#f4f0e8";
+    ctx.fillStyle = "#2b3038";
     if (unit.weapon === "cannon") {
-      ctx.strokeRect(-r * 0.72, -r * 0.4, r * 1.44, r * 0.8);
+      ctx.fillRect(-r * 0.18, -r * 0.34, r * 1.42, r * 0.68);
+      ctx.strokeRect(-r * 0.18, -r * 0.34, r * 1.42, r * 0.68);
+      ctx.fillStyle = "#f2d36b";
+      ctx.beginPath();
+      ctx.arc(r * 1.24, 0, r * 0.22, 0, Math.PI * 2);
+      ctx.fill();
     } else if (unit.weapon === "hammer") {
       ctx.beginPath();
       ctx.moveTo(-r * 0.4, -r * 0.9);
       ctx.lineTo(r * 0.4, -r * 0.9);
       ctx.moveTo(0, -r * 0.9);
       ctx.lineTo(0, r * 0.6);
+      ctx.stroke();
+    } else if (unit.weapon === "musket") {
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.42, -r * 0.12);
+      ctx.lineTo(r * 1.45, -r * 0.12);
+      ctx.moveTo(-r * 0.2, r * 0.16);
+      ctx.lineTo(r * 0.42, r * 0.42);
       ctx.stroke();
     } else if (unit.projectileSpeed) {
       ctx.beginPath();
@@ -2956,21 +2983,13 @@ startBtn.addEventListener("click", startBattle);
 pauseBtn.addEventListener("click", pauseBattle);
 resetBtn.addEventListener("click", () => resetGame(false));
 randomBtn.addEventListener("click", randomFormation);
-for (const button of itemButtons) {
-  button.addEventListener("click", () => {
-    const text = translations[state.language] || translations.en;
-    if (state.phase !== "battle") {
-      setToast(text.itemNeedBattle);
-      return;
-    }
-    state.selectedItem = state.selectedItem === button.dataset.item ? null : button.dataset.item;
-    updateUi();
-    if (state.selectedItem) {
-      const name = text.itemNames[state.selectedItem] || state.selectedItem;
-      setToast(`${name}: ${text.itemUseHint}`);
-    } else {
-      setToast(state.language === "zh" ? "已取消道具" : "Item canceled");
-    }
+if (itemBar) {
+  itemBar.addEventListener("pointerdown", (event) => {
+    const button = event.target.closest("[data-item]");
+    if (!button) return;
+    event.preventDefault();
+    button.blur();
+    selectItem(button.dataset.item);
   });
 }
 eraseBtn.addEventListener("click", () => {
