@@ -17,6 +17,9 @@ const speedSlider = document.querySelector("#speedSlider");
 const sandboxToggle = document.querySelector("#sandboxToggle");
 const blueTeamBtn = document.querySelector("#blueTeamBtn");
 const redTeamBtn = document.querySelector("#redTeamBtn");
+const wallToolBtn = document.querySelector("#wallToolBtn");
+const eraseWallBtn = document.querySelector("#eraseWallBtn");
+const clearWallsBtn = document.querySelector("#clearWallsBtn");
 const customName = document.querySelector("#customName");
 const customHp = document.querySelector("#customHp");
 const customDamage = document.querySelector("#customDamage");
@@ -990,6 +993,7 @@ const state = {
   phase: "setup",
   selected: unitTypes[0].id,
   selectedItem: null,
+  mapTool: null,
   placeTeam: "blue",
   sandbox: false,
   language: "en",
@@ -999,6 +1003,7 @@ const state = {
   particles: [],
   slimes: [],
   tornadoes: [],
+  walls: [],
   nextId: 1,
   dragging: null,
   lastTime: performance.now(),
@@ -1067,6 +1072,51 @@ function worldPoint(event) {
 
 function setToast(message) {
   toast.textContent = message;
+}
+
+function addWall(point) {
+  if (state.phase !== "setup") {
+    setToast(state.language === "zh" ? "布阵阶段才能放墙" : "Walls can be placed during setup");
+    return;
+  }
+  state.walls.push({
+    x: clamp(point.x, 30, canvas.width - 30),
+    y: clamp(point.y, 30, canvas.height - 30),
+    w: 96,
+    h: 28,
+  });
+  setToast(state.language === "zh" ? "已放置墙" : "Wall placed");
+}
+
+function eraseWall(point) {
+  const before = state.walls.length;
+  state.walls = state.walls.filter((wall) => {
+    return !(point.x >= wall.x - wall.w / 2 && point.x <= wall.x + wall.w / 2 && point.y >= wall.y - wall.h / 2 && point.y <= wall.y + wall.h / 2);
+  });
+  if (state.walls.length !== before) setToast(state.language === "zh" ? "墙已删除" : "Wall removed");
+}
+
+function pushOutOfWalls(unit) {
+  if (unit.dead) return;
+  for (const wall of state.walls) {
+    const closestX = clamp(unit.x, wall.x - wall.w / 2, wall.x + wall.w / 2);
+    const closestY = clamp(unit.y, wall.y - wall.h / 2, wall.y + wall.h / 2);
+    const dx = unit.x - closestX;
+    const dy = unit.y - closestY;
+    const distance = Math.max(0.01, Math.hypot(dx, dy));
+    if (distance >= unit.radius) continue;
+    const push = unit.radius - distance;
+    const nx = dx / distance;
+    const ny = dy / distance;
+    unit.x += nx * push;
+    unit.y += ny * push;
+    unit.vx += nx * 45;
+    unit.vy += ny * 45;
+  }
+}
+
+function projectileHitsWall(projectile) {
+  return state.walls.some((wall) => projectile.x >= wall.x - wall.w / 2 && projectile.x <= wall.x + wall.w / 2 && projectile.y >= wall.y - wall.h / 2 && projectile.y <= wall.y + wall.h / 2);
 }
 
 function selectItem(itemId) {
@@ -2124,6 +2174,7 @@ function updateUnit(unit, dt) {
   unit.vy *= 0.91;
   unit.x += unit.vx * dt;
   unit.y += unit.vy * dt;
+  pushOutOfWalls(unit);
   unit.x = Math.max(unit.radius, Math.min(canvas.width - unit.radius, unit.x));
   unit.y = Math.max(unit.radius, Math.min(canvas.height - unit.radius, unit.y));
 }
@@ -2188,6 +2239,11 @@ function updateProjectiles(dt) {
     const angle = Math.atan2(target.y - projectile.y, target.x - projectile.x);
     projectile.x += Math.cos(angle) * projectile.speed * dt;
     projectile.y += Math.sin(angle) * projectile.speed * dt;
+    if (projectileHitsWall(projectile)) {
+      state.particles.push({ x: projectile.x, y: projectile.y, life: 0.45, startLife: 0.45, color: "#d8d0a8", size: 24 });
+      projectile.life = 0;
+      continue;
+    }
     if (projectile.applyBurn || projectile.fireball) {
       state.particles.push({
         x: projectile.x + (Math.random() - 0.5) * 8,
@@ -2374,6 +2430,27 @@ function drawGround() {
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
+}
+
+function drawWalls() {
+  for (const wall of state.walls) {
+    ctx.save();
+    ctx.translate(wall.x, wall.y);
+    ctx.fillStyle = "#5a564b";
+    ctx.fillRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h);
+    ctx.strokeStyle = "#d8d0a8";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h);
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = "#211f1a";
+    for (let x = -wall.w / 2 + 18; x < wall.w / 2; x += 24) {
+      ctx.beginPath();
+      ctx.moveTo(x, -wall.h / 2);
+      ctx.lineTo(x - 12, wall.h / 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 }
 
 function drawUnit(unit) {
@@ -2983,6 +3060,7 @@ function drawParticles() {
 function draw() {
   drawGround();
   drawSlimes();
+  drawWalls();
   const sorted = [...state.units].sort((a, b) => a.y - b.y);
   for (const unit of sorted) drawUnit(unit);
   drawProjectiles();
@@ -2999,6 +3077,11 @@ function updateUi() {
   phaseText.textContent = labels[state.phase];
   startBtn.disabled = state.phase === "battle";
   pauseBtn.disabled = state.phase === "setup" || state.phase === "ended";
+  wallToolBtn.classList.toggle("active", state.mapTool === "wall");
+  eraseWallBtn.classList.toggle("active", state.mapTool === "eraseWall");
+  wallToolBtn.disabled = state.phase !== "setup";
+  eraseWallBtn.disabled = state.phase !== "setup";
+  clearWallsBtn.disabled = state.phase !== "setup" || state.walls.length === 0;
   blueTeamBtn.classList.toggle("active", state.placeTeam === "blue");
   redTeamBtn.classList.toggle("active", state.placeTeam === "red");
   const canPickTeam = state.sandbox || Boolean(state.selectedItem);
@@ -3066,6 +3149,16 @@ function renderUnitList() {
 
 canvas.addEventListener("pointerdown", (event) => {
   const point = worldPoint(event);
+  if (state.phase === "setup" && state.mapTool === "wall") {
+    addWall(point);
+    updateUi();
+    return;
+  }
+  if (state.phase === "setup" && state.mapTool === "eraseWall") {
+    eraseWall(point);
+    updateUi();
+    return;
+  }
   if (state.phase === "battle" && state.selectedItem) {
     castItemAt(state.selectedItem, point);
     return;
@@ -3102,6 +3195,27 @@ startBtn.addEventListener("click", startBattle);
 pauseBtn.addEventListener("click", pauseBattle);
 resetBtn.addEventListener("click", () => resetGame(false));
 randomBtn.addEventListener("click", randomFormation);
+wallToolBtn.addEventListener("click", () => {
+  if (state.phase !== "setup") return;
+  state.mapTool = state.mapTool === "wall" ? null : "wall";
+  state.selectedItem = null;
+  updateUi();
+  setToast(state.mapTool === "wall" ? (state.language === "zh" ? "点击战场放墙" : "Click the field to place walls") : (state.language === "zh" ? "墙工具关闭" : "Wall tool off"));
+});
+eraseWallBtn.addEventListener("click", () => {
+  if (state.phase !== "setup") return;
+  state.mapTool = state.mapTool === "eraseWall" ? null : "eraseWall";
+  state.selectedItem = null;
+  updateUi();
+  setToast(state.mapTool === "eraseWall" ? (state.language === "zh" ? "点击墙删除" : "Click a wall to erase it") : (state.language === "zh" ? "删墙关闭" : "Erase wall off"));
+});
+clearWallsBtn.addEventListener("click", () => {
+  if (state.phase !== "setup") return;
+  state.walls = [];
+  state.mapTool = null;
+  updateUi();
+  setToast(state.language === "zh" ? "墙已清空" : "Walls cleared");
+});
 if (itemBar) {
   itemBar.addEventListener("pointerdown", (event) => {
     const cancelButton = event.target.closest("[data-item-cancel]");

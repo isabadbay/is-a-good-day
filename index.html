@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>TABS Lite</title>
-    <link rel="stylesheet" href="./styles.css?v=20260610-more-items" />
+    <link rel="stylesheet" href="./styles.css?v=20260610-map-walls" />
   </head>
   <body>
     <main class="app-shell">
@@ -40,6 +40,11 @@
           <div class="team-picker" aria-label="Placement team">
             <button id="blueTeamBtn" class="active" data-team="blue">Blue</button>
             <button id="redTeamBtn" data-team="red">Red</button>
+          </div>
+          <div class="map-tools">
+            <button id="wallToolBtn">Wall</button>
+            <button id="eraseWallBtn">Erase Wall</button>
+            <button id="clearWallsBtn">Clear Walls</button>
           </div>
           <div id="unitList" class="unit-list"></div>
 
@@ -338,6 +343,6 @@
       </section>
     </main>
 
-    <script src="./game.js?v=20260610-more-items"></script>
+    <script src="./game.js?v=20260610-map-walls"></script>
   </body>
 </html>

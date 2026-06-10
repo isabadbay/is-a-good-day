@@ -126,6 +126,29 @@ h1 {
   gap: 10px;
 }
 
+.map-tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 0 12px;
+}
+
+.map-tools button {
+  min-height: 36px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.map-tools button.active {
+  border-color: var(--gold);
+  background: #37303a;
+  color: var(--gold);
+}
+
+.map-tools #clearWallsBtn {
+  grid-column: 1 / -1;
+}
+
 .battle-actions button {
   min-width: 82px;
 }
