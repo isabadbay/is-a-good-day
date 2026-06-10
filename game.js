@@ -151,6 +151,14 @@ const translations = {
     itemCancelHint: "停止瞄准",
     blueWin: "蓝队胜利",
     redWin: "红队胜利",
+    mapWall: "墙",
+    mapEraseWall: "删除墙",
+    mapClearWalls: "清空墙",
+    wallDirection: "方向",
+    wallLength: "长度",
+    wallHorizontal: "横向",
+    wallVertical: "竖向",
+    wallOverlap: "这里已经有墙了",
     itemNames: {
       fireball: "火球",
       defense: "防御药水",
@@ -300,6 +308,14 @@ const translations = {
     itemCancelHint: "stop aiming",
     blueWin: "Blue wins",
     redWin: "Red wins",
+    mapWall: "Wall",
+    mapEraseWall: "Erase Wall",
+    mapClearWalls: "Clear Walls",
+    wallDirection: "Direction",
+    wallLength: "Length",
+    wallHorizontal: "Horizontal",
+    wallVertical: "Vertical",
+    wallOverlap: "A wall is already there",
     itemNames: {
       fireball: "Fireball",
       defense: "Defense Potion",
@@ -437,6 +453,14 @@ function applyLanguage(lang) {
   }
   blueTeamBtn.textContent = text.blue;
   redTeamBtn.textContent = text.red;
+  wallToolBtn.textContent = text.mapWall;
+  eraseWallBtn.textContent = text.mapEraseWall;
+  clearWallsBtn.textContent = text.mapClearWalls;
+  const wallLabels = document.querySelectorAll(".map-tools label");
+  if (wallLabels[0]) wallLabels[0].childNodes[0].textContent = text.wallDirection;
+  if (wallLabels[1]) wallLabels[1].childNodes[0].textContent = text.wallLength;
+  if (wallDirection?.options?.[0]) wallDirection.options[0].textContent = text.wallHorizontal;
+  if (wallDirection?.options?.[1]) wallDirection.options[1].textContent = text.wallVertical;
   setText(".custom-builder summary", text.custom);
   createCustomBtn.textContent = text.create;
   setText(".inspector .panel-title h2", text.battle);
@@ -1081,14 +1105,23 @@ function addWall(point) {
     setToast(state.language === "zh" ? "布阵阶段才能放墙" : "Walls can be placed during setup");
     return;
   }
+  const text = translations[state.language] || translations.en;
   const length = clamp(Number(wallLength?.value) || 120, 60, 260);
   const horizontal = (wallDirection?.value || "horizontal") === "horizontal";
-  state.walls.push({
+  const wall = {
     x: clamp(point.x, 30, canvas.width - 30),
     y: clamp(point.y, 30, canvas.height - 30),
     w: horizontal ? length : 28,
     h: horizontal ? 28 : length,
+  };
+  const overlaps = state.walls.some((other) => {
+    return Math.abs(wall.x - other.x) < (wall.w + other.w) / 2 + 6 && Math.abs(wall.y - other.y) < (wall.h + other.h) / 2 + 6;
   });
+  if (overlaps) {
+    setToast(text.wallOverlap);
+    return;
+  }
+  state.walls.push(wall);
   setToast(state.language === "zh" ? "已放置墙" : "Wall placed");
 }
 
