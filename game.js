@@ -32,6 +32,7 @@ const customStopDistance = document.querySelector("#customStopDistance");
 const customDodge = document.querySelector("#customDodge");
 const customWeapon = document.querySelector("#customWeapon");
 const customRanged = document.querySelector("#customRanged");
+const customAttackWalls = document.querySelector("#customAttackWalls");
 const customAreaAttack = document.querySelector("#customAreaAttack");
 const customAreaRange = document.querySelector("#customAreaRange");
 const customAreaDamage = document.querySelector("#customAreaDamage");
@@ -183,6 +184,7 @@ const translations = {
       customDodge: "躲闪概率",
       customWeapon: "武器",
       customRanged: "远程攻击",
+      customAttackWalls: "攻击墙",
       areaAttack: "范围攻击",
       customAreaAttack: "是否范围攻击",
       customAreaRange: "范围攻击范围",
@@ -343,6 +345,7 @@ const translations = {
       customDodge: "Dodge Chance",
       customWeapon: "Weapon",
       customRanged: "Ranged Attack",
+      customAttackWalls: "Attack Walls",
       areaAttack: "Area Attack",
       customAreaAttack: "Use Area Attack",
       customAreaRange: "Area Radius",
@@ -1187,6 +1190,7 @@ function damageWall(wall, damage, x = wall.x, y = wall.y) {
 }
 
 function wallTargetNear(unit, target = null) {
+  if (unit.canAttackWalls === false) return null;
   let best = null;
   let bestDistance = Infinity;
   for (const wall of state.walls) {
@@ -1335,6 +1339,7 @@ function createCustomUnitType() {
     berserkHeal: clamp(Number(skillBerserkHeal.value) || 0, 0, CUSTOM_LIMIT),
   };
   const ranged = customRanged.checked;
+  const canAttackWalls = customAttackWalls.checked;
   const secondProfile = weaponProfiles[customSecondWeapon.value] || null;
   const secondRange = clamp(Number(customSecondRange.value) || 0, 0, CUSTOM_LIMIT);
   const secondDamage = clamp(Number(customSecondDamage.value) || 0, 0, CUSTOM_LIMIT);
@@ -1402,6 +1407,7 @@ function createCustomUnitType() {
     dodgeChance,
     weapon: customWeapon.value,
     isRangedCustom: ranged,
+    canAttackWalls,
     secondAttack,
     skills,
     color: palette[(customUnitCounter - 2) % palette.length],
@@ -1441,6 +1447,7 @@ function addUnit(typeId, team, x, y) {
     splash: type.splash || 0,
     knockback: type.knockback || 2.3,
     dodgeChance: type.dodgeChance || 0,
+    canAttackWalls: type.canAttackWalls !== false,
     skills: type.skills || {},
     poisonTimer: 0,
     poisonTick: 0,
@@ -2240,6 +2247,7 @@ function attack(unit, target, mode = null) {
   };
   unit.cooldown = active.cooldown || unit.cooldownTime;
   if (target.kind === "wall") {
+    if (unit.canAttackWalls === false) return;
     if (active.ranged && active.projectileSpeed) {
       state.projectiles.push({
         x: unit.x,
