@@ -20,8 +20,6 @@ const redTeamBtn = document.querySelector("#redTeamBtn");
 const wallToolBtn = document.querySelector("#wallToolBtn");
 const eraseWallBtn = document.querySelector("#eraseWallBtn");
 const clearWallsBtn = document.querySelector("#clearWallsBtn");
-const wallDirection = document.querySelector("#wallDirection");
-const wallLength = document.querySelector("#wallLength");
 const customName = document.querySelector("#customName");
 const customHp = document.querySelector("#customHp");
 const customDamage = document.querySelector("#customDamage");
@@ -159,6 +157,8 @@ const translations = {
     wallHorizontal: "横向",
     wallVertical: "竖向",
     wallOverlap: "这里已经有墙了",
+    wallNeedGold: "金币不够放这面墙",
+    wallStartHint: "再点一下确认墙的长度和方向",
     itemNames: {
       fireball: "火球",
       defense: "防御药水",
@@ -316,6 +316,8 @@ const translations = {
     wallHorizontal: "Horizontal",
     wallVertical: "Vertical",
     wallOverlap: "A wall is already there",
+    wallNeedGold: "Not enough gold for this wall",
+    wallStartHint: "Click again to set wall length and direction",
     itemNames: {
       fireball: "Fireball",
       defense: "Defense Potion",
@@ -456,11 +458,6 @@ function applyLanguage(lang) {
   wallToolBtn.textContent = text.mapWall;
   eraseWallBtn.textContent = text.mapEraseWall;
   clearWallsBtn.textContent = text.mapClearWalls;
-  const wallLabels = document.querySelectorAll(".map-tools label");
-  if (wallLabels[0]) wallLabels[0].childNodes[0].textContent = text.wallDirection;
-  if (wallLabels[1]) wallLabels[1].childNodes[0].textContent = text.wallLength;
-  if (wallDirection?.options?.[0]) wallDirection.options[0].textContent = text.wallHorizontal;
-  if (wallDirection?.options?.[1]) wallDirection.options[1].textContent = text.wallVertical;
   setText(".custom-builder summary", text.custom);
   createCustomBtn.textContent = text.create;
   setText(".inspector .panel-title h2", text.battle);
@@ -1020,6 +1017,8 @@ const state = {
   selected: unitTypes[0].id,
   selectedItem: null,
   mapTool: null,
+  wallStart: null,
+  pointer: null,
   placeTeam: "blue",
   sandbox: false,
   language: "en",
@@ -1083,9 +1082,13 @@ function blueArmyCost() {
     .reduce((sum, unit) => sum + typeById(unit.typeId).price, 0);
 }
 
+function wallTotalCost() {
+  return state.walls.reduce((sum, wall) => sum + wallCost(wall), 0);
+}
+
 function syncBudgetToEnemySize() {
   if (state.sandbox) return;
-  state.budget = Math.max(0, totalBudgetForEnemySize() - blueArmyCost());
+  state.budget = Math.max(0, totalBudgetForEnemySize() - blueArmyCost() - wallTotalCost());
 }
 
 function worldPoint(event) {
@@ -1100,20 +1103,31 @@ function setToast(message) {
   toast.textContent = message;
 }
 
-function addWall(point) {
+function wallCost(wall) {
+  return Math.ceil(40 + Math.max(wall.w, wall.h) * 0.4);
+}
+
+function addWall(start, end) {
   if (state.phase !== "setup") {
     setToast(state.language === "zh" ? "布阵阶段才能放墙" : "Walls can be placed during setup");
     return;
   }
   const text = translations[state.language] || translations.en;
-  const length = clamp(Number(wallLength?.value) || 120, 60, 260);
-  const horizontal = (wallDirection?.value || "horizontal") === "horizontal";
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const horizontal = Math.abs(dx) >= Math.abs(dy);
+  const length = clamp(horizontal ? Math.abs(dx) : Math.abs(dy), 36, 420);
   const wall = {
-    x: clamp(point.x, 30, canvas.width - 30),
-    y: clamp(point.y, 30, canvas.height - 30),
+    x: clamp(horizontal ? (start.x + end.x) / 2 : start.x, 30, canvas.width - 30),
+    y: clamp(horizontal ? start.y : (start.y + end.y) / 2, 30, canvas.height - 30),
     w: horizontal ? length : 28,
     h: horizontal ? 28 : length,
   };
+  const cost = wallCost(wall);
+  if (!state.sandbox && state.budget < cost) {
+    setToast(text.wallNeedGold);
+    return;
+  }
   const overlaps = state.walls.some((other) => {
     return Math.abs(wall.x - other.x) < (wall.w + other.w) / 2 + 6 && Math.abs(wall.y - other.y) < (wall.h + other.h) / 2 + 6;
   });
@@ -1122,7 +1136,8 @@ function addWall(point) {
     return;
   }
   state.walls.push(wall);
-  setToast(state.language === "zh" ? "已放置墙" : "Wall placed");
+  if (!state.sandbox) state.budget -= cost;
+  setToast(`${state.language === "zh" ? "已放置墙" : "Wall placed"} -${cost}`);
 }
 
 function eraseWall(point) {
@@ -1887,7 +1902,11 @@ function resetGame(keepEnemies = false) {
   state.particles = [];
   state.slimes = [];
   state.tornadoes = [];
+  state.walls = [];
   state.dragging = null;
+  state.wallStart = null;
+  state.pointer = null;
+  state.mapTool = null;
   state.selectedItem = null;
   state.winnerShown = false;
   if (!keepEnemies) spawnEnemyArmy();
@@ -2537,6 +2556,26 @@ function drawWalls() {
       ctx.lineTo(x - 12, wall.h / 2);
       ctx.stroke();
     }
+    ctx.restore();
+  }
+  if (state.mapTool === "wall" && state.wallStart && state.pointer) {
+    const dx = state.pointer.x - state.wallStart.x;
+    const dy = state.pointer.y - state.wallStart.y;
+    const horizontal = Math.abs(dx) >= Math.abs(dy);
+    const end = horizontal ? { x: state.pointer.x, y: state.wallStart.y } : { x: state.wallStart.x, y: state.pointer.y };
+    ctx.save();
+    ctx.strokeStyle = "#e8bd57";
+    ctx.lineWidth = 5;
+    ctx.setLineDash([10, 8]);
+    ctx.beginPath();
+    ctx.moveTo(state.wallStart.x, state.wallStart.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#e8bd57";
+    ctx.beginPath();
+    ctx.arc(state.wallStart.x, state.wallStart.y, 7, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 }
@@ -3238,7 +3277,16 @@ function renderUnitList() {
 canvas.addEventListener("pointerdown", (event) => {
   const point = worldPoint(event);
   if (state.phase === "setup" && state.mapTool === "wall") {
-    addWall(point);
+    if (!state.wallStart) {
+      state.wallStart = point;
+      state.pointer = point;
+      setToast((translations[state.language] || translations.en).wallStartHint);
+    } else {
+      addWall(state.wallStart, point);
+      state.wallStart = null;
+      state.pointer = null;
+      updateUi();
+    }
     updateUi();
     return;
   }
@@ -3268,8 +3316,10 @@ canvas.addEventListener("pointerdown", (event) => {
 });
 
 canvas.addEventListener("pointermove", (event) => {
+  state.pointer = worldPoint(event);
+  if (state.mapTool === "wall" && state.wallStart) return;
   if (!state.dragging) return;
-  const point = worldPoint(event);
+  const point = state.pointer;
   const maxX = state.sandbox ? canvas.width - state.dragging.radius : blueZone() - 18;
   state.dragging.x = Math.max(state.dragging.radius, Math.min(maxX, point.x));
   state.dragging.y = Math.max(state.dragging.radius, Math.min(canvas.height - state.dragging.radius, point.y));
@@ -3286,13 +3336,17 @@ randomBtn.addEventListener("click", randomFormation);
 wallToolBtn.addEventListener("click", () => {
   if (state.phase !== "setup") return;
   state.mapTool = state.mapTool === "wall" ? null : "wall";
+  state.wallStart = null;
+  state.pointer = null;
   state.selectedItem = null;
   updateUi();
-  setToast(state.mapTool === "wall" ? (state.language === "zh" ? "点击战场放墙" : "Click the field to place walls") : (state.language === "zh" ? "墙工具关闭" : "Wall tool off"));
+  setToast(state.mapTool === "wall" ? (state.language === "zh" ? "点一下起点，再点一下终点放墙" : "Click a start point, then an end point") : (state.language === "zh" ? "墙工具关闭" : "Wall tool off"));
 });
 eraseWallBtn.addEventListener("click", () => {
   if (state.phase !== "setup") return;
   state.mapTool = state.mapTool === "eraseWall" ? null : "eraseWall";
+  state.wallStart = null;
+  state.pointer = null;
   state.selectedItem = null;
   updateUi();
   setToast(state.mapTool === "eraseWall" ? (state.language === "zh" ? "点击墙删除" : "Click a wall to erase it") : (state.language === "zh" ? "删墙关闭" : "Erase wall off"));
@@ -3301,6 +3355,8 @@ clearWallsBtn.addEventListener("click", () => {
   if (state.phase !== "setup") return;
   state.walls = [];
   state.mapTool = null;
+  state.wallStart = null;
+  state.pointer = null;
   updateUi();
   setToast(state.language === "zh" ? "墙已清空" : "Walls cleared");
 });
