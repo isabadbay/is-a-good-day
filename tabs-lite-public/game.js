@@ -6,6 +6,10 @@ const budgetText = document.querySelector("#budgetText");
 const blueCount = document.querySelector("#blueCount");
 const redCount = document.querySelector("#redCount");
 const phaseText = document.querySelector("#phaseText");
+const controlPanel = document.querySelector("#controlPanel");
+const controlTitle = document.querySelector("#controlTitle");
+const controlName = document.querySelector("#controlName");
+const controlCooldowns = document.querySelector("#controlCooldowns");
 const toast = document.querySelector("#toast");
 const startBtn = document.querySelector("#startBtn");
 const pauseBtn = document.querySelector("#pauseBtn");
@@ -178,6 +182,12 @@ const translations = {
     custom: "自定义兵种",
     create: "创建兵种",
     battle: "战况",
+    control: "操控",
+    controlEmpty: "战斗中点击兵种操控",
+    controlKeys: "WASD移动 / 空格攻击 / V第二攻击 / B特殊",
+    controlSelected: "正在操控",
+    noControlTarget: "没有可操控兵种",
+    noSpecialReady: "没有可用特殊技能",
     enemySize: "敌军规模",
     speed: "镜头速度",
     erase: "橡皮擦",
@@ -366,6 +376,12 @@ const translations = {
     custom: "Custom Unit",
     create: "Create Unit",
     battle: "Battle",
+    control: "Control",
+    controlEmpty: "Click a unit during battle",
+    controlKeys: "WASD Move / Space Attack / V Second / B Skill",
+    controlSelected: "Controlling",
+    noControlTarget: "No controllable unit",
+    noSpecialReady: "No special skill ready",
     enemySize: "Enemy Size",
     speed: "Camera Speed",
     erase: "Erase",
@@ -572,6 +588,7 @@ function applyLanguage(lang) {
   setText(".custom-builder summary", text.custom);
   createCustomBtn.textContent = text.create;
   setText(".inspector .panel-title h2", text.battle);
+  if (controlTitle) controlTitle.textContent = text.control;
   const rangeRows = document.querySelectorAll(".range-row");
   if (rangeRows[0]) rangeRows[0].childNodes[0].textContent = text.enemySize;
   if (rangeRows[1]) rangeRows[1].childNodes[0].textContent = text.speed;
@@ -1343,6 +1360,9 @@ const state = {
   walls: [],
   commands: { blue: null, red: null },
   focusTargets: { blue: null, red: null },
+  controlledId: null,
+  controlKeys: {},
+  controlSpecialIndex: 0,
   nextId: 1,
   dragging: null,
   lastTime: performance.now(),
@@ -1942,6 +1962,7 @@ function nearestUnit(point, team = "blue") {
 
 function removeUnit(unit) {
   state.units = state.units.filter((candidate) => candidate.id !== unit.id);
+  if (state.controlledId === unit.id) state.controlledId = null;
   if (unit.team === "blue") refund(unit.typeId);
 }
 
@@ -2457,6 +2478,9 @@ function resetGame(keepEnemies = false) {
   state.commands = { blue: null, red: null };
   state.focusTargets = { blue: null, red: null };
   state.dragging = null;
+  state.controlledId = null;
+  state.controlKeys = {};
+  state.controlSpecialIndex = 0;
   state.wallStart = null;
   state.pointer = null;
   state.mapTool = null;
@@ -2586,6 +2610,126 @@ function findTarget(unit) {
     return { target: best, distance: bestDistance };
   }
   return wallTargetNear(unit);
+}
+
+function controlledUnit() {
+  const unit = state.units.find((candidate) => candidate.id === state.controlledId && !candidate.dead);
+  if (!unit) state.controlledId = null;
+  return unit || null;
+}
+
+function nearestEnemyFor(unit, maxDistance = Infinity) {
+  let best = null;
+  let bestDistance = Infinity;
+  for (const other of state.units) {
+    if (other.team === unit.team || other.dead || other.airborneTimer > 0) continue;
+    const distance = Math.hypot(other.x - unit.x, other.y - unit.y);
+    if (distance < bestDistance && distance <= maxDistance) {
+      best = other;
+      bestDistance = distance;
+    }
+  }
+  return best ? { target: best, distance: bestDistance } : null;
+}
+
+function selectControlledUnit(unit) {
+  state.controlledId = unit?.id || null;
+  state.controlSpecialIndex = 0;
+  const text = translations[state.language] || translations.en;
+  if (unit) setToast(`${text.controlSelected}: ${unit.name}`);
+  updateUi();
+}
+
+function controlledPrimaryAttack(unit) {
+  if (!unit || unit.cooldown > 0) return;
+  const info = nearestEnemyFor(unit, Math.max(unit.range, 16) + unit.radius + 80);
+  if (!info) return;
+  const distance = Math.max(0, info.distance - unit.radius - info.target.radius);
+  const attackDistance = unit.projectileSpeed ? unit.range * 0.88 : unit.range;
+  if (distance <= attackDistance || unit.projectileSpeed) attack(unit, info.target);
+}
+
+function controlledSecondAttack(unit) {
+  if (!unit || unit.cooldown > 0 || !unit.secondAttack) return;
+  const second = unit.secondAttack;
+  const info = nearestEnemyFor(unit, second.range + unit.radius + 80);
+  if (!info) return;
+  const edgeDistance = Math.max(0, info.distance - unit.radius - info.target.radius);
+  const engagementDistance = second.ranged ? info.distance : edgeDistance;
+  if (engagementDistance <= second.range) attack(unit, info.target, second);
+}
+
+function controlledSpecials(unit) {
+  if (!unit) return [];
+  const specials = [];
+  if (unit.skills.stasisGaze) specials.push({ name: "Stasis", cd: unit.stasisCooldown, ready: unit.stasisCooldown <= 0, cast: () => triggerStasisGaze(unit) });
+  if (unit.skills.fireball) {
+    const info = nearestEnemyFor(unit, 320);
+    specials.push({ name: "Fireball", cd: unit.fireballCooldown, ready: unit.fireballCooldown <= 0 && Boolean(info), cast: () => castFireball(unit, info.target) });
+  }
+  if (unit.skills.tornado) {
+    const info = nearestEnemyFor(unit, 360);
+    specials.push({
+      name: "Tornado",
+      cd: unit.tornadoCooldown,
+      ready: unit.tornadoCooldown <= 0 && Boolean(info),
+      cast: () => {
+        spawnTornado(unit, info.target);
+        unit.tornadoCooldown = unit.skills.poisonSlime ? 5.2 : 6.4;
+      },
+    });
+  }
+  if (unit.skills.whirlwindLeap) {
+    const info = nearestEnemyFor(unit, unit.skills.whirlwindTriggerRange || 92);
+    specials.push({ name: "Sky Slam", cd: unit.whirlwindCooldown, ready: unit.whirlwindCooldown <= 0 && Boolean(info), cast: () => triggerWhirlwindLeap(unit) });
+  }
+  if (unit.skills.randomSpawn) {
+    specials.push({
+      name: "Spawn",
+      cd: unit.randomSpawnCooldown,
+      ready: unit.randomSpawnCooldown <= 0,
+      cast: () => {
+        spawnRandomUnit(unit);
+        unit.randomSpawnCooldown = unit.skills.randomSpawnInterval || 5;
+      },
+    });
+  }
+  return specials;
+}
+
+function controlledSpecialAttack(unit) {
+  const specials = controlledSpecials(unit).filter((special) => special.ready);
+  const text = translations[state.language] || translations.en;
+  if (!specials.length) {
+    setToast(text.noSpecialReady);
+    return;
+  }
+  const special = specials[state.controlSpecialIndex % specials.length];
+  state.controlSpecialIndex += 1;
+  special.cast();
+  setToast(`${unit.name}: ${special.name}`);
+}
+
+function updateControlledUnit(unit, dt) {
+  const up = state.controlKeys.w;
+  const down = state.controlKeys.s;
+  const left = state.controlKeys.a;
+  const right = state.controlKeys.d;
+  const dx = (right ? 1 : 0) - (left ? 1 : 0);
+  const dy = (down ? 1 : 0) - (up ? 1 : 0);
+  if (dx || dy) {
+    const length = Math.hypot(dx, dy) || 1;
+    const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1);
+    unit.vx += (dx / length) * unit.speed * speedFactor * dt * 4.2;
+    unit.vy += (dy / length) * unit.speed * speedFactor * dt * 4.2;
+  }
+  unit.vx *= 0.88;
+  unit.vy *= 0.88;
+  unit.x += unit.vx * dt;
+  unit.y += unit.vy * dt;
+  pushOutOfWalls(unit);
+  unit.x = Math.max(unit.radius, Math.min(canvas.width - unit.radius, unit.x));
+  unit.y = Math.max(unit.radius, Math.min(canvas.height - unit.radius, unit.y));
 }
 
 function damageFor(unit, amount) {
@@ -2919,6 +3063,7 @@ function attack(unit, target, mode = null) {
         isRanged: true,
         areaAttack: unit.areaAttack,
         passWalls: unit.skills.rooted,
+        continueOnTargetDeath: unit.typeId === "peashooter",
         applyBurn: unit.skills.fireBreath,
         fireDuration: unit.skills.fireDuration || 5,
         applyFreeze: unit.skills.freezeAttack,
@@ -2979,6 +3124,11 @@ function updateUnit(unit, dt) {
   unit.powerPotionTimer = Math.max(0, unit.powerPotionTimer - dt);
   unit.speedPotionTimer = Math.max(0, unit.speedPotionTimer - dt);
   if (!unit.dead && unit.infectionTimer > 0) {
+    unit.hp -= unit.maxHp * 0.05 * dt;
+    if (unit.hp <= 0) {
+      convertToZombie(unit);
+      return;
+    }
     unit.infectionTimer = Math.max(0, unit.infectionTimer - dt);
     if (unit.infectionTimer <= 0) {
       convertToZombie(unit);
@@ -3025,6 +3175,10 @@ function updateUnit(unit, dt) {
   if (unit.stasisTimer > 0) {
     unit.vx = 0;
     unit.vy = 0;
+    return;
+  }
+  if (state.phase === "battle" && state.controlledId === unit.id) {
+    updateControlledUnit(unit, dt);
     return;
   }
   if (unit.skills.rooted) {
@@ -3185,10 +3339,41 @@ function updateProjectiles(dt) {
     const target = state.units.find((unit) => unit.id === projectile.tx && !unit.dead);
     projectile.life -= dt;
     if (!target) {
-      projectile.life = 0;
+      if (!projectile.continueOnTargetDeath) {
+        projectile.life = 0;
+        continue;
+      }
+      projectile.vx ??= Math.cos(projectile.lastAngle || 0) * projectile.speed;
+      projectile.vy ??= Math.sin(projectile.lastAngle || 0) * projectile.speed;
+      projectile.x += projectile.vx * dt;
+      projectile.y += projectile.vy * dt;
+      const replacement = state.units.find((unit) => {
+        if (unit.team === projectile.team || unit.dead) return false;
+        return Math.hypot(unit.x - projectile.x, unit.y - projectile.y) < unit.radius + 6;
+      });
+      if (replacement) {
+        const owner = state.units.find((unit) => unit.id === projectile.ownerId);
+        const angle = Math.atan2(replacement.y - projectile.y, replacement.x - projectile.x);
+        hurt(replacement, projectile.damage, {
+          x: projectile.x - Math.cos(angle),
+          y: projectile.y - Math.sin(angle),
+          isRanged: true,
+          applyBurn: projectile.applyBurn,
+          fireDuration: projectile.fireDuration || 5,
+          applyFreeze: projectile.applyFreeze,
+          fireball: projectile.fireball,
+          damageType: projectile.fireball ? "fireball" : projectile.applyBurn ? "fire" : projectile.applyFreeze ? "ice" : null,
+          noKnockback: projectile.applyBurn,
+          owner,
+        });
+        projectile.life = 0;
+      }
       continue;
     }
     const angle = Math.atan2(target.y - projectile.y, target.x - projectile.x);
+    projectile.lastAngle = angle;
+    projectile.vx = Math.cos(angle) * projectile.speed;
+    projectile.vy = Math.sin(angle) * projectile.speed;
     projectile.x += Math.cos(angle) * projectile.speed * dt;
     projectile.y += Math.sin(angle) * projectile.speed * dt;
     if (projectileHitsWall(projectile)) {
@@ -3518,6 +3703,13 @@ function drawUnit(unit) {
       ctx.ellipse(0, i * 7 - 5, unit.radius * (1.25 + i * 0.22), unit.radius * 0.38, performance.now() / (220 - i * 35), 0, Math.PI * 2);
       ctx.stroke();
     }
+  }
+  if (!unit.dead && state.controlledId === unit.id) {
+    ctx.strokeStyle = "#fff36d";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(0, 0, unit.radius + 22, 0, Math.PI * 2);
+    ctx.stroke();
   }
   if (!unit.dead && unit.skills.holyShield) {
     const shieldRange = unit.skills.holyShieldRange ?? 160;
@@ -4379,6 +4571,27 @@ function updateUi() {
     cancelButton.classList.toggle("selected", !state.selectedItem);
     cancelButton.innerHTML = `<b>${text.itemCancel}</b><small>${text.itemCancelHint}</small>`;
   }
+  const unit = controlledUnit();
+  if (controlName && controlCooldowns) {
+    if (!unit) {
+      controlName.textContent = text.controlEmpty;
+      controlCooldowns.innerHTML = `<span>${text.controlKeys}</span>`;
+      controlPanel?.classList.remove("active");
+    } else {
+      const specials = controlledSpecials(unit);
+      const specialText = specials.length
+        ? specials.map((special) => `${special.name}: ${special.ready ? "OK" : Math.max(0, special.cd || 0).toFixed(1)}`).join(" / ")
+        : "B: -";
+      controlName.textContent = `${text.controlSelected}: ${unit.name}`;
+      controlCooldowns.innerHTML = `
+        <span>HP ${Math.max(0, Math.ceil(unit.hp))}/${unit.maxHp}</span>
+        <span>Space ${unit.cooldown <= 0 ? "OK" : unit.cooldown.toFixed(1)}</span>
+        <span>V ${unit.secondAttack ? (unit.cooldown <= 0 ? "OK" : unit.cooldown.toFixed(1)) : "-"}</span>
+        <span>B ${specialText}</span>
+      `;
+      controlPanel?.classList.add("active");
+    }
+  }
 }
 
 function renderUnitList() {
@@ -4456,6 +4669,16 @@ canvas.addEventListener("pointerdown", (event) => {
     castItemAt(state.selectedItem, point);
     return;
   }
+  if (state.phase === "battle" && !state.selectedItem && !state.mapTool) {
+    const unit = nearestUnit(point, state.sandbox ? null : "blue");
+    const text = translations[state.language] || translations.en;
+    if (unit && Math.hypot(unit.x - point.x, unit.y - point.y) <= unit.radius + 18) {
+      selectControlledUnit(unit);
+    } else {
+      setToast(text.noControlTarget);
+    }
+    return;
+  }
   if (state.phase !== "setup") return;
   const existing = nearestUnit(point, state.sandbox ? null : "blue");
   if (existing) {
@@ -4484,6 +4707,50 @@ canvas.addEventListener("pointermove", (event) => {
 
 canvas.addEventListener("pointerup", () => {
   state.dragging = null;
+});
+
+window.addEventListener("keydown", (event) => {
+  const tag = event.target?.tagName;
+  if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+  const key = event.key.toLowerCase();
+  if (["w", "a", "s", "d"].includes(key)) {
+    state.controlKeys[key] = true;
+    event.preventDefault();
+    return;
+  }
+  if (event.code === "Space") {
+    const unit = controlledUnit();
+    if (unit && state.phase === "battle") {
+      controlledPrimaryAttack(unit);
+      event.preventDefault();
+    }
+    return;
+  }
+  if (key === "v") {
+    const unit = controlledUnit();
+    if (unit && state.phase === "battle") {
+      controlledSecondAttack(unit);
+      event.preventDefault();
+    }
+    return;
+  }
+  if (key === "b") {
+    const unit = controlledUnit();
+    if (unit && state.phase === "battle") {
+      controlledSpecialAttack(unit);
+      event.preventDefault();
+    }
+  }
+});
+
+window.addEventListener("keyup", (event) => {
+  const tag = event.target?.tagName;
+  if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+  const key = event.key.toLowerCase();
+  if (["w", "a", "s", "d"].includes(key)) {
+    state.controlKeys[key] = false;
+    event.preventDefault();
+  }
 });
 
 startBtn.addEventListener("click", startBattle);
