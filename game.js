@@ -138,6 +138,27 @@ const UNIT_PACK_2_IDS = new Set([
   "phoenixguard",
   "stormlancer",
   "whirlhammer",
+  "zombie",
+]);
+
+const INFECTABLE_TYPE_IDS = new Set([
+  "clubber",
+  "shield",
+  "spear",
+  "archer",
+  "berserker",
+  "hammer",
+  "musketeer",
+  "cannon",
+  "knight",
+  "assassin",
+  "crossbow",
+  "bomber",
+  "giant",
+  "wolf",
+  "sharpshooter",
+  "wallcrusher",
+  "whirlhammer",
 ]);
 
 const translations = {
@@ -307,6 +328,7 @@ const translations = {
       phoenixguard: ["凤凰卫士", "圣火护盾"],
       stormlancer: ["风暴枪兵", "爆发远程"],
       whirlhammer: ["旋风重锤兵", "跃空重砸"],
+      zombie: ["僵尸", "感染"],
     },
     tags: {
       ranged: "远程",
@@ -492,6 +514,7 @@ const translations = {
       phoenixguard: ["Phoenix Guard", "Holy Fire"],
       stormlancer: ["Storm Lancer", "Burst Shot"],
       whirlhammer: ["Whirl Hammer", "Sky Slam"],
+      zombie: ["Zombie", "Infection"],
     },
     tags: {
       ranged: "Ranged",
@@ -1253,6 +1276,23 @@ const unitTypes = [
     },
     color: "#8ab4ff",
   },
+  {
+    id: "zombie",
+    name: "Zombie",
+    tag: "Infection",
+    glyph: "Z",
+    price: 160,
+    hp: 115,
+    damage: 13,
+    range: 30,
+    speed: 36,
+    radius: 16,
+    cooldown: 0.9,
+    knockback: 1.9,
+    weapon: "club",
+    skills: { infectTouch: true, infectSeconds: 10 },
+    color: "#76b86d",
+  },
 ];
 
 let customUnitCounter = 1;
@@ -1766,6 +1806,9 @@ function addUnit(typeId, team, x, y) {
     defensePotionTimer: 0,
     powerPotionTimer: 0,
     speedPotionTimer: 0,
+    infectionTimer: 0,
+    infectionDuration: 0,
+    infectionTeam: null,
     stasisSourceId: null,
     stasisCooldown: 1 + Math.random() * 2,
     fireballCooldown: 1.5 + Math.random() * 2,
@@ -2323,6 +2366,7 @@ function spawnEnemyArmy() {
     "phoenixguard",
     "stormlancer",
     "whirlhammer",
+    "zombie",
   ];
   for (let i = 0; i < count; i += 1) {
     const typeId = ids[Math.floor(Math.random() * ids.length)];
@@ -2397,6 +2441,7 @@ function randomFormation() {
     "phoenixguard",
     "stormlancer",
     "whirlhammer",
+    "zombie",
   ];
   const team = state.sandbox ? state.placeTeam : "blue";
   let guard = 0;
@@ -2568,6 +2613,74 @@ function spawnRandomUnit(unit) {
     });
   }
   state.particles.push({ x, y, life: 0.9, startLife: 0.9, color: "#c48cff", size: 58 });
+}
+
+function canBeInfected(unit) {
+  return !unit.dead && unit.typeId !== "zombie" && INFECTABLE_TYPE_IDS.has(unit.typeId);
+}
+
+function infectUnit(target, source) {
+  if (!source.skills.infectTouch || !canBeInfected(target)) return;
+  const seconds = source.skills.infectSeconds || 10;
+  if (target.infectionTimer > 0 && target.infectionTeam === source.team) return;
+  target.infectionTimer = seconds;
+  target.infectionDuration = seconds;
+  target.infectionTeam = source.team;
+  state.particles.push({ x: target.x, y: target.y, life: 0.65, startLife: 0.65, color: "#83d96f", size: target.radius * 3.2 });
+}
+
+function convertToZombie(unit) {
+  const zombie = typeById("zombie");
+  unit.team = unit.infectionTeam || unit.team;
+  unit.typeId = zombie.id;
+  unit.name = zombie.name;
+  unit.glyph = zombie.glyph;
+  unit.weapon = zombie.weapon;
+  unit.secondAttack = null;
+  unit.areaAttack = null;
+  unit.hp = zombie.hp;
+  unit.maxHp = zombie.hp;
+  unit.damage = zombie.damage;
+  unit.range = zombie.range;
+  unit.burstCount = 1;
+  unit.burstCooldown = 0;
+  unit.stopDistance = zombie.range;
+  unit.speed = zombie.speed;
+  unit.radius = zombie.radius;
+  unit.cooldownTime = zombie.cooldown;
+  unit.projectileSpeed = 0;
+  unit.splash = 0;
+  unit.knockback = zombie.knockback;
+  unit.dodgeChance = 0;
+  unit.canAttackWalls = true;
+  unit.skills = { infectTouch: true, infectSeconds: 10 };
+  unit.poisonTimer = 0;
+  unit.burnTimer = 0;
+  unit.freezeTimer = 0;
+  unit.stasisTimer = 0;
+  unit.defensePotionTimer = 0;
+  unit.powerPotionTimer = 0;
+  unit.speedPotionTimer = 0;
+  unit.infectionTimer = 0;
+  unit.infectionDuration = 0;
+  unit.infectionTeam = null;
+  unit.color = unit.team === "blue" ? zombie.color : "#ff706c";
+  unit.cooldown = 0.4;
+  unit.dead = false;
+  for (let i = 0; i < 24; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 40 + Math.random() * 110;
+    state.particles.push({
+      x: unit.x,
+      y: unit.y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.45 + Math.random() * 0.35,
+      startLife: 0.8,
+      color: "#83d96f",
+      size: 12 + Math.random() * 16,
+    });
+  }
 }
 
 function triggerWhirlwindLeap(unit) {
@@ -2788,6 +2901,13 @@ function updateUnit(unit, dt) {
   unit.defensePotionTimer = Math.max(0, unit.defensePotionTimer - dt);
   unit.powerPotionTimer = Math.max(0, unit.powerPotionTimer - dt);
   unit.speedPotionTimer = Math.max(0, unit.speedPotionTimer - dt);
+  if (!unit.dead && unit.infectionTimer > 0) {
+    unit.infectionTimer = Math.max(0, unit.infectionTimer - dt);
+    if (unit.infectionTimer <= 0) {
+      convertToZombie(unit);
+      return;
+    }
+  }
   if (unit.dead) {
     unit.vx *= 0.972;
     unit.vy *= 0.972;
@@ -2916,6 +3036,10 @@ function resolveCrowding() {
       const distance = Math.max(0.01, Math.hypot(dx, dy));
       const min = a.radius + b.radius;
       if (distance >= min) continue;
+      if (!a.dead && !b.dead && a.team !== b.team) {
+        infectUnit(b, a);
+        infectUnit(a, b);
+      }
       const push = (min - distance) * 0.5;
       const nx = dx / distance;
       const ny = dy / distance;
@@ -3377,6 +3501,16 @@ function drawUnit(unit) {
     ctx.arc(0, 0, unit.radius + 14, 0, Math.PI * 2);
     ctx.stroke();
   }
+  if (!unit.dead && unit.infectionTimer > 0) {
+    const pulse = 0.55 + Math.sin(performance.now() / 120) * 0.25;
+    ctx.strokeStyle = "#83d96f";
+    ctx.lineWidth = 4;
+    ctx.globalAlpha = pulse;
+    ctx.beginPath();
+    ctx.arc(0, 0, unit.radius + 17, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = unit.dead ? 0.45 : 1;
+  }
   ctx.fillStyle = unit.team === "blue" ? "#0b2038" : "#3b1010";
   ctx.beginPath();
   ctx.arc(-unit.radius * 0.33, -unit.radius * 0.2, unit.radius * 0.13, 0, Math.PI * 2);
@@ -3658,6 +3792,27 @@ function drawUnitSkin(unit) {
     ctx.beginPath();
     ctx.arc(-r * 0.28, -r * 0.12, r * 0.12, 0, Math.PI * 2);
     ctx.arc(r * 0.28, -r * 0.12, r * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (unit.typeId === "zombie") {
+    ctx.fillStyle = "#2d5b35";
+    ctx.beginPath();
+    ctx.arc(-r * 0.3, -r * 0.18, r * 0.12, 0, Math.PI * 2);
+    ctx.arc(r * 0.3, -r * 0.18, r * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#dff5c8";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.72, r * 0.22);
+    ctx.lineTo(-r * 1.16, r * 0.72);
+    ctx.moveTo(r * 0.72, r * 0.22);
+    ctx.lineTo(r * 1.16, r * 0.72);
+    ctx.moveTo(-r * 0.42, -r * 0.68);
+    ctx.lineTo(r * 0.42, -r * 0.68);
+    ctx.stroke();
+    ctx.fillStyle = "#83d96f";
+    ctx.beginPath();
+    ctx.arc(0, r * 0.34, r * 0.18, 0, Math.PI * 2);
     ctx.fill();
   }
   if (unit.typeId === "dragonling") {
