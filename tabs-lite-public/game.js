@@ -17,9 +17,17 @@ const speedSlider = document.querySelector("#speedSlider");
 const sandboxToggle = document.querySelector("#sandboxToggle");
 const blueTeamBtn = document.querySelector("#blueTeamBtn");
 const redTeamBtn = document.querySelector("#redTeamBtn");
+const wallToolBtn = document.querySelector("#wallToolBtn");
+const thickWallToolBtn = document.querySelector("#thickWallToolBtn");
+const arrowWallToolBtn = document.querySelector("#arrowWallToolBtn");
+const commandToolBtn = document.querySelector("#commandToolBtn");
+const focusToolBtn = document.querySelector("#focusToolBtn");
+const eraseWallBtn = document.querySelector("#eraseWallBtn");
+const clearWallsBtn = document.querySelector("#clearWallsBtn");
 const customName = document.querySelector("#customName");
 const customHp = document.querySelector("#customHp");
 const customDamage = document.querySelector("#customDamage");
+const customKnockback = document.querySelector("#customKnockback");
 const customAttackSpeed = document.querySelector("#customAttackSpeed");
 const customMoveSpeed = document.querySelector("#customMoveSpeed");
 const customSize = document.querySelector("#customSize");
@@ -28,13 +36,18 @@ const customStopDistance = document.querySelector("#customStopDistance");
 const customDodge = document.querySelector("#customDodge");
 const customWeapon = document.querySelector("#customWeapon");
 const customRanged = document.querySelector("#customRanged");
+const customAttackWalls = document.querySelector("#customAttackWalls");
 const customAreaAttack = document.querySelector("#customAreaAttack");
 const customAreaRange = document.querySelector("#customAreaRange");
 const customAreaDamage = document.querySelector("#customAreaDamage");
+const customBurstCooldown = document.querySelector("#customBurstCooldown");
+const customBurstCount = document.querySelector("#customBurstCount");
 const customSecondWeapon = document.querySelector("#customSecondWeapon");
 const customSecondRange = document.querySelector("#customSecondRange");
 const customSecondRanged = document.querySelector("#customSecondRanged");
 const customSecondDamage = document.querySelector("#customSecondDamage");
+const customSecondBurstCooldown = document.querySelector("#customSecondBurstCooldown");
+const customSecondBurstCount = document.querySelector("#customSecondBurstCount");
 const createCustomBtn = document.querySelector("#createCustomBtn");
 const skillExplode = document.querySelector("#skillExplode");
 const skillExplodeDamage = document.querySelector("#skillExplodeDamage");
@@ -52,8 +65,15 @@ const skillDamageAura = document.querySelector("#skillDamageAura");
 const skillDamageAuraRange = document.querySelector("#skillDamageAuraRange");
 const skillDamageAuraDamage = document.querySelector("#skillDamageAuraDamage");
 const skillTornado = document.querySelector("#skillTornado");
+const skillTornadoDamage = document.querySelector("#skillTornadoDamage");
+const skillTornadoDuration = document.querySelector("#skillTornadoDuration");
+const skillTornadoRange = document.querySelector("#skillTornadoRange");
 const skillFireBreath = document.querySelector("#skillFireBreath");
+const skillFireParticleSize = document.querySelector("#skillFireParticleSize");
+const skillFireDuration = document.querySelector("#skillFireDuration");
+const skillFireRange = document.querySelector("#skillFireRange");
 const skillFireball = document.querySelector("#skillFireball");
+const skillFireballDamage = document.querySelector("#skillFireballDamage");
 const skillHolyShield = document.querySelector("#skillHolyShield");
 const skillHolyShieldRange = document.querySelector("#skillHolyShieldRange");
 const skillHolyShieldReduction = document.querySelector("#skillHolyShieldReduction");
@@ -64,6 +84,7 @@ const skillBerserkDamage = document.querySelector("#skillBerserkDamage");
 const skillBerserkHeal = document.querySelector("#skillBerserkHeal");
 const languageSelect = document.querySelector("#languageSelect");
 const itemsTitle = document.querySelector("#itemsTitle");
+const itemBar = document.querySelector("#itemBar");
 const itemButtons = document.querySelectorAll("[data-item]");
 
 const weaponProfiles = {
@@ -83,6 +104,10 @@ const itemTypes = {
   defense: { cost: 180, buff: "defensePotionTimer", color: "#ffeaa0" },
   power: { cost: 180, buff: "powerPotionTimer", color: "#ff6d6d" },
   speed: { cost: 160, buff: "speedPotionTimer", color: "#7cff9c" },
+  heal: { cost: 170, heal: 90, color: "#70e8a0" },
+  meteor: { cost: 260, damage: 150, radius: 190, color: "#ff5d2e" },
+  wall: { cost: 220, color: "#9bdcff" },
+  lightning: { cost: 240, damage: 70, chains: 5, color: "#bde7ff" },
 };
 const UNIT_PACK_2_IDS = new Set([
   "knight",
@@ -95,6 +120,7 @@ const UNIT_PACK_2_IDS = new Set([
   "wolf",
   "slimebeast",
   "dragonling",
+  "adultdragon",
   "firebeast",
   "paladin",
   "plaguewizard",
@@ -137,18 +163,41 @@ const translations = {
     itemNoGold: "金币不够买这个道具",
     itemCast: "道具已释放",
     itemHit: "喷中友军",
+    itemCancel: "取消道具",
+    itemCancelHint: "停止瞄准",
     blueWin: "蓝队胜利",
     redWin: "红队胜利",
+    mapWall: "墙",
+    mapThickWall: "厚墙",
+    mapArrowWall: "透射墙",
+    mapCommand: "指挥",
+    mapFocus: "集火",
+    mapEraseWall: "删除墙",
+    mapClearWalls: "清空墙",
+    wallDirection: "方向",
+    wallLength: "长度",
+    wallHorizontal: "横向",
+    wallVertical: "竖向",
+    wallOverlap: "这里已经有墙了",
+    wallNeedGold: "金币不够放这面墙",
+    wallStartHint: "再点一下确认墙的长度和方向",
+    commandHint: "点击战场，命令当前队伍移动",
+    focusHint: "点击一个敌人，当前队伍会优先攻击它",
     itemNames: {
       fireball: "火球",
       defense: "防御药水",
       power: "力量药水",
       speed: "速度药水",
+      heal: "治疗药水",
+      meteor: "陨石",
+      wall: "召唤墙",
+      lightning: "闪电链",
     },
     form: {
       customName: "名字",
       customHp: "血量",
       customDamage: "伤害",
+      customKnockback: "击退",
       customAttackSpeed: "攻速",
       customMoveSpeed: "移速",
       customSize: "大小",
@@ -157,15 +206,20 @@ const translations = {
       customDodge: "躲闪概率",
       customWeapon: "武器",
       customRanged: "远程攻击",
+      customAttackWalls: "攻击墙",
       areaAttack: "范围攻击",
       customAreaAttack: "是否范围攻击",
       customAreaRange: "范围攻击范围",
       customAreaDamage: "范围攻击伤害",
+      customBurstCooldown: "爆发攻击冷却",
+      customBurstCount: "爆发攻击次数",
       secondAttack: "第二攻击",
       customSecondWeapon: "第2攻击物品",
       customSecondRange: "第2攻击范围",
       customSecondRanged: "第2攻击是远程",
       customSecondDamage: "第2攻击伤害",
+      customSecondBurstCooldown: "第2爆发攻击冷却",
+      customSecondBurstCount: "第2爆发攻击次数",
       skills: "特殊技能",
       skillExplode: "死亡自爆",
       skillExplodeDamage: "自爆伤害",
@@ -183,8 +237,15 @@ const translations = {
       skillDamageAuraRange: "范围伤害半径",
       skillDamageAuraDamage: "每秒范围伤害",
       skillTornado: "龙卷风",
+      skillTornadoDamage: "龙卷风伤害",
+      skillTornadoDuration: "龙卷风持续时间",
+      skillTornadoRange: "龙卷风范围",
       skillFireBreath: "喷火",
+      skillFireParticleSize: "火焰粒子大小",
+      skillFireDuration: "火焰持续时间",
+      skillFireRange: "火焰范围",
       skillFireball: "火球术",
+      skillFireballDamage: "火球伤害",
       skillHolyShield: "圣光护盾",
       skillHolyShieldRange: "圣光护盾范围",
       skillHolyShieldReduction: "圣光护盾减伤%",
@@ -222,6 +283,7 @@ const translations = {
       wolf: ["战狼", "扑咬"],
       slimebeast: ["毒史莱姆", "毒液"],
       dragonling: ["幼龙", "火焰"],
+      adultdragon: ["成年龙", "火球巨兽"],
       firebeast: ["火炮兽", "范围"],
       paladin: ["圣骑士", "格挡"],
       plaguewizard: ["瘟疫法师", "毒风"],
@@ -280,18 +342,41 @@ const translations = {
     itemNoGold: "Not enough gold for this item",
     itemCast: "Item used",
     itemHit: "Friendly units hit",
+    itemCancel: "Cancel Item",
+    itemCancelHint: "stop aiming",
     blueWin: "Blue wins",
     redWin: "Red wins",
+    mapWall: "Wall",
+    mapThickWall: "Thick Wall",
+    mapArrowWall: "Arrow Wall",
+    mapCommand: "Command",
+    mapFocus: "Focus",
+    mapEraseWall: "Erase Wall",
+    mapClearWalls: "Clear Walls",
+    wallDirection: "Direction",
+    wallLength: "Length",
+    wallHorizontal: "Horizontal",
+    wallVertical: "Vertical",
+    wallOverlap: "A wall is already there",
+    wallNeedGold: "Not enough gold for this wall",
+    wallStartHint: "Click again to set wall length and direction",
+    commandHint: "Click the battlefield to command the current team",
+    focusHint: "Click an enemy to make the current team focus it",
     itemNames: {
       fireball: "Fireball",
       defense: "Defense Potion",
       power: "Power Potion",
       speed: "Speed Potion",
+      heal: "Healing Potion",
+      meteor: "Meteor",
+      wall: "Summon Wall",
+      lightning: "Chain Lightning",
     },
     form: {
       customName: "Name",
       customHp: "Health",
       customDamage: "Damage",
+      customKnockback: "Knockback",
       customAttackSpeed: "Attack Speed",
       customMoveSpeed: "Move Speed",
       customSize: "Size",
@@ -300,15 +385,20 @@ const translations = {
       customDodge: "Dodge Chance",
       customWeapon: "Weapon",
       customRanged: "Ranged Attack",
+      customAttackWalls: "Attack Walls",
       areaAttack: "Area Attack",
       customAreaAttack: "Use Area Attack",
       customAreaRange: "Area Radius",
       customAreaDamage: "Area Damage",
+      customBurstCooldown: "Burst Cooldown",
+      customBurstCount: "Burst Count",
       secondAttack: "Second Attack",
       customSecondWeapon: "Second Weapon",
       customSecondRange: "Second Range",
       customSecondRanged: "Second Attack Is Ranged",
       customSecondDamage: "Second Damage",
+      customSecondBurstCooldown: "Second Burst Cooldown",
+      customSecondBurstCount: "Second Burst Count",
       skills: "Special Skills",
       skillExplode: "Death Explosion",
       skillExplodeDamage: "Explosion Damage",
@@ -326,8 +416,15 @@ const translations = {
       skillDamageAuraRange: "Aura Radius",
       skillDamageAuraDamage: "Aura Damage Per Second",
       skillTornado: "Tornado",
+      skillTornadoDamage: "Tornado Damage",
+      skillTornadoDuration: "Tornado Duration",
+      skillTornadoRange: "Tornado Range",
       skillFireBreath: "Fire Breath",
+      skillFireParticleSize: "Fire Particle Size",
+      skillFireDuration: "Burn Duration",
+      skillFireRange: "Fire Range",
       skillFireball: "Fireball",
+      skillFireballDamage: "Fireball Damage",
       skillHolyShield: "Holy Shield",
       skillHolyShieldRange: "Holy Shield Range",
       skillHolyShieldReduction: "Holy Shield Damage Reduction %",
@@ -365,6 +462,7 @@ const translations = {
       wolf: ["War Wolf", "Pounce"],
       slimebeast: ["Slime Beast", "Poison"],
       dragonling: ["Dragonling", "Fire"],
+      adultdragon: ["Adult Dragon", "Fire Tyrant"],
       firebeast: ["Blast Beast", "Area"],
       paladin: ["Paladin", "Guard"],
       plaguewizard: ["Plague Wizard", "Poison Storm"],
@@ -415,6 +513,13 @@ function applyLanguage(lang) {
   }
   blueTeamBtn.textContent = text.blue;
   redTeamBtn.textContent = text.red;
+  wallToolBtn.textContent = text.mapWall;
+  thickWallToolBtn.textContent = text.mapThickWall;
+  arrowWallToolBtn.textContent = text.mapArrowWall;
+  commandToolBtn.textContent = text.mapCommand;
+  focusToolBtn.textContent = text.mapFocus;
+  eraseWallBtn.textContent = text.mapEraseWall;
+  clearWallsBtn.textContent = text.mapClearWalls;
   setText(".custom-builder summary", text.custom);
   createCustomBtn.textContent = text.create;
   setText(".inspector .panel-title h2", text.battle);
@@ -766,6 +871,42 @@ const unitTypes = [
     color: "#f47b55",
   },
   {
+    id: "adultdragon",
+    name: "Adult Dragon",
+    tag: "Fire Tyrant",
+    glyph: "D",
+    price: 980,
+    hp: 750,
+    damage: 58,
+    range: 290,
+    stopDistance: 210,
+    speed: 38,
+    radius: 38,
+    cooldown: 1.45,
+    projectileSpeed: 340,
+    splash: 105,
+    knockback: 12.5,
+    weapon: "cannon",
+    areaAttack: { range: 115, damage: 28 },
+    secondAttack: { weapon: "club", range: 82, damage: 74, ranged: false, projectileSpeed: 0, splash: 0, cooldown: 0.95 },
+    skills: {
+      fireBreath: true,
+      fireball: true,
+      meleeKnockbackWithFire: true,
+      damageAura: true,
+      damageAuraRange: 90,
+      damageAuraDamage: 15,
+      explode: true,
+      explodeDamage: 120,
+      explodeRange: 120,
+      burnImmune: true,
+      berserkHp: 400,
+      berserkDamage: 0.5,
+      berserkHeal: 80,
+    },
+    color: "#d94f36",
+  },
+  {
     id: "firebeast",
     name: "Blast Beast",
     tag: "Area",
@@ -973,6 +1114,9 @@ const state = {
   phase: "setup",
   selected: unitTypes[0].id,
   selectedItem: null,
+  mapTool: null,
+  wallStart: null,
+  pointer: null,
   placeTeam: "blue",
   sandbox: false,
   language: "en",
@@ -982,6 +1126,9 @@ const state = {
   particles: [],
   slimes: [],
   tornadoes: [],
+  walls: [],
+  commands: { blue: null, red: null },
+  focusTargets: { blue: null, red: null },
   nextId: 1,
   dragging: null,
   lastTime: performance.now(),
@@ -1035,9 +1182,13 @@ function blueArmyCost() {
     .reduce((sum, unit) => sum + typeById(unit.typeId).price, 0);
 }
 
+function wallTotalCost() {
+  return state.walls.reduce((sum, wall) => sum + wallCost(wall), 0);
+}
+
 function syncBudgetToEnemySize() {
   if (state.sandbox) return;
-  state.budget = Math.max(0, totalBudgetForEnemySize() - blueArmyCost());
+  state.budget = Math.max(0, totalBudgetForEnemySize() - blueArmyCost() - wallTotalCost());
 }
 
 function worldPoint(event) {
@@ -1052,10 +1203,242 @@ function setToast(message) {
   toast.textContent = message;
 }
 
+function wallCost(wall) {
+  const thickMultiplier = wall.type === "thick" ? 2.35 : wall.type === "arrow" ? 1.35 : 1;
+  return Math.ceil((40 + Math.max(wall.w, wall.h) * 0.4) * 2 * thickMultiplier);
+}
+
+function wallMaxHp(wall) {
+  const length = Math.max(wall.w, wall.h);
+  if (wall.type === "thick") return Math.ceil(260 + length * 3.2);
+  if (wall.type === "arrow") return Math.ceil(90 + length * 1.15);
+  return Math.ceil(120 + length * 1.55);
+}
+
+function addWall(start, end) {
+  if (state.phase !== "setup") {
+    setToast(state.language === "zh" ? "布阵阶段才能放墙" : "Walls can be placed during setup");
+    return;
+  }
+  const text = translations[state.language] || translations.en;
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const horizontal = Math.abs(dx) >= Math.abs(dy);
+  const length = Math.max(36, horizontal ? Math.abs(dx) : Math.abs(dy));
+  const thick = state.mapTool === "thickWall";
+  const arrow = state.mapTool === "arrowWall";
+  const thickness = thick ? 48 : arrow ? 22 : 28;
+  const wall = {
+    x: clamp(horizontal ? (start.x + end.x) / 2 : start.x, 30, canvas.width - 30),
+    y: clamp(horizontal ? start.y : (start.y + end.y) / 2, 30, canvas.height - 30),
+    w: horizontal ? length : thickness,
+    h: horizontal ? thickness : length,
+    type: thick ? "thick" : arrow ? "arrow" : "normal",
+  };
+  wall.maxHp = wallMaxHp(wall);
+  wall.hp = wall.maxHp;
+  const cost = wallCost(wall);
+  if (!state.sandbox && state.budget < cost) {
+    setToast(text.wallNeedGold);
+    return;
+  }
+  const overlaps = state.walls.some((other) => {
+    return Math.abs(wall.x - other.x) < (wall.w + other.w) / 2 + 6 && Math.abs(wall.y - other.y) < (wall.h + other.h) / 2 + 6;
+  });
+  if (overlaps) {
+    setToast(text.wallOverlap);
+    return;
+  }
+  state.walls.push(wall);
+  if (!state.sandbox) state.budget -= cost;
+  setToast(`${state.language === "zh" ? "已放置墙" : "Wall placed"} -${cost}`);
+}
+
+function eraseWall(point) {
+  const before = state.walls.length;
+  state.walls = state.walls.filter((wall) => {
+    return !(point.x >= wall.x - wall.w / 2 && point.x <= wall.x + wall.w / 2 && point.y >= wall.y - wall.h / 2 && point.y <= wall.y + wall.h / 2);
+  });
+  if (state.walls.length !== before) setToast(state.language === "zh" ? "墙已删除" : "Wall removed");
+}
+
+function damageWallsAt(x, y, radius, damage) {
+  for (const wall of state.walls) {
+    wall.maxHp ??= wallMaxHp(wall);
+    wall.hp ??= wall.maxHp;
+    const closestX = clamp(x, wall.x - wall.w / 2, wall.x + wall.w / 2);
+    const closestY = clamp(y, wall.y - wall.h / 2, wall.y + wall.h / 2);
+    const distance = Math.hypot(x - closestX, y - closestY);
+    if (distance > radius) continue;
+    wall.hp -= damage;
+    state.particles.push({ x: closestX, y: closestY, life: 0.45, startLife: 0.45, color: "#d8d0a8", size: 30 });
+  }
+  state.walls = state.walls.filter((wall) => (wall.hp ?? wallMaxHp(wall)) > 0);
+}
+
+function damageWall(wall, damage, x = wall.x, y = wall.y) {
+  wall.maxHp ??= wallMaxHp(wall);
+  wall.hp ??= wall.maxHp;
+  wall.hp -= damage;
+  state.particles.push({ x, y, life: 0.45, startLife: 0.45, color: "#d8d0a8", size: 26 });
+  state.walls = state.walls.filter((candidate) => (candidate.hp ?? wallMaxHp(candidate)) > 0);
+}
+
+function wallTargetNear(unit, target = null) {
+  if (unit.canAttackWalls === false) return null;
+  let best = null;
+  let bestDistance = Infinity;
+  for (const wall of state.walls) {
+    const closestX = clamp(unit.x, wall.x - wall.w / 2, wall.x + wall.w / 2);
+    const closestY = clamp(unit.y, wall.y - wall.h / 2, wall.y + wall.h / 2);
+    const distance = Math.hypot(unit.x - closestX, unit.y - closestY);
+    const lineBlocksThisUnit = !(wall.type === "arrow" && unit.projectileSpeed);
+    const blocked = target && lineBlocksThisUnit ? segmentHitsWall(unit.x, unit.y, target.x, target.y, wall, unit.radius + 12) : false;
+    if (!blocked && distance > unit.radius + 18) continue;
+    if (distance < bestDistance) {
+      best = { kind: "wall", wall, x: closestX, y: closestY, radius: 0, dead: false };
+      bestDistance = distance;
+    }
+  }
+  return best ? { target: best, distance: bestDistance } : null;
+}
+
+function pushOutOfWalls(unit) {
+  if (unit.dead) return;
+  for (const wall of state.walls) {
+    const closestX = clamp(unit.x, wall.x - wall.w / 2, wall.x + wall.w / 2);
+    const closestY = clamp(unit.y, wall.y - wall.h / 2, wall.y + wall.h / 2);
+    const dx = unit.x - closestX;
+    const dy = unit.y - closestY;
+    const distance = Math.max(0.01, Math.hypot(dx, dy));
+    if (distance >= unit.radius) continue;
+    const push = unit.radius - distance;
+    const nx = dx / distance;
+    const ny = dy / distance;
+    unit.x += nx * push;
+    unit.y += ny * push;
+    unit.vx += nx * 45;
+    unit.vy += ny * 45;
+  }
+}
+
+function projectileHitsWall(projectile) {
+  return state.walls.some((wall) => {
+    if (wall.type === "arrow") return false;
+    return projectile.x >= wall.x - wall.w / 2 && projectile.x <= wall.x + wall.w / 2 && projectile.y >= wall.y - wall.h / 2 && projectile.y <= wall.y + wall.h / 2;
+  });
+}
+
+function segmentHitsWall(x1, y1, x2, y2, wall, padding = 20) {
+  const minX = wall.x - wall.w / 2 - padding;
+  const maxX = wall.x + wall.w / 2 + padding;
+  const minY = wall.y - wall.h / 2 - padding;
+  const maxY = wall.y + wall.h / 2 + padding;
+  for (let i = 0; i <= 10; i += 1) {
+    const t = i / 10;
+    const x = x1 + (x2 - x1) * t;
+    const y = y1 + (y2 - y1) * t;
+    if (x >= minX && x <= maxX && y >= minY && y <= maxY) return true;
+  }
+  return false;
+}
+
+function wallAvoidancePoint(unit, target) {
+  const lookX = unit.x + (target.x - unit.x) * 0.42;
+  const lookY = unit.y + (target.y - unit.y) * 0.42;
+  let blocker = null;
+  for (const wall of state.walls) {
+    if (segmentHitsWall(unit.x, unit.y, lookX, lookY, wall, unit.radius + 10)) {
+      blocker = wall;
+      break;
+    }
+  }
+  if (!blocker) return target;
+  const margin = unit.radius + 32;
+  const candidates =
+    blocker.w >= blocker.h
+      ? [
+          { x: blocker.x, y: blocker.y - blocker.h / 2 - margin },
+          { x: blocker.x, y: blocker.y + blocker.h / 2 + margin },
+        ]
+      : [
+          { x: blocker.x - blocker.w / 2 - margin, y: blocker.y },
+          { x: blocker.x + blocker.w / 2 + margin, y: blocker.y },
+        ];
+  let best = candidates[0];
+  let bestScore = Infinity;
+  for (const candidate of candidates) {
+    const x = clamp(candidate.x, unit.radius, canvas.width - unit.radius);
+    const y = clamp(candidate.y, unit.radius, canvas.height - unit.radius);
+    const score = Math.hypot(unit.x - x, unit.y - y) + Math.hypot(target.x - x, target.y - y);
+    if (score < bestScore) {
+      best = { x, y };
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+function isWallBuildTool(tool = state.mapTool) {
+  return tool === "wall" || tool === "thickWall" || tool === "arrowWall";
+}
+
+function issueCommand(point) {
+  const team = state.placeTeam;
+  state.commands[team] = { x: point.x, y: point.y, timer: 5.5 };
+  const label = team === "blue" ? "Blue" : "Red";
+  setToast(state.language === "zh" ? `${team === "blue" ? "蓝队" : "红队"}前往目标点` : `${label} team moving`);
+}
+
+function updateCommands(dt) {
+  for (const team of ["blue", "red"]) {
+    const command = state.commands[team];
+    if (!command) continue;
+    command.timer -= dt;
+    if (command.timer <= 0) state.commands[team] = null;
+  }
+}
+
+function issueFocus(point) {
+  const team = state.placeTeam;
+  const enemyTeam = team === "blue" ? "red" : "blue";
+  const target = nearestUnit(point, enemyTeam);
+  if (!target) {
+    setToast(state.language === "zh" ? "没有点中敌人" : "No enemy target selected");
+    return;
+  }
+  state.focusTargets[team] = { id: target.id, timer: 12 };
+  setToast(state.language === "zh" ? `${team === "blue" ? "蓝队" : "红队"}集火 ${target.name}` : `${team === "blue" ? "Blue" : "Red"} focusing ${target.name}`);
+}
+
+function updateFocusTargets(dt) {
+  for (const team of ["blue", "red"]) {
+    const focus = state.focusTargets[team];
+    if (!focus) continue;
+    focus.timer -= dt;
+    const target = state.units.find((unit) => unit.id === focus.id && !unit.dead);
+    if (!target || target.team === team || focus.timer <= 0) state.focusTargets[team] = null;
+  }
+}
+
+function selectItem(itemId) {
+  const text = translations[state.language] || translations.en;
+  state.selectedItem = state.selectedItem === itemId ? null : itemId;
+  updateUi();
+  if (state.selectedItem) {
+    const name = text.itemNames[state.selectedItem] || state.selectedItem;
+    const hint = state.phase === "battle" ? text.itemUseHint : text.itemNeedBattle;
+    setToast(`${name}: ${hint}`);
+  } else {
+    setToast(state.language === "zh" ? "已取消道具" : "Item canceled");
+  }
+}
+
 function createCustomUnitType() {
   const profile = weaponProfiles[customWeapon.value] || weaponProfiles.club;
   const hp = clamp(Number(customHp.value) || 120, 20, CUSTOM_LIMIT);
   const damage = clamp(Number(customDamage.value) || 22, 1, CUSTOM_LIMIT);
+  const knockback = clamp(Number(customKnockback.value) || 2.3, 0, CUSTOM_LIMIT);
   const attackSpeed = clamp(Number(customAttackSpeed.value) || 1.2, 0.2, CUSTOM_LIMIT);
   const speed = clamp(Number(customMoveSpeed.value) || 48, 8, CUSTOM_LIMIT);
   const areaAttack =
@@ -1069,6 +1452,8 @@ function createCustomUnitType() {
   const customAttackRange = clamp(Number(customRange.value) || profile.range, 8, CUSTOM_LIMIT);
   const stopDistance = clamp(Number(customStopDistance.value) || customAttackRange, 0, CUSTOM_LIMIT);
   const dodgeChance = clamp(Number(customDodge.value) || 0, 0, CUSTOM_LIMIT) / 100;
+  const burstCount = Math.max(1, Math.floor(clamp(Number(customBurstCount.value) || 1, 1, CUSTOM_LIMIT)));
+  const burstCooldown = clamp(Number(customBurstCooldown.value) || 0, 0, CUSTOM_LIMIT);
   const skills = {
     explode: skillExplode.checked,
     explodeDamage: clamp(Number(skillExplodeDamage.value) || 120, 10, CUSTOM_LIMIT),
@@ -1086,8 +1471,15 @@ function createCustomUnitType() {
     damageAuraRange: clamp(Number(skillDamageAuraRange.value) || 120, 0, CUSTOM_LIMIT),
     damageAuraDamage: clamp(Number(skillDamageAuraDamage.value) || 10, 0, CUSTOM_LIMIT),
     tornado: skillTornado.checked,
+    tornadoDamage: clamp(Number(skillTornadoDamage.value) || 6, 0, CUSTOM_LIMIT),
+    tornadoDuration: clamp(Number(skillTornadoDuration.value) || 4.2, 0, CUSTOM_LIMIT),
+    tornadoRange: clamp(Number(skillTornadoRange.value) || 82, 0, CUSTOM_LIMIT),
     fireBreath: skillFireBreath.checked,
+    fireParticleSize: clamp(Number(skillFireParticleSize.value) || 1, 0, CUSTOM_LIMIT),
+    fireDuration: clamp(Number(skillFireDuration.value) || 5, 0, CUSTOM_LIMIT),
+    fireRange: clamp(Number(skillFireRange.value) || 95, 0, CUSTOM_LIMIT),
     fireball: skillFireball.checked,
+    fireballDamage: clamp(Number(skillFireballDamage.value) || 52, 0, CUSTOM_LIMIT),
     holyShield: skillHolyShield.checked,
     holyShieldRange: clamp(Number(skillHolyShieldRange.value) || 160, 0, CUSTOM_LIMIT),
     holyShieldReduction: clamp(Number(skillHolyShieldReduction.value) || 45, 0, CUSTOM_LIMIT) / 100,
@@ -1098,10 +1490,13 @@ function createCustomUnitType() {
     berserkHeal: clamp(Number(skillBerserkHeal.value) || 0, 0, CUSTOM_LIMIT),
   };
   const ranged = customRanged.checked;
+  const canAttackWalls = customAttackWalls.checked;
   const secondProfile = weaponProfiles[customSecondWeapon.value] || null;
   const secondRange = clamp(Number(customSecondRange.value) || 0, 0, CUSTOM_LIMIT);
   const secondDamage = clamp(Number(customSecondDamage.value) || 0, 0, CUSTOM_LIMIT);
   const secondRanged = customSecondRanged.checked;
+  const secondBurstCount = Math.max(1, Math.floor(clamp(Number(customSecondBurstCount.value) || 1, 1, CUSTOM_LIMIT)));
+  const secondBurstCooldown = clamp(Number(customSecondBurstCooldown.value) || 0, 0, CUSTOM_LIMIT);
   const secondAttack =
     customSecondWeapon.value !== "none" && secondRange > 0 && secondDamage > 0
       ? {
@@ -1112,6 +1507,8 @@ function createCustomUnitType() {
           projectileSpeed: secondRanged ? secondProfile.projectileSpeed || 390 : 0,
           splash: secondRanged && customSecondWeapon.value === "cannon" ? secondProfile.splash : 0,
           cooldown: Math.max(0.25, 1 / attackSpeed),
+          burstCount: secondBurstCount,
+          burstCooldown: secondBurstCooldown,
         }
       : null;
   const cleanName = customName.value.trim() || `鑷畾涔?{customUnitCounter}`;
@@ -1121,27 +1518,29 @@ function createCustomUnitType() {
   const splash = ranged && customWeapon.value === "cannon" ? profile.splash : 0;
   const range = customAttackRange;
   const price = Math.round(
-    hp * 0.7 +
+      hp * 0.7 +
       damage * 7 +
+      knockback * 18 +
       attackSpeed * 34 +
       speed * 1.4 +
       size * 3 +
       range * 0.45 +
       dodgeChance * 260 +
+      (burstCount > 1 ? burstCount * 55 + burstCooldown * 18 : 0) +
       (areaAttack ? areaAttack.range * 0.35 + areaAttack.damage * 4.5 : 0) +
       (skills.explode ? skills.explodeDamage * 0.7 + skills.explodeRange * 0.55 : 0) +
       (skills.poisonSlime ? 120 + skills.slimeChance * 120 : 0) +
       (skills.summonOnKill ? 130 + skills.summonChance * 100 : 0) +
       (skills.damageOnKill ? 120 + skills.damageGain * 8 : 0) +
       (skills.damageAura ? 160 + skills.damageAuraRange * 0.35 + skills.damageAuraDamage * 8 : 0) +
-      (skills.tornado ? 260 : 0) +
-      (skills.fireBreath ? 150 : 0) +
-      (skills.fireball ? 230 : 0) +
+      (skills.tornado ? 180 + skills.tornadoRange * 0.45 + skills.tornadoDamage * 12 + skills.tornadoDuration * 25 : 0) +
+      (skills.fireBreath ? 120 + skills.fireRange * 0.35 + skills.fireDuration * 18 + skills.fireParticleSize * 30 : 0) +
+      (skills.fireball ? 130 + skills.fireballDamage * 3 : 0) +
       (skills.holyShield ? 140 + skills.holyShieldRange * 0.45 + skills.holyShieldReduction * 320 : 0) +
       (skills.freezeAttack ? 140 : 0) +
       skills.blockRangedChance * 220 +
       (skills.berserkHp > 0 ? skills.berserkDamage * 180 + skills.berserkHeal * 0.8 : 0) +
-      (secondAttack ? secondAttack.damage * 5 + secondAttack.range * 0.22 + (secondAttack.ranged ? 80 : 0) : 0) +
+      (secondAttack ? secondAttack.damage * 5 + secondAttack.range * 0.22 + (secondAttack.ranged ? 80 : 0) + (secondBurstCount > 1 ? secondBurstCount * 45 + secondBurstCooldown * 16 : 0) : 0) +
       (ranged ? 95 : 0) +
       splash * 1.5,
   );
@@ -1158,13 +1557,16 @@ function createCustomUnitType() {
     speed,
     radius: size,
     cooldown: 1 / attackSpeed,
+    burstCount,
+    burstCooldown,
     projectileSpeed,
     splash,
     areaAttack,
-    knockback: profile.knockback,
+    knockback,
     dodgeChance,
     weapon: customWeapon.value,
     isRangedCustom: ranged,
+    canAttackWalls,
     secondAttack,
     skills,
     color: palette[(customUnitCounter - 2) % palette.length],
@@ -1196,6 +1598,8 @@ function addUnit(typeId, team, x, y) {
     maxHp: type.hp,
     damage: type.damage,
     range: type.range,
+    burstCount: type.burstCount || 1,
+    burstCooldown: type.burstCooldown || 0,
     stopDistance: type.stopDistance ?? type.range,
     speed: type.speed,
     radius: type.radius,
@@ -1204,6 +1608,7 @@ function addUnit(typeId, team, x, y) {
     splash: type.splash || 0,
     knockback: type.knockback || 2.3,
     dodgeChance: type.dodgeChance || 0,
+    canAttackWalls: type.canAttackWalls !== false,
     skills: type.skills || {},
     poisonTimer: 0,
     poisonTick: 0,
@@ -1288,6 +1693,11 @@ function poisonUnit(unit, seconds = 5) {
 
 function burnUnit(unit, seconds = 5) {
   if (unit.dead) return;
+  if (unit.skills?.burnImmune) {
+    unit.burnTimer = 0;
+    unit.burnTick = 0;
+    return;
+  }
   unit.burnTimer = Math.max(unit.burnTimer || 0, seconds);
   unit.burnTick = Math.min(unit.burnTick || 1, 1);
 }
@@ -1298,7 +1708,7 @@ function freezeUnit(unit, seconds = 2.4) {
 }
 
 function itemTeam() {
-  return state.sandbox ? state.placeTeam : "blue";
+  return state.selectedItem ? state.placeTeam : state.sandbox ? state.placeTeam : "blue";
 }
 
 function canPayForItem(item) {
@@ -1326,6 +1736,7 @@ function itemCastOrigin(team) {
 }
 
 function explodeItemFireball(projectile) {
+  damageWallsAt(projectile.x, projectile.y, projectile.splash, 25);
   for (const unit of state.units) {
     if (unit.dead || unit.team === projectile.team) continue;
     const distance = Math.hypot(unit.x - projectile.x, unit.y - projectile.y);
@@ -1356,6 +1767,110 @@ function explodeItemFireball(projectile) {
     });
   }
   addRingParticle(projectile.x, projectile.y, "#ff7838", projectile.splash);
+}
+
+function healItemAt(point, team, item) {
+  let affected = 0;
+  for (const unit of state.units) {
+    if (unit.dead || unit.team !== team) continue;
+    const distance = Math.hypot(unit.x - point.x, unit.y - point.y);
+    if (distance > ITEM_RADIUS + unit.radius) continue;
+    unit.hp = Math.min(unit.maxHp, unit.hp + item.heal);
+    affected += 1;
+    state.particles.push({ x: unit.x, y: unit.y, life: 0.55, startLife: 0.55, color: item.color, size: unit.radius * 2.6 });
+  }
+  addRingParticle(point.x, point.y, item.color, ITEM_RADIUS);
+  return affected;
+}
+
+function meteorItemAt(point, team, item) {
+  for (let i = 0; i < 34; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const distance = Math.random() * item.radius;
+    state.particles.push({
+      x: point.x + Math.cos(angle) * distance,
+      y: point.y - 180 - Math.random() * 120,
+      vx: Math.cos(angle) * 25,
+      vy: 260 + Math.random() * 160,
+      life: 0.55 + Math.random() * 0.35,
+      startLife: 0.9,
+      color: Math.random() < 0.5 ? "#ff5d2e" : "#ffd15a",
+      size: 20 + Math.random() * 28,
+    });
+  }
+  for (const unit of state.units) {
+    if (unit.dead || unit.team === team) continue;
+    const distance = Math.hypot(unit.x - point.x, unit.y - point.y);
+    if (distance > item.radius + unit.radius) continue;
+    const falloff = Math.max(0.45, 1 - distance / item.radius);
+    hurt(unit, item.damage * falloff, { x: point.x, y: point.y, knockback: 5.2, ignoreDodge: true, applyBurn: true });
+    burnUnit(unit, 5);
+  }
+  damageWallsAt(point.x, point.y, item.radius, item.damage * 0.75);
+  addRingParticle(point.x, point.y, item.color, item.radius);
+}
+
+function wallItemAt(point, team) {
+  const count = 5;
+  const spacing = 34;
+  for (let i = 0; i < count; i += 1) {
+    const offset = (i - (count - 1) / 2) * spacing;
+    const unit = addUnit("shield", team, clamp(point.x, 30, canvas.width - 30), clamp(point.y + offset, 30, canvas.height - 30));
+    unit.maxHp *= 1.25;
+    unit.hp = unit.maxHp;
+    unit.speed *= 0.55;
+    unit.damage *= 0.65;
+    unit.name = "Wall Guard";
+    state.particles.push({ x: unit.x, y: unit.y, life: 0.6, startLife: 0.6, color: "#9bdcff", size: 36 });
+  }
+  addRingParticle(point.x, point.y, "#9bdcff", 95);
+}
+
+function wallLightningCandidates(from, hitWalls, chainRange = Infinity) {
+  return state.walls
+    .filter((wall) => !hitWalls.includes(wall))
+    .map((wall) => {
+      const x = clamp(from.x, wall.x - wall.w / 2, wall.x + wall.w / 2);
+      const y = clamp(from.y, wall.y - wall.h / 2, wall.y + wall.h / 2);
+      return { kind: "wall", wall, x, y, distance: Math.hypot(x - from.x, y - from.y) };
+    })
+    .filter((target) => target.distance <= chainRange);
+}
+
+function lightningItemAt(point, team, item) {
+  const hit = [];
+  const hitWalls = [];
+  let from = { x: point.x, y: point.y };
+  let candidates = [
+    ...state.units
+      .filter((unit) => !unit.dead && unit.team !== team)
+      .map((unit) => ({ kind: "unit", unit, x: unit.x, y: unit.y, distance: Math.hypot(unit.x - from.x, unit.y - from.y) })),
+    ...wallLightningCandidates(from, hitWalls),
+  ];
+  let current = candidates.sort((a, b) => a.distance - b.distance)[0];
+  for (let i = 0; i < item.chains && current; i += 1) {
+    hit.push(current);
+    const damage = item.damage * Math.max(0.45, 1 - i * 0.12);
+    if (current.kind === "wall") {
+      hitWalls.push(current.wall);
+      damageWall(current.wall, damage, current.x, current.y);
+    } else {
+      hurt(current.unit, damage, { x: from.x, y: from.y, knockback: 1.7, ignoreDodge: true, isRanged: true });
+    }
+    state.particles.push({ x: current.x, y: current.y, life: 0.55, startLife: 0.55, color: item.color, size: 44 });
+    state.particles.push({ x: from.x, y: from.y, x2: current.x, y2: current.y, life: 0.24, startLife: 0.24, color: item.color, line: true });
+    from = { x: current.x, y: current.y };
+    candidates = [
+      ...state.units
+        .filter((unit) => !unit.dead && unit.team !== team && !hit.some((target) => target.unit === unit))
+        .map((unit) => ({ kind: "unit", unit, x: unit.x, y: unit.y, distance: Math.hypot(unit.x - from.x, unit.y - from.y) }))
+        .filter((target) => target.distance <= 170),
+      ...wallLightningCandidates(from, hitWalls, 170),
+    ];
+    current = candidates.sort((a, b) => a.distance - b.distance)[0];
+  }
+  addRingParticle(point.x, point.y, item.color, 80);
+  return hit.length;
 }
 
 function castItemAt(itemId, point) {
@@ -1400,6 +1915,18 @@ function castItemAt(itemId, point) {
         size: 14 + Math.random() * 16,
       });
     }
+  } else if (itemId === "heal") {
+    const affected = healItemAt(point, team, item);
+    setToast(affected ? `${text.itemHit}: ${affected}` : state.language === "zh" ? "没有喷中友军" : "No friendly units hit");
+  } else if (itemId === "meteor") {
+    meteorItemAt(point, team, item);
+    setToast(text.itemCast);
+  } else if (itemId === "wall") {
+    wallItemAt(point, team);
+    setToast(text.itemCast);
+  } else if (itemId === "lightning") {
+    const affected = lightningItemAt(point, team, item);
+    setToast(affected ? `${text.itemCast}: ${affected}` : state.language === "zh" ? "没有击中敌人" : "No enemies hit");
   } else {
     let affected = 0;
     for (const unit of state.units) {
@@ -1437,16 +1964,21 @@ function castItemAt(itemId, point) {
 
 function spawnFireBreathParticles(from, to, count = 14) {
   const angle = Math.atan2(to.y - from.y, to.x - from.x);
-  const distance = Math.min(95, Math.hypot(to.x - from.x, to.y - from.y));
-  for (let i = 0; i < count; i += 1) {
-    const t = (i + Math.random() * 0.7) / count;
-    const spread = (Math.random() - 0.5) * 0.65;
-    const speed = 90 + Math.random() * 150;
-    const size = 12 + Math.random() * 18;
-    const life = 0.26 + Math.random() * 0.28;
+  const baseScale = from.typeId === "adultdragon" ? 2.15 : Math.max(1, from.radius / 22);
+  const particleScale = Math.max(0.2, from.skills?.fireParticleSize || 1);
+  const scale = baseScale * particleScale;
+  const flameCount = Math.ceil(count * scale);
+  const fireRange = Math.max(8, from.skills?.fireRange || 95);
+  const distance = Math.min(fireRange * baseScale, Math.hypot(to.x - from.x, to.y - from.y));
+  for (let i = 0; i < flameCount; i += 1) {
+    const t = (i + Math.random() * 0.7) / flameCount;
+    const spread = (Math.random() - 0.5) * (0.65 + scale * 0.12);
+    const speed = 90 + Math.random() * 150 * scale;
+    const size = (12 + Math.random() * 18) * scale;
+    const life = 0.26 + Math.random() * 0.28 + (scale - 1) * 0.08;
     state.particles.push({
-      x: from.x + Math.cos(angle) * distance * t + (Math.random() - 0.5) * 10,
-      y: from.y + Math.sin(angle) * distance * t + (Math.random() - 0.5) * 10,
+      x: from.x + Math.cos(angle) * distance * t + (Math.random() - 0.5) * 10 * scale,
+      y: from.y + Math.sin(angle) * distance * t + (Math.random() - 0.5) * 10 * scale,
       vx: Math.cos(angle + spread) * speed,
       vy: Math.sin(angle + spread) * speed,
       life,
@@ -1465,12 +1997,13 @@ function castFireball(unit, target) {
     tx: target.id,
     team: unit.team,
     ownerId: unit.id,
-    damage: damageFor(unit, 52),
+    damage: damageFor(unit, unit.skills.fireballDamage || 52),
     speed: 360,
     splash: 92,
     radius: 11,
     isRanged: true,
     applyBurn: true,
+    fireDuration: unit.skills.fireDuration || 5,
     fireball: true,
     life: 2.2,
   });
@@ -1501,9 +2034,10 @@ function spawnTornado(unit, target) {
     team: unit.team,
     vx: (target.x - unit.x) * 0.32,
     vy: (target.y - unit.y) * 0.32,
-    radius: 82,
+    radius: unit.skills.tornadoRange || 82,
+    damage: unit.skills.tornadoDamage || 6,
     spin: Math.random() < 0.5 ? -1 : 1,
-    life: 4.2,
+    life: unit.skills.tornadoDuration || 4.2,
     poison: Boolean(unit.skills.poisonSlime),
   });
 }
@@ -1603,6 +2137,7 @@ function spawnEnemyArmy() {
     "wolf",
     "slimebeast",
     "dragonling",
+    "adultdragon",
     "firebeast",
     "paladin",
     "plaguewizard",
@@ -1632,7 +2167,13 @@ function resetGame(keepEnemies = false) {
   state.particles = [];
   state.slimes = [];
   state.tornadoes = [];
+  state.walls = [];
+  state.commands = { blue: null, red: null };
+  state.focusTargets = { blue: null, red: null };
   state.dragging = null;
+  state.wallStart = null;
+  state.pointer = null;
+  state.mapTool = null;
   state.selectedItem = null;
   state.winnerShown = false;
   if (!keepEnemies) spawnEnemyArmy();
@@ -1664,6 +2205,7 @@ function randomFormation() {
     "wolf",
     "slimebeast",
     "dragonling",
+    "adultdragon",
     "firebeast",
     "paladin",
     "plaguewizard",
@@ -1706,6 +2248,8 @@ function startBattle() {
   if (!state.units.some((unit) => unit.team === "red")) {
     spawnEnemyArmy();
   }
+  state.commands = { blue: null, red: null };
+  state.focusTargets = { blue: null, red: null };
   state.winnerShown = false;
   setPhase("battle");
   setToast("Battle started");
@@ -1722,6 +2266,16 @@ function pauseBattle() {
 }
 
 function findTarget(unit) {
+  const focus = state.focusTargets[unit.team];
+  if (focus) {
+    const focused = state.units.find((other) => other.id === focus.id && !other.dead && other.team !== unit.team);
+    if (focused) {
+      const distance = Math.hypot(focused.x - unit.x, focused.y - unit.y);
+      const wallInfo = wallTargetNear(unit, focused);
+      if (wallInfo) return wallInfo;
+      return { target: focused, distance };
+    }
+  }
   let best = null;
   let bestDistance = Infinity;
   for (const other of state.units) {
@@ -1732,7 +2286,12 @@ function findTarget(unit) {
       bestDistance = distance;
     }
   }
-  return best ? { target: best, distance: bestDistance } : null;
+  if (best) {
+    const wallInfo = wallTargetNear(unit, best);
+    if (wallInfo) return wallInfo;
+    return { target: best, distance: bestDistance };
+  }
+  return wallTargetNear(unit);
 }
 
 function damageFor(unit, amount) {
@@ -1758,6 +2317,7 @@ function applyAreaAttack(attacker, x, y, area = attacker.areaAttack, isRanged = 
       knockback: 2.2,
       isRanged,
       applyBurn: attacker.skills.fireBreath,
+      fireDuration: attacker.skills.fireDuration || 5,
       applyFreeze: attacker.skills.freezeAttack,
       noKnockback: attacker.skills.fireBreath,
       owner: attacker,
@@ -1848,7 +2408,7 @@ function hurt(target, amount, source) {
     amount *= 0.45;
     state.particles.push({ x: target.x, y: target.y, life: 0.38, color: "#ffeaa0", size: target.radius * 2.1 });
   }
-  if (source.applyBurn) burnUnit(target, 5);
+  if (source.applyBurn) burnUnit(target, source.fireDuration || 5);
   if (source.applyFreeze) freezeUnit(target, 2.4);
   target.hp -= amount;
   updateBerserk(target);
@@ -1874,8 +2434,42 @@ function attack(unit, target, mode = null) {
     projectileSpeed: unit.projectileSpeed,
     splash: unit.splash,
     cooldown: unit.cooldownTime,
+    burstCount: unit.burstCount || 1,
+    burstCooldown: unit.burstCooldown || 0,
   };
-  unit.cooldown = active.cooldown || unit.cooldownTime;
+  const burstCount = Math.max(1, Math.floor(active.burstCount || 1));
+  unit.cooldown = burstCount > 1 && active.burstCooldown > 0 ? active.burstCooldown : active.cooldown || unit.cooldownTime;
+  if (target.kind === "wall") {
+    if (unit.canAttackWalls === false) return;
+    if (active.ranged && active.projectileSpeed) {
+      for (let i = 0; i < burstCount; i += 1) {
+        state.projectiles.push({
+          x: unit.x + (Math.random() - 0.5) * unit.radius * 0.35,
+          y: unit.y + (Math.random() - 0.5) * unit.radius * 0.35,
+          targetWall: target.wall,
+          targetX: target.x,
+          targetY: target.y,
+          team: unit.team,
+          ownerId: unit.id,
+          damage: damageFor(unit, active.damage),
+          speed: active.projectileSpeed,
+          splash: active.splash || 0,
+          radius: active.weapon === "cannon" ? 7 : 4,
+          isRanged: true,
+          life: active.weapon === "musket" ? 0.85 : 1.6,
+        });
+      }
+      return;
+    }
+    for (let i = 0; i < burstCount; i += 1) {
+      damageWall(target.wall, damageFor(unit, active.damage * (0.85 + Math.random() * 0.3)), target.x, target.y);
+    }
+    applyAreaAttack(unit, target.x, target.y);
+    const angle = Math.atan2(target.y - unit.y, target.x - unit.x);
+    unit.vx -= Math.cos(angle) * 20;
+    unit.vy -= Math.sin(angle) * 20;
+    return;
+  }
   if (unit.skills.poisonSlime && unit.slimeCooldown <= 0 && Math.random() < unit.skills.slimeChance) {
     spawnSlime(target.x, target.y, unit.team);
     unit.slimeCooldown = 1.2;
@@ -1884,32 +2478,39 @@ function attack(unit, target, mode = null) {
     spawnFireBreathParticles(unit, target, active.ranged ? 18 : 12);
   }
   if (active.ranged && active.projectileSpeed) {
-    state.projectiles.push({
-      x: unit.x,
-      y: unit.y,
-      tx: target.id,
-      team: unit.team,
-      ownerId: unit.id,
-      damage: damageFor(unit, active.damage),
-      speed: active.projectileSpeed,
-      splash: active.splash || 0,
-      radius: active.weapon === "cannon" ? 7 : 4,
-      isRanged: true,
-      areaAttack: unit.areaAttack,
-      applyBurn: unit.skills.fireBreath,
-      applyFreeze: unit.skills.freezeAttack,
-      life: active.weapon === "musket" ? 0.85 : 1.6,
-    });
+    for (let i = 0; i < burstCount; i += 1) {
+      state.projectiles.push({
+        x: unit.x + (Math.random() - 0.5) * unit.radius * 0.35,
+        y: unit.y + (Math.random() - 0.5) * unit.radius * 0.35,
+        tx: target.id,
+        team: unit.team,
+        ownerId: unit.id,
+        damage: damageFor(unit, active.damage),
+        speed: active.projectileSpeed,
+        splash: active.splash || 0,
+        radius: active.weapon === "cannon" ? 7 : 4,
+        isRanged: true,
+        areaAttack: unit.areaAttack,
+        applyBurn: unit.skills.fireBreath,
+        fireDuration: unit.skills.fireDuration || 5,
+        applyFreeze: unit.skills.freezeAttack,
+        life: active.weapon === "musket" ? 0.85 : 1.6,
+      });
+    }
     return;
   }
-  hurt(target, damageFor(unit, active.damage * (0.85 + Math.random() * 0.3)), {
-    ...unit,
-    applyBurn: unit.skills.fireBreath,
-    applyFreeze: unit.skills.freezeAttack,
-    noKnockback: unit.skills.fireBreath,
-  });
+  for (let i = 0; i < burstCount; i += 1) {
+    hurt(target, damageFor(unit, active.damage * (0.85 + Math.random() * 0.3)), {
+      ...unit,
+      applyBurn: unit.skills.fireBreath,
+      fireDuration: unit.skills.fireDuration || 5,
+      applyFreeze: unit.skills.freezeAttack,
+      noKnockback: unit.skills.fireBreath && !unit.skills.meleeKnockbackWithFire,
+    });
+  }
   applyAreaAttack(unit, target.x, target.y);
-  const angle = Math.atan2(target.y - unit.y, target.x - unit.x);
+  const moveTarget = wallAvoidancePoint(unit, target);
+  const angle = Math.atan2(moveTarget.y - unit.y, moveTarget.x - unit.x);
   unit.vx -= Math.cos(angle) * 28;
   unit.vy -= Math.sin(angle) * 28;
 }
@@ -1963,13 +2564,34 @@ function updateUnit(unit, dt) {
     unit.vy = 0;
     return;
   }
+  const command = state.commands[unit.team];
+  if (command) {
+    const goal = wallAvoidancePoint(unit, command);
+    const commandDistance = Math.hypot(goal.x - unit.x, goal.y - unit.y);
+    const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1);
+    if (commandDistance > unit.radius + 18) {
+      const angle = Math.atan2(goal.y - unit.y, goal.x - unit.x);
+      unit.vx += Math.cos(angle) * unit.speed * speedFactor * dt * 3.2;
+      unit.vy += Math.sin(angle) * unit.speed * speedFactor * dt * 3.2;
+      unit.vx += Math.cos(unit.wobble) * 6 * dt;
+      unit.vy += Math.sin(unit.wobble * 1.7) * 5 * dt;
+      unit.vx *= 0.91;
+      unit.vy *= 0.91;
+      unit.x += unit.vx * dt;
+      unit.y += unit.vy * dt;
+      pushOutOfWalls(unit);
+      unit.x = Math.max(unit.radius, Math.min(canvas.width - unit.radius, unit.x));
+      unit.y = Math.max(unit.radius, Math.min(canvas.height - unit.radius, unit.y));
+      return;
+    }
+  }
   const info = findTarget(unit);
   if (!info) return;
   const { target, distance } = info;
   if (unit.skills.stasisGaze && unit.stasisCooldown <= 0) {
     triggerStasisGaze(unit);
   }
-  if (unit.skills.fireball && unit.fireballCooldown <= 0 && distance <= 320) {
+  if (target.kind !== "wall" && unit.skills.fireball && unit.fireballCooldown <= 0 && distance <= 320) {
     castFireball(unit, target);
   }
   if (unit.skills.tornado && unit.tornadoCooldown <= 0) {
@@ -1994,7 +2616,9 @@ function updateUnit(unit, dt) {
     unit.vy += Math.sin(angle) * unit.speed * speedFactor * dt * 2.8;
   }
   if (unit.cooldown <= 0) {
-    if (canPrimaryAttack) {
+    if (canSecondAttack && second && !second.ranged) {
+      attack(unit, target, second);
+    } else if (canPrimaryAttack) {
       attack(unit, target);
     } else if (canSecondAttack) {
       attack(unit, target, second);
@@ -2006,6 +2630,7 @@ function updateUnit(unit, dt) {
   unit.vy *= 0.91;
   unit.x += unit.vx * dt;
   unit.y += unit.vy * dt;
+  pushOutOfWalls(unit);
   unit.x = Math.max(unit.radius, Math.min(canvas.width - unit.radius, unit.x));
   unit.y = Math.max(unit.radius, Math.min(canvas.height - unit.radius, unit.y));
 }
@@ -2061,6 +2686,22 @@ function updateProjectiles(dt) {
       }
       continue;
     }
+    if (projectile.targetWall) {
+      projectile.life -= dt;
+      if (!state.walls.includes(projectile.targetWall)) {
+        projectile.life = 0;
+        continue;
+      }
+      const angle = Math.atan2(projectile.targetY - projectile.y, projectile.targetX - projectile.x);
+      projectile.x += Math.cos(angle) * projectile.speed * dt;
+      projectile.y += Math.sin(angle) * projectile.speed * dt;
+      if (Math.hypot(projectile.targetX - projectile.x, projectile.targetY - projectile.y) < 12 || projectileHitsWall(projectile)) {
+        damageWall(projectile.targetWall, projectile.damage, projectile.x, projectile.y);
+        if (projectile.splash) damageWallsAt(projectile.x, projectile.y, projectile.splash, projectile.damage * 0.45);
+        projectile.life = 0;
+      }
+      continue;
+    }
     const target = state.units.find((unit) => unit.id === projectile.tx && !unit.dead);
     projectile.life -= dt;
     if (!target) {
@@ -2070,6 +2711,11 @@ function updateProjectiles(dt) {
     const angle = Math.atan2(target.y - projectile.y, target.x - projectile.x);
     projectile.x += Math.cos(angle) * projectile.speed * dt;
     projectile.y += Math.sin(angle) * projectile.speed * dt;
+    if (projectileHitsWall(projectile)) {
+      state.particles.push({ x: projectile.x, y: projectile.y, life: 0.45, startLife: 0.45, color: "#d8d0a8", size: 24 });
+      projectile.life = 0;
+      continue;
+    }
     if (projectile.applyBurn || projectile.fireball) {
       state.particles.push({
         x: projectile.x + (Math.random() - 0.5) * 8,
@@ -2096,6 +2742,7 @@ function updateProjectiles(dt) {
               knockback: 3.8,
               isRanged: true,
               applyBurn: projectile.applyBurn,
+              fireDuration: projectile.fireDuration || 5,
               applyFreeze: projectile.applyFreeze,
               noKnockback: projectile.applyBurn,
               owner,
@@ -2115,6 +2762,7 @@ function updateProjectiles(dt) {
           y: projectile.y - Math.sin(angle),
           isRanged: true,
           applyBurn: projectile.applyBurn,
+          fireDuration: projectile.fireDuration || 5,
           applyFreeze: projectile.applyFreeze,
           noKnockback: projectile.applyBurn,
           owner,
@@ -2160,6 +2808,14 @@ function updateTornadoes(dt) {
     tornado.y += tornado.vy * dt;
     tornado.vx *= 0.992;
     tornado.vy *= 0.992;
+    for (const wall of state.walls) {
+      const closestX = clamp(tornado.x, wall.x - wall.w / 2, wall.x + wall.w / 2);
+      const closestY = clamp(tornado.y, wall.y - wall.h / 2, wall.y + wall.h / 2);
+      const distance = Math.hypot(tornado.x - closestX, tornado.y - closestY);
+      if (distance > tornado.radius) continue;
+      const effect = Math.max(0.25, 1 - distance / tornado.radius);
+      damageWall(wall, 18 * effect * dt, closestX, closestY);
+    }
     for (const unit of state.units) {
       if (unit.team === tornado.team || unit.dead) continue;
       const dx = tornado.x - unit.x;
@@ -2191,7 +2847,7 @@ function updateTornadoes(dt) {
         unit.vx -= nx * 190 * dt;
         unit.vy -= ny * 190 * dt;
       }
-      hurt(unit, 6 * dt, { x: tornado.x, y: tornado.y, knockback: 0.35 });
+      hurt(unit, (tornado.damage || 6) * dt, { x: tornado.x, y: tornado.y, knockback: 0.35 });
       if (tornado.poison) poisonUnit(unit, 5);
     }
   }
@@ -2214,6 +2870,8 @@ function update(dt) {
   const speed = Number(speedSlider.value) / 100;
   const scaledDt = Math.min(0.033, dt * speed);
   if (state.phase === "battle") {
+    updateCommands(scaledDt);
+    updateFocusTargets(scaledDt);
     for (const unit of state.units) updateUnit(unit, scaledDt);
     resolveCrowding();
     updateProjectiles(scaledDt);
@@ -2256,6 +2914,97 @@ function drawGround() {
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
+}
+
+function drawWalls() {
+  for (const wall of state.walls) {
+    ctx.save();
+    ctx.translate(wall.x, wall.y);
+    ctx.fillStyle = wall.type === "thick" ? "#4b4940" : wall.type === "arrow" ? "rgba(73, 96, 104, 0.62)" : "#5a564b";
+    ctx.fillRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h);
+    ctx.strokeStyle = wall.type === "thick" ? "#f0dfae" : wall.type === "arrow" ? "#9bdcff" : "#d8d0a8";
+    ctx.lineWidth = wall.type === "thick" ? 5 : 3;
+    ctx.strokeRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h);
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = "#211f1a";
+    for (let x = -wall.w / 2 + 18; x < wall.w / 2; x += 24) {
+      ctx.beginPath();
+      ctx.moveTo(x, -wall.h / 2);
+      ctx.lineTo(x - 12, wall.h / 2);
+      ctx.stroke();
+    }
+    const health = Math.max(0, (wall.hp ?? wallMaxHp(wall)) / (wall.maxHp ?? wallMaxHp(wall)));
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.fillRect(-wall.w / 2, -wall.h / 2 - 8, wall.w, 4);
+    ctx.fillStyle = health > 0.45 ? "#63d28a" : "#e8bd57";
+    ctx.fillRect(-wall.w / 2, -wall.h / 2 - 8, wall.w * health, 4);
+    ctx.restore();
+  }
+  for (const [team, command] of Object.entries(state.commands)) {
+    if (!command) continue;
+    ctx.save();
+    ctx.translate(command.x, command.y);
+    ctx.strokeStyle = team === "blue" ? "#6bbcff" : "#ff706c";
+    ctx.fillStyle = team === "blue" ? "rgba(107, 188, 255, 0.18)" : "rgba(255, 112, 108, 0.18)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -26);
+    ctx.lineTo(0, 8);
+    ctx.lineTo(18, 2);
+    ctx.lineTo(0, -6);
+    ctx.stroke();
+    ctx.restore();
+  }
+  for (const [team, focus] of Object.entries(state.focusTargets)) {
+    if (!focus) continue;
+    const target = state.units.find((unit) => unit.id === focus.id && !unit.dead);
+    if (!target) continue;
+    ctx.save();
+    ctx.translate(target.x, target.y - target.radius - 18);
+    ctx.strokeStyle = team === "blue" ? "#6bbcff" : "#ff706c";
+    ctx.fillStyle = "rgba(10, 13, 18, 0.52)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-21, 0);
+    ctx.lineTo(-8, 0);
+    ctx.moveTo(8, 0);
+    ctx.lineTo(21, 0);
+    ctx.moveTo(0, -21);
+    ctx.lineTo(0, -8);
+    ctx.moveTo(0, 8);
+    ctx.lineTo(0, 21);
+    ctx.stroke();
+    ctx.restore();
+  }
+  if (isWallBuildTool() && state.wallStart && state.pointer) {
+    const dx = state.pointer.x - state.wallStart.x;
+    const dy = state.pointer.y - state.wallStart.y;
+    const horizontal = Math.abs(dx) >= Math.abs(dy);
+    const end = horizontal ? { x: state.pointer.x, y: state.wallStart.y } : { x: state.wallStart.x, y: state.pointer.y };
+    ctx.save();
+    ctx.strokeStyle = state.mapTool === "thickWall" ? "#d8d0a8" : state.mapTool === "arrowWall" ? "#9bdcff" : "#e8bd57";
+    ctx.lineWidth = state.mapTool === "thickWall" ? 10 : state.mapTool === "arrowWall" ? 4 : 5;
+    ctx.setLineDash([10, 8]);
+    ctx.beginPath();
+    ctx.moveTo(state.wallStart.x, state.wallStart.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#e8bd57";
+    ctx.beginPath();
+    ctx.arc(state.wallStart.x, state.wallStart.y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 }
 
 function drawUnit(unit) {
@@ -2561,6 +3310,57 @@ function drawUnitSkin(unit) {
     ctx.arc(r * 0.18, -r * 0.52, r * 0.08, 0, Math.PI * 2);
     ctx.fill();
   }
+  if (unit.typeId === "adultdragon") {
+    ctx.fillStyle = "#4a0f16";
+    ctx.beginPath();
+    ctx.moveTo(-r * 2.15, -r * 0.15);
+    ctx.lineTo(-r * 0.62, -r * 1.28);
+    ctx.lineTo(-r * 0.25, r * 0.42);
+    ctx.closePath();
+    ctx.moveTo(r * 2.15, -r * 0.15);
+    ctx.lineTo(r * 0.62, -r * 1.28);
+    ctx.lineTo(r * 0.25, r * 0.42);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#ffb15f";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-r * 1.6, -r * 0.18);
+    ctx.lineTo(-r * 0.55, -r * 0.72);
+    ctx.moveTo(r * 1.6, -r * 0.18);
+    ctx.lineTo(r * 0.55, -r * 0.72);
+    ctx.stroke();
+    ctx.strokeStyle = "#2a0910";
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(0, r * 0.48);
+    ctx.quadraticCurveTo(-r * 0.78, r * 1.26, -r * 1.85, r * 0.82);
+    ctx.stroke();
+    ctx.fillStyle = "#2a0910";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.78, r * 1.02, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#e34227";
+    ctx.beginPath();
+    ctx.ellipse(0, -r * 0.48, r * 0.58, r * 0.42, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ffd15a";
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.4, -r * 0.98);
+    ctx.lineTo(-r * 0.16, -r * 1.52);
+    ctx.lineTo(-r * 0.04, -r * 0.88);
+    ctx.closePath();
+    ctx.moveTo(r * 0.4, -r * 0.98);
+    ctx.lineTo(r * 0.16, -r * 1.52);
+    ctx.lineTo(r * 0.04, -r * 0.88);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#fff0a8";
+    ctx.beginPath();
+    ctx.arc(-r * 0.22, -r * 0.56, r * 0.09, 0, Math.PI * 2);
+    ctx.arc(r * 0.22, -r * 0.56, r * 0.09, 0, Math.PI * 2);
+    ctx.fill();
+  }
   if (unit.typeId === "firebeast") {
     ctx.fillStyle = "#2d3036";
     ctx.fillRect(-r * 0.92, -r * 0.2, r * 1.84, r * 0.5);
@@ -2845,6 +3645,15 @@ function drawParticles() {
     const startLife = particle.startLife || 0.5;
     const age = 1 - Math.max(0, particle.life) / startLife;
     ctx.globalAlpha = Math.max(0, Math.min(1, particle.life * 2.5));
+    if (particle.line) {
+      ctx.strokeStyle = particle.color;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(particle.x, particle.y);
+      ctx.lineTo(particle.x2, particle.y2);
+      ctx.stroke();
+      continue;
+    }
     ctx.fillStyle = particle.color;
     ctx.beginPath();
     ctx.arc(particle.x, particle.y, (particle.size || 20) * Math.max(0.18, age), 0, Math.PI * 2);
@@ -2856,6 +3665,7 @@ function drawParticles() {
 function draw() {
   drawGround();
   drawSlimes();
+  drawWalls();
   const sorted = [...state.units].sort((a, b) => a.y - b.y);
   for (const unit of sorted) drawUnit(unit);
   drawProjectiles();
@@ -2872,10 +3682,24 @@ function updateUi() {
   phaseText.textContent = labels[state.phase];
   startBtn.disabled = state.phase === "battle";
   pauseBtn.disabled = state.phase === "setup" || state.phase === "ended";
+  wallToolBtn.classList.toggle("active", state.mapTool === "wall");
+  thickWallToolBtn.classList.toggle("active", state.mapTool === "thickWall");
+  arrowWallToolBtn.classList.toggle("active", state.mapTool === "arrowWall");
+  commandToolBtn.classList.toggle("active", state.mapTool === "command");
+  focusToolBtn.classList.toggle("active", state.mapTool === "focus");
+  eraseWallBtn.classList.toggle("active", state.mapTool === "eraseWall");
+  wallToolBtn.disabled = state.phase !== "setup";
+  thickWallToolBtn.disabled = state.phase !== "setup";
+  arrowWallToolBtn.disabled = state.phase !== "setup";
+  commandToolBtn.disabled = state.phase !== "battle";
+  focusToolBtn.disabled = state.phase !== "battle";
+  eraseWallBtn.disabled = state.phase !== "setup";
+  clearWallsBtn.disabled = state.phase !== "setup" || state.walls.length === 0;
   blueTeamBtn.classList.toggle("active", state.placeTeam === "blue");
   redTeamBtn.classList.toggle("active", state.placeTeam === "red");
-  blueTeamBtn.disabled = !state.sandbox || state.phase !== "setup";
-  redTeamBtn.disabled = !state.sandbox || state.phase !== "setup";
+  const canPickTeam = state.sandbox || Boolean(state.selectedItem) || state.mapTool === "command" || state.mapTool === "focus";
+  blueTeamBtn.disabled = !canPickTeam;
+  redTeamBtn.disabled = !canPickTeam;
   sandboxToggle.checked = state.sandbox;
   if (battlefieldWrap) battlefieldWrap.classList.toggle("item-aiming", state.phase === "battle" && Boolean(state.selectedItem));
   if (itemsTitle) itemsTitle.textContent = text.items;
@@ -2888,6 +3712,11 @@ function updateUi() {
     button.classList.toggle("locked", state.phase !== "battle");
     button.disabled = false;
     button.innerHTML = `<b>${name}</b><small>${item.cost} ${text.budget}</small>`;
+  }
+  const cancelButton = itemBar?.querySelector("[data-item-cancel]");
+  if (cancelButton) {
+    cancelButton.classList.toggle("selected", !state.selectedItem);
+    cancelButton.innerHTML = `<b>${text.itemCancel}</b><small>${text.itemCancelHint}</small>`;
   }
 }
 
@@ -2933,6 +3762,35 @@ function renderUnitList() {
 
 canvas.addEventListener("pointerdown", (event) => {
   const point = worldPoint(event);
+  if (state.phase === "setup" && isWallBuildTool()) {
+    if (!state.wallStart) {
+      state.wallStart = point;
+      state.pointer = point;
+      setToast((translations[state.language] || translations.en).wallStartHint);
+    } else {
+      addWall(state.wallStart, point);
+      state.wallStart = null;
+      state.pointer = null;
+      updateUi();
+    }
+    updateUi();
+    return;
+  }
+  if (state.phase === "battle" && state.mapTool === "command") {
+    issueCommand(point);
+    updateUi();
+    return;
+  }
+  if (state.phase === "battle" && state.mapTool === "focus") {
+    issueFocus(point);
+    updateUi();
+    return;
+  }
+  if (state.phase === "setup" && state.mapTool === "eraseWall") {
+    eraseWall(point);
+    updateUi();
+    return;
+  }
   if (state.phase === "battle" && state.selectedItem) {
     castItemAt(state.selectedItem, point);
     return;
@@ -2954,8 +3812,10 @@ canvas.addEventListener("pointerdown", (event) => {
 });
 
 canvas.addEventListener("pointermove", (event) => {
+  state.pointer = worldPoint(event);
+  if (isWallBuildTool() && state.wallStart) return;
   if (!state.dragging) return;
-  const point = worldPoint(event);
+  const point = state.pointer;
   const maxX = state.sandbox ? canvas.width - state.dragging.radius : blueZone() - 18;
   state.dragging.x = Math.max(state.dragging.radius, Math.min(maxX, point.x));
   state.dragging.y = Math.max(state.dragging.radius, Math.min(canvas.height - state.dragging.radius, point.y));
@@ -2969,19 +3829,84 @@ startBtn.addEventListener("click", startBattle);
 pauseBtn.addEventListener("click", pauseBattle);
 resetBtn.addEventListener("click", () => resetGame(false));
 randomBtn.addEventListener("click", randomFormation);
-for (const button of itemButtons) {
-  button.addEventListener("click", () => {
-    button.blur();
-    const text = translations[state.language] || translations.en;
-    state.selectedItem = state.selectedItem === button.dataset.item ? null : button.dataset.item;
-    updateUi();
-    if (state.selectedItem) {
-      const name = text.itemNames[state.selectedItem] || state.selectedItem;
-      const hint = state.phase === "battle" ? text.itemUseHint : text.itemNeedBattle;
-      setToast(`${name}: ${hint}`);
-    } else {
-      setToast(state.language === "zh" ? "已取消道具" : "Item canceled");
+wallToolBtn.addEventListener("click", () => {
+  if (state.phase !== "setup") return;
+  state.mapTool = state.mapTool === "wall" ? null : "wall";
+  state.wallStart = null;
+  state.pointer = null;
+  state.selectedItem = null;
+  updateUi();
+  setToast(state.mapTool === "wall" ? (state.language === "zh" ? "点一下起点，再点一下终点放墙" : "Click a start point, then an end point") : (state.language === "zh" ? "墙工具关闭" : "Wall tool off"));
+});
+thickWallToolBtn.addEventListener("click", () => {
+  if (state.phase !== "setup") return;
+  state.mapTool = state.mapTool === "thickWall" ? null : "thickWall";
+  state.wallStart = null;
+  state.pointer = null;
+  state.selectedItem = null;
+  updateUi();
+  setToast(state.mapTool === "thickWall" ? (state.language === "zh" ? "点一下起点，再点一下终点放厚墙" : "Click a start point, then an end point for a thick wall") : (state.language === "zh" ? "厚墙工具关闭" : "Thick wall tool off"));
+});
+arrowWallToolBtn.addEventListener("click", () => {
+  if (state.phase !== "setup") return;
+  state.mapTool = state.mapTool === "arrowWall" ? null : "arrowWall";
+  state.wallStart = null;
+  state.pointer = null;
+  state.selectedItem = null;
+  updateUi();
+  setToast(state.mapTool === "arrowWall" ? (state.language === "zh" ? "点一下起点，再点一下终点放透射墙" : "Click a start point, then an end point for an arrow wall") : (state.language === "zh" ? "透射墙工具关闭" : "Arrow wall tool off"));
+});
+commandToolBtn.addEventListener("click", () => {
+  if (state.phase !== "battle") return;
+  state.mapTool = state.mapTool === "command" ? null : "command";
+  state.wallStart = null;
+  state.pointer = null;
+  state.selectedItem = null;
+  updateUi();
+  setToast(state.mapTool === "command" ? (translations[state.language] || translations.en).commandHint : (state.language === "zh" ? "指挥关闭" : "Command off"));
+});
+focusToolBtn.addEventListener("click", () => {
+  if (state.phase !== "battle") return;
+  state.mapTool = state.mapTool === "focus" ? null : "focus";
+  state.wallStart = null;
+  state.pointer = null;
+  state.selectedItem = null;
+  updateUi();
+  setToast(state.mapTool === "focus" ? (translations[state.language] || translations.en).focusHint : (state.language === "zh" ? "集火关闭" : "Focus off"));
+});
+eraseWallBtn.addEventListener("click", () => {
+  if (state.phase !== "setup") return;
+  state.mapTool = state.mapTool === "eraseWall" ? null : "eraseWall";
+  state.wallStart = null;
+  state.pointer = null;
+  state.selectedItem = null;
+  updateUi();
+  setToast(state.mapTool === "eraseWall" ? (state.language === "zh" ? "点击墙删除" : "Click a wall to erase it") : (state.language === "zh" ? "删墙关闭" : "Erase wall off"));
+});
+clearWallsBtn.addEventListener("click", () => {
+  if (state.phase !== "setup") return;
+  state.walls = [];
+  state.mapTool = null;
+  state.wallStart = null;
+  state.pointer = null;
+  updateUi();
+  setToast(state.language === "zh" ? "墙已清空" : "Walls cleared");
+});
+if (itemBar) {
+  itemBar.addEventListener("pointerdown", (event) => {
+    const cancelButton = event.target.closest("[data-item-cancel]");
+    if (cancelButton) {
+      event.preventDefault();
+      state.selectedItem = null;
+      updateUi();
+      setToast((translations[state.language] || translations.en).itemCancel);
+      return;
     }
+    const button = event.target.closest("[data-item]");
+    if (!button) return;
+    event.preventDefault();
+    button.blur();
+    selectItem(button.dataset.item);
   });
 }
 eraseBtn.addEventListener("click", () => {
@@ -3007,16 +3932,18 @@ sandboxToggle.addEventListener("change", () => {
   }
   updateUi();
 });
-blueTeamBtn.addEventListener("click", () => {
-  if (!state.sandbox || state.phase !== "setup") return;
+blueTeamBtn.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  if (!state.sandbox && !state.selectedItem && state.mapTool !== "command" && state.mapTool !== "focus") return;
   state.placeTeam = "blue";
-  setToast("Placing team: Blue");
+  setToast(state.mapTool === "focus" ? "Focus team: Blue" : state.mapTool === "command" ? "Command team: Blue" : state.selectedItem ? "Item team: Blue" : "Placing team: Blue");
   updateUi();
 });
-redTeamBtn.addEventListener("click", () => {
-  if (!state.sandbox || state.phase !== "setup") return;
+redTeamBtn.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  if (!state.sandbox && !state.selectedItem && state.mapTool !== "command" && state.mapTool !== "focus") return;
   state.placeTeam = "red";
-  setToast("Placing team: Red");
+  setToast(state.mapTool === "focus" ? "Focus team: Red" : state.mapTool === "command" ? "Command team: Red" : state.selectedItem ? "Item team: Red" : "Placing team: Red");
   updateUi();
 });
 customWeapon.addEventListener("change", () => {
@@ -3026,6 +3953,7 @@ customWeapon.addEventListener("change", () => {
   customRange.value = rangedWeapon ? profile.range : profile.range;
   customStopDistance.value = rangedWeapon ? Math.max(110, Math.round(profile.range * 0.72)) : Math.min(profile.range, 42);
   customSize.value = profile.radius;
+  customKnockback.value = profile.knockback;
 });
 customSecondWeapon.addEventListener("change", () => {
   if (customSecondWeapon.value === "none") {

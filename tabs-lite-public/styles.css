@@ -126,6 +126,49 @@ h1 {
   gap: 10px;
 }
 
+.map-tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 0 12px;
+}
+
+.map-tools button {
+  min-height: 36px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.map-tools button.active {
+  border-color: var(--gold);
+  background: #37303a;
+  color: var(--gold);
+}
+
+.map-tools #clearWallsBtn {
+  grid-column: 1 / -1;
+}
+
+.map-tools label {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.map-tools select,
+.map-tools input {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #151a21;
+  color: var(--text);
+  padding: 5px 8px;
+}
+
 .battle-actions button {
   min-width: 82px;
 }
@@ -404,6 +447,7 @@ canvas {
 .item-bar {
   display: grid;
   gap: 8px;
+  touch-action: manipulation;
 }
 
 .item-bar button {
@@ -412,6 +456,7 @@ canvas {
   padding: 10px 12px;
   text-align: left;
   outline: none;
+  user-select: none;
 }
 
 .item-bar button:focus,
@@ -431,6 +476,17 @@ canvas {
 
 .item-bar button.locked:not(.selected) {
   opacity: 0.74;
+}
+
+.item-bar [data-item-cancel] {
+  min-height: 42px;
+  background: #20262f;
+}
+
+.item-bar [data-item-cancel].selected {
+  border-color: var(--line);
+  background: #20262f;
+  box-shadow: none;
 }
 
 .item-bar button b {
