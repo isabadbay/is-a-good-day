@@ -137,6 +137,7 @@ const UNIT_PACK_2_IDS = new Set([
   "wallcrusher",
   "phoenixguard",
   "stormlancer",
+  "whirlhammer",
 ]);
 
 const translations = {
@@ -305,6 +306,7 @@ const translations = {
       wallcrusher: ["破墙重锤", "拆墙"],
       phoenixguard: ["凤凰卫士", "圣火护盾"],
       stormlancer: ["风暴枪兵", "爆发远程"],
+      whirlhammer: ["旋风重锤兵", "跃空重砸"],
     },
     tags: {
       ranged: "远程",
@@ -489,6 +491,7 @@ const translations = {
       wallcrusher: ["Wall Crusher", "Siege"],
       phoenixguard: ["Phoenix Guard", "Holy Fire"],
       stormlancer: ["Storm Lancer", "Burst Shot"],
+      whirlhammer: ["Whirl Hammer", "Sky Slam"],
     },
     tags: {
       ranged: "Ranged",
@@ -1225,6 +1228,31 @@ const unitTypes = [
     skills: { tornado: true, tornadoDamage: 4, tornadoDuration: 2.8, tornadoRange: 64, blockRangedChance: 0.12 },
     color: "#75d7ff",
   },
+  {
+    id: "whirlhammer",
+    name: "Whirl Hammer",
+    tag: "Sky Slam",
+    glyph: "WH",
+    price: 520,
+    hp: 190,
+    damage: 34,
+    range: 44,
+    speed: 42,
+    radius: 22,
+    cooldown: 0.92,
+    knockback: 4.8,
+    weapon: "hammer",
+    areaAttack: { range: 58, damage: 12 },
+    skills: {
+      whirlwindLeap: true,
+      whirlwindTriggerRange: 92,
+      whirlwindDuration: 4,
+      whirlwindCooldown: 5,
+      whirlwindDamage: 200,
+      whirlwindRadius: 105,
+    },
+    color: "#8ab4ff",
+  },
 ];
 
 let customUnitCounter = 1;
@@ -1742,6 +1770,9 @@ function addUnit(typeId, team, x, y) {
     stasisCooldown: 1 + Math.random() * 2,
     fireballCooldown: 1.5 + Math.random() * 2,
     randomSpawnCooldown: type.skills?.randomSpawn ? type.skills.randomSpawnInterval || 5 : 0,
+    whirlwindCooldown: type.skills?.whirlwindLeap ? 1.2 + Math.random() * 1.8 : 0,
+    airborneTimer: 0,
+    airborneTotal: 0,
     damageAuraPulse: 0,
     slimeCooldown: 0,
     tornadoCooldown: 1 + Math.random() * 1.5,
@@ -2291,6 +2322,7 @@ function spawnEnemyArmy() {
     "wallcrusher",
     "phoenixguard",
     "stormlancer",
+    "whirlhammer",
   ];
   for (let i = 0; i < count; i += 1) {
     const typeId = ids[Math.floor(Math.random() * ids.length)];
@@ -2364,6 +2396,7 @@ function randomFormation() {
     "wallcrusher",
     "phoenixguard",
     "stormlancer",
+    "whirlhammer",
   ];
   const team = state.sandbox ? state.placeTeam : "blue";
   let guard = 0;
@@ -2415,7 +2448,7 @@ function pauseBattle() {
 function findTarget(unit) {
   const focus = state.focusTargets[unit.team];
   if (focus) {
-    const focused = state.units.find((other) => other.id === focus.id && !other.dead && other.team !== unit.team);
+    const focused = state.units.find((other) => other.id === focus.id && !other.dead && other.airborneTimer <= 0 && other.team !== unit.team);
     if (focused) {
       const distance = Math.hypot(focused.x - unit.x, focused.y - unit.y);
       const wallInfo = wallTargetNear(unit, focused);
@@ -2426,7 +2459,7 @@ function findTarget(unit) {
   let best = null;
   let bestDistance = Infinity;
   for (const other of state.units) {
-    if (other.team === unit.team || other.dead) continue;
+    if (other.team === unit.team || other.dead || other.airborneTimer > 0) continue;
     const distance = Math.hypot(other.x - unit.x, other.y - unit.y);
     if (distance < bestDistance) {
       best = other;
@@ -2537,7 +2570,56 @@ function spawnRandomUnit(unit) {
   state.particles.push({ x, y, life: 0.9, startLife: 0.9, color: "#c48cff", size: 58 });
 }
 
+function triggerWhirlwindLeap(unit) {
+  const duration = unit.skills.whirlwindDuration || 4;
+  unit.airborneTimer = duration;
+  unit.airborneTotal = duration;
+  unit.whirlwindCooldown = duration + (unit.skills.whirlwindCooldown || 5);
+  unit.cooldown = Math.max(unit.cooldown, duration + 0.2);
+  unit.vx *= 0.5;
+  unit.vy *= 0.5;
+  for (let i = 0; i < 18; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 70 + Math.random() * 120;
+    state.particles.push({
+      x: unit.x,
+      y: unit.y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.35 + Math.random() * 0.25,
+      startLife: 0.6,
+      color: "#d7ecff",
+      size: 12 + Math.random() * 16,
+    });
+  }
+}
+
+function finishWhirlwindLeap(unit) {
+  const radius = unit.skills.whirlwindRadius || 105;
+  const damage = unit.skills.whirlwindDamage || 200;
+  for (const other of state.units) {
+    if (other.team === unit.team || other.dead || other.airborneTimer > 0) continue;
+    const distance = Math.hypot(other.x - unit.x, other.y - unit.y);
+    if (distance > radius + other.radius) continue;
+    const falloff = Math.max(0.45, 1 - distance / Math.max(1, radius));
+    hurt(other, damage * falloff, {
+      x: unit.x,
+      y: unit.y,
+      knockback: 5.5,
+      ignoreDodge: true,
+      owner: unit,
+    });
+  }
+  damageWallsAt(unit.x, unit.y, radius, damage * 0.35);
+  addRingParticle(unit.x, unit.y, "#d7ecff", radius);
+  state.particles.push({ x: unit.x, y: unit.y, life: 0.85, startLife: 0.85, color: "#8ab4ff", size: radius * 1.25 });
+}
+
 function hurt(target, amount, source) {
+  if (target.airborneTimer > 0) {
+    state.particles.push({ x: target.x, y: target.y, life: 0.28, color: "#d7ecff", size: target.radius * 1.6 });
+    return;
+  }
   const killer = source.owner || source;
   if (source.isRanged && target.skills.blockRangedChance > 0 && Math.random() < target.skills.blockRangedChance) {
     state.particles.push({ x: target.x, y: target.y, life: 0.6, color: "#bde7ff", size: target.radius * 2.5 });
@@ -2682,6 +2764,7 @@ function updateUnit(unit, dt) {
   unit.stasisCooldown = Math.max(0, unit.stasisCooldown - dt);
   unit.fireballCooldown = Math.max(0, unit.fireballCooldown - dt);
   unit.randomSpawnCooldown = Math.max(0, unit.randomSpawnCooldown - dt);
+  unit.whirlwindCooldown = Math.max(0, unit.whirlwindCooldown - dt);
   unit.wobble += dt * (5 + unit.speed / 25);
   updateBerserk(unit);
   if (!unit.dead && unit.poisonTimer > 0) {
@@ -2712,6 +2795,31 @@ function updateUnit(unit, dt) {
     unit.vy *= 0.972;
     unit.x += unit.vx * dt;
     unit.y += unit.vy * dt;
+    return;
+  }
+  if (unit.airborneTimer > 0) {
+    unit.airborneTimer = Math.max(0, unit.airborneTimer - dt);
+    unit.vx *= 0.965;
+    unit.vy *= 0.965;
+    unit.x += unit.vx * dt * 0.5;
+    unit.y += unit.vy * dt * 0.5;
+    unit.x = Math.max(unit.radius, Math.min(canvas.width - unit.radius, unit.x));
+    unit.y = Math.max(unit.radius, Math.min(canvas.height - unit.radius, unit.y));
+    if (unit.airborneTimer <= 0) {
+      finishWhirlwindLeap(unit);
+      unit.airborneTotal = 0;
+    } else if (Math.random() < dt * 16) {
+      state.particles.push({
+        x: unit.x + (Math.random() - 0.5) * unit.radius * 2,
+        y: unit.y + (Math.random() - 0.5) * unit.radius * 2,
+        vx: (Math.random() - 0.5) * 120,
+        vy: (Math.random() - 0.5) * 120,
+        life: 0.25,
+        startLife: 0.25,
+        color: "#d7ecff",
+        size: 10 + Math.random() * 12,
+      });
+    }
     return;
   }
   applyDamageAura(unit, dt);
@@ -2748,6 +2856,10 @@ function updateUnit(unit, dt) {
   const info = findTarget(unit);
   if (!info) return;
   const { target, distance } = info;
+  if (unit.skills.whirlwindLeap && unit.whirlwindCooldown <= 0 && target.kind !== "wall" && distance <= (unit.skills.whirlwindTriggerRange || 92)) {
+    triggerWhirlwindLeap(unit);
+    return;
+  }
   if (unit.skills.stasisGaze && unit.stasisCooldown <= 0) {
     triggerStasisGaze(unit);
   }
@@ -3178,15 +3290,27 @@ function drawUnit(unit) {
   const faceAngle = stasisSource ? Math.atan2(stasisSource.y - unit.y, stasisSource.x - unit.x) : 0;
   const stasisShake = unit.stasisTimer > 0 ? Math.sin(performance.now() / 42 + unit.id) * 0.82 : 0;
   const stasisSlide = unit.stasisTimer > 0 ? Math.sin(performance.now() / 35 + unit.id * 1.7) * 8 : 0;
-  const tilt = unit.stasisTimer > 0 ? stasisShake : Math.sin(unit.wobble) * (unit.dead ? 0.7 : 0.18);
+  const airProgress = unit.airborneTotal > 0 ? 1 - unit.airborneTimer / unit.airborneTotal : 0;
+  const airHeight = unit.airborneTimer > 0 ? Math.sin(airProgress * Math.PI) * 82 + 26 : 0;
+  const tilt = unit.airborneTimer > 0 ? performance.now() / 90 : unit.stasisTimer > 0 ? stasisShake : Math.sin(unit.wobble) * (unit.dead ? 0.7 : 0.18);
   ctx.save();
   ctx.translate(unit.x + stasisSlide, unit.y);
-  ctx.rotate(faceAngle + tilt);
   ctx.globalAlpha = unit.dead ? 0.45 : 1;
   ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
   ctx.beginPath();
-  ctx.ellipse(3, unit.radius * 0.86, unit.radius * 1.1, unit.radius * 0.42, 0, 0, Math.PI * 2);
+  ctx.ellipse(3, unit.radius * 0.86, unit.radius * (unit.airborneTimer > 0 ? 1.35 : 1.1), unit.radius * (unit.airborneTimer > 0 ? 0.24 : 0.42), 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.translate(0, -airHeight);
+  ctx.rotate(faceAngle + tilt);
+  if (!unit.dead && unit.airborneTimer > 0) {
+    ctx.strokeStyle = "#d7ecff";
+    ctx.lineWidth = 4;
+    for (let i = 0; i < 3; i += 1) {
+      ctx.beginPath();
+      ctx.ellipse(0, i * 7 - 5, unit.radius * (1.25 + i * 0.22), unit.radius * 0.38, performance.now() / (220 - i * 35), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
   if (!unit.dead && unit.skills.holyShield) {
     const shieldRange = unit.skills.holyShieldRange ?? 160;
     ctx.save();
@@ -3367,6 +3491,21 @@ function drawUnitSkin(unit) {
       ctx.arc(0, 0, r * (0.78 + i * 0.18), Math.PI * 0.1, Math.PI * 1.75);
       ctx.stroke();
     }
+  }
+  if (unit.typeId === "whirlhammer") {
+    ctx.strokeStyle = "#d7ecff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.05, Math.PI * 0.12, Math.PI * 1.72);
+    ctx.stroke();
+    ctx.fillStyle = "#5f6f96";
+    ctx.fillRect(r * 0.7, -r * 0.82, r * 0.82, r * 0.58);
+    ctx.strokeStyle = "#f0dfae";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.55, r * 0.62);
+    ctx.lineTo(r * 0.95, -r * 0.52);
+    ctx.stroke();
   }
   if (unit.typeId === "bomber" || unit.typeId === "cannon") {
     ctx.fillStyle = "#2d3036";
