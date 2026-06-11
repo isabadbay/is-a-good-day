@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>TABS Lite</title>
-    <link rel="stylesheet" href="./styles.css?v=20260611-custom-advanced" />
+    <link rel="stylesheet" href="./styles.css?v=20260611-peashooter-infinite-range" />
   </head>
   <body>
     <main class="app-shell">
@@ -41,6 +41,10 @@
             <button id="blueTeamBtn" class="active" data-team="blue">Blue</button>
             <button id="redTeamBtn" data-team="red">Red</button>
           </div>
+          <label class="placement-batch">
+            <span id="batchPlaceLabel">Place Count</span>
+            <input id="batchPlaceCount" type="number" min="1" max="60" value="1" />
+          </label>
           <div class="map-tools">
             <button id="wallToolBtn">Wall</button>
             <button id="thickWallToolBtn">Thick Wall</button>
@@ -399,6 +403,6 @@
       </section>
     </main>
 
-    <script src="./game.js?v=20260611-custom-advanced"></script>
+    <script src="./game.js?v=20260611-peashooter-infinite-range"></script>
   </body>
 </html>

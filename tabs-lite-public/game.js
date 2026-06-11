@@ -17,6 +17,8 @@ const speedSlider = document.querySelector("#speedSlider");
 const sandboxToggle = document.querySelector("#sandboxToggle");
 const blueTeamBtn = document.querySelector("#blueTeamBtn");
 const redTeamBtn = document.querySelector("#redTeamBtn");
+const batchPlaceLabel = document.querySelector("#batchPlaceLabel");
+const batchPlaceCount = document.querySelector("#batchPlaceCount");
 const wallToolBtn = document.querySelector("#wallToolBtn");
 const thickWallToolBtn = document.querySelector("#thickWallToolBtn");
 const arrowWallToolBtn = document.querySelector("#arrowWallToolBtn");
@@ -132,6 +134,34 @@ const UNIT_PACK_2_IDS = new Set([
   "sharpshooter",
   "portalmage",
   "unit67",
+  "hydra",
+  "voidbinder",
+  "wallcrusher",
+  "phoenixguard",
+  "stormlancer",
+  "whirlhammer",
+  "zombie",
+  "peashooter",
+]);
+
+const INFECTABLE_TYPE_IDS = new Set([
+  "clubber",
+  "shield",
+  "spear",
+  "archer",
+  "berserker",
+  "hammer",
+  "musketeer",
+  "cannon",
+  "knight",
+  "assassin",
+  "crossbow",
+  "bomber",
+  "giant",
+  "wolf",
+  "sharpshooter",
+  "wallcrusher",
+  "whirlhammer",
 ]);
 
 const translations = {
@@ -144,6 +174,7 @@ const translations = {
     sandbox: "沙盒模式",
     blue: "蓝队",
     red: "红队",
+    batchPlace: "一次放置数量",
     custom: "自定义兵种",
     create: "创建兵种",
     battle: "战况",
@@ -295,6 +326,14 @@ const translations = {
       sharpshooter: ["神射手", "远狙"],
       portalmage: ["传送门法师", "召兵"],
       unit67: ["67", "凝视定身"],
+      hydra: ["三头幼龙", "三连火焰"],
+      voidbinder: ["虚空束缚者", "定身法术"],
+      wallcrusher: ["破墙重锤", "拆墙"],
+      phoenixguard: ["凤凰卫士", "圣火护盾"],
+      stormlancer: ["风暴枪兵", "爆发远程"],
+      whirlhammer: ["旋风重锤兵", "跃空重砸"],
+      zombie: ["僵尸", "感染"],
+      peashooter: ["豌豆射手", "固定远程"],
     },
     tags: {
       ranged: "远程",
@@ -323,6 +362,7 @@ const translations = {
     sandbox: "Sandbox",
     blue: "Blue",
     red: "Red",
+    batchPlace: "Place Count",
     custom: "Custom Unit",
     create: "Create Unit",
     battle: "Battle",
@@ -474,6 +514,14 @@ const translations = {
       sharpshooter: ["Sharpshooter", "Snipe"],
       portalmage: ["Portal Mage", "Spawner"],
       unit67: ["67", "Stasis Gaze"],
+      hydra: ["Hydra Whelp", "Triple Fire"],
+      voidbinder: ["Void Binder", "Stasis Spell"],
+      wallcrusher: ["Wall Crusher", "Siege"],
+      phoenixguard: ["Phoenix Guard", "Holy Fire"],
+      stormlancer: ["Storm Lancer", "Burst Shot"],
+      whirlhammer: ["Whirl Hammer", "Sky Slam"],
+      zombie: ["Zombie", "Infection"],
+      peashooter: ["Peashooter", "Rooted Ranged"],
     },
     tags: {
       ranged: "Ranged",
@@ -513,6 +561,7 @@ function applyLanguage(lang) {
   }
   blueTeamBtn.textContent = text.blue;
   redTeamBtn.textContent = text.red;
+  if (batchPlaceLabel) batchPlaceLabel.textContent = text.batchPlace;
   wallToolBtn.textContent = text.mapWall;
   thickWallToolBtn.textContent = text.mapThickWall;
   arrowWallToolBtn.textContent = text.mapArrowWall;
@@ -875,12 +924,12 @@ const unitTypes = [
     name: "Adult Dragon",
     tag: "Fire Tyrant",
     glyph: "D",
-    price: 980,
+    price: 1200,
     hp: 750,
     damage: 58,
     range: 290,
     stopDistance: 210,
-    speed: 38,
+    speed: 114,
     radius: 38,
     cooldown: 1.45,
     projectileSpeed: 340,
@@ -900,6 +949,9 @@ const unitTypes = [
       explodeDamage: 120,
       explodeRange: 120,
       burnImmune: true,
+      fireResist: 1,
+      magicResist: 0.85,
+      knockbackImmune: true,
       berserkHp: 400,
       berserkDamage: 0.5,
       berserkHeal: 80,
@@ -1105,6 +1157,168 @@ const unitTypes = [
     weapon: "club",
     skills: { stasisGaze: true, stasisRange: 200, stasisDuration: 5, stasisCooldown: 20 },
     color: "#2495ff",
+  },
+  {
+    id: "hydra",
+    name: "Hydra Whelp",
+    tag: "Triple Fire",
+    glyph: "3H",
+    price: 520,
+    hp: 210,
+    damage: 18,
+    range: 235,
+    stopDistance: 165,
+    speed: 48,
+    radius: 22,
+    cooldown: 1.35,
+    projectileSpeed: 430,
+    splash: 36,
+    weapon: "bow",
+    burstCount: 3,
+    burstCooldown: 1.75,
+    areaAttack: { range: 58, damage: 12 },
+    secondAttack: { weapon: "club", range: 48, damage: 24, ranged: false, projectileSpeed: 0, splash: 0, cooldown: 0.7, burstCount: 2, burstCooldown: 0.9 },
+    skills: { fireBreath: true, fireball: true, fireParticleSize: 1.25, fireDuration: 4, fireRange: 115, fireballDamage: 46 },
+    color: "#ff6b4a",
+  },
+  {
+    id: "voidbinder",
+    name: "Void Binder",
+    tag: "Stasis Spell",
+    glyph: "VB",
+    price: 430,
+    hp: 80,
+    damage: 15,
+    range: 255,
+    stopDistance: 205,
+    speed: 30,
+    radius: 16,
+    cooldown: 1.15,
+    projectileSpeed: 380,
+    weapon: "bow",
+    skills: { stasisGaze: true, stasisRange: 170, stasisDuration: 3.2, stasisCooldown: 11, damageAura: true, damageAuraRange: 64, damageAuraDamage: 5 },
+    color: "#7b5cff",
+  },
+  {
+    id: "wallcrusher",
+    name: "Wall Crusher",
+    tag: "Siege",
+    glyph: "WC",
+    price: 460,
+    hp: 260,
+    damage: 54,
+    range: 46,
+    speed: 34,
+    radius: 24,
+    cooldown: 1.15,
+    knockback: 6.5,
+    weapon: "hammer",
+    burstCount: 2,
+    burstCooldown: 1.45,
+    areaAttack: { range: 76, damage: 20 },
+    skills: { blockRangedChance: 0.2, berserkHp: 90, berserkDamage: 0.35, berserkHeal: 45 },
+    color: "#9b8a6d",
+  },
+  {
+    id: "phoenixguard",
+    name: "Phoenix Guard",
+    tag: "Holy Fire",
+    glyph: "PG",
+    price: 610,
+    hp: 240,
+    damage: 32,
+    range: 52,
+    speed: 46,
+    radius: 22,
+    cooldown: 0.82,
+    knockback: 3.4,
+    weapon: "spear",
+    areaAttack: { range: 66, damage: 14 },
+    secondAttack: { weapon: "bow", range: 250, damage: 20, ranged: true, projectileSpeed: 410, splash: 28, cooldown: 1.1 },
+    skills: { fireBreath: true, fireball: true, fireballDamage: 38, holyShield: true, holyShieldRange: 175, holyShieldReduction: 0.35, burnImmune: true, berserkHp: 95, berserkDamage: 0.35, berserkHeal: 60 },
+    color: "#ffb84e",
+  },
+  {
+    id: "stormlancer",
+    name: "Storm Lancer",
+    tag: "Burst Shot",
+    glyph: "SL",
+    price: 370,
+    hp: 92,
+    damage: 20,
+    range: 285,
+    stopDistance: 225,
+    speed: 42,
+    radius: 16,
+    cooldown: 1.25,
+    projectileSpeed: 560,
+    weapon: "musket",
+    burstCount: 3,
+    burstCooldown: 1.7,
+    secondAttack: { weapon: "spear", range: 56, damage: 26, ranged: false, projectileSpeed: 0, splash: 0, cooldown: 0.72 },
+    skills: { tornado: true, tornadoDamage: 4, tornadoDuration: 2.8, tornadoRange: 64, blockRangedChance: 0.12 },
+    color: "#75d7ff",
+  },
+  {
+    id: "whirlhammer",
+    name: "Whirl Hammer",
+    tag: "Sky Slam",
+    glyph: "WH",
+    price: 520,
+    hp: 190,
+    damage: 34,
+    range: 44,
+    speed: 42,
+    radius: 22,
+    cooldown: 0.92,
+    knockback: 4.8,
+    weapon: "hammer",
+    areaAttack: { range: 58, damage: 12 },
+    skills: {
+      whirlwindLeap: true,
+      whirlwindTriggerRange: 92,
+      whirlwindDuration: 4,
+      whirlwindCooldown: 5,
+      whirlwindDamage: 200,
+      whirlwindRadius: 105,
+    },
+    color: "#8ab4ff",
+  },
+  {
+    id: "zombie",
+    name: "Zombie",
+    tag: "Infection",
+    glyph: "Z",
+    price: 160,
+    hp: 115,
+    damage: 13,
+    range: 30,
+    speed: 36,
+    radius: 16,
+    cooldown: 0.9,
+    knockback: 1.9,
+    weapon: "club",
+    skills: { infectTouch: true, infectSeconds: 10 },
+    color: "#76b86d",
+  },
+  {
+    id: "peashooter",
+    name: "Peashooter",
+    tag: "Rooted Ranged",
+    glyph: "PS",
+    price: 180,
+    hp: 70,
+    damage: 18,
+    range: 500000000,
+    stopDistance: 500000000,
+    speed: 0,
+    radius: 16,
+    cooldown: 0.95,
+    projectileSpeed: 440,
+    weapon: "bow",
+    canAttackWalls: false,
+    skills: { rooted: true },
+    color: "#68c96b",
   },
 ];
 
@@ -1323,6 +1537,7 @@ function pushOutOfWalls(unit) {
 }
 
 function projectileHitsWall(projectile) {
+  if (projectile.passWalls) return false;
   return state.walls.some((wall) => {
     if (wall.type === "arrow") return false;
     return projectile.x >= wall.x - wall.w / 2 && projectile.x <= wall.x + wall.w / 2 && projectile.y >= wall.y - wall.h / 2 && projectile.y <= wall.y + wall.h / 2;
@@ -1619,10 +1834,16 @@ function addUnit(typeId, team, x, y) {
     defensePotionTimer: 0,
     powerPotionTimer: 0,
     speedPotionTimer: 0,
+    infectionTimer: 0,
+    infectionDuration: 0,
+    infectionTeam: null,
     stasisSourceId: null,
     stasisCooldown: 1 + Math.random() * 2,
     fireballCooldown: 1.5 + Math.random() * 2,
     randomSpawnCooldown: type.skills?.randomSpawn ? type.skills.randomSpawnInterval || 5 : 0,
+    whirlwindCooldown: type.skills?.whirlwindLeap ? 1.2 + Math.random() * 1.8 : 0,
+    airborneTimer: 0,
+    airborneTotal: 0,
     damageAuraPulse: 0,
     slimeCooldown: 0,
     tornadoCooldown: 1 + Math.random() * 1.5,
@@ -1648,6 +1869,32 @@ function refund(typeId) {
   updateUi();
 }
 
+function batchOffsets(count, spacing) {
+  if (count <= 1) return [{ x: 0, y: 0 }];
+  const offsets = [];
+  const rings = Math.ceil((Math.sqrt(count) - 1) / 2);
+  offsets.push({ x: 0, y: 0 });
+  for (let ring = 1; ring <= rings && offsets.length < count; ring += 1) {
+    const perSide = ring * 2;
+    for (let side = 0; side < 4 && offsets.length < count; side += 1) {
+      for (let step = 0; step < perSide && offsets.length < count; step += 1) {
+        const a = -ring + step;
+        const b = ring;
+        const point =
+          side === 0
+            ? { x: a, y: -b }
+            : side === 1
+              ? { x: b, y: a }
+              : side === 2
+                ? { x: -a, y: b }
+                : { x: -b, y: -a };
+        offsets.push({ x: point.x * spacing, y: point.y * spacing });
+      }
+    }
+  }
+  return offsets.slice(0, count);
+}
+
 function placePlayerUnit(point) {
   if (state.phase !== "setup") return;
   const type = typeById(state.selected);
@@ -1661,9 +1908,22 @@ function placePlayerUnit(point) {
     return;
   }
   const team = state.sandbox ? state.placeTeam : "blue";
-  addUnit(type.id, team, point.x, point.y);
-  spendFor(type);
-  setToast(`${team === "blue" ? "Blue" : "Red"} ${type.name} deployed`);
+  const wanted = Math.max(1, Math.min(60, Math.floor(Number(batchPlaceCount?.value) || 1)));
+  const affordable = state.sandbox ? wanted : Math.max(1, Math.min(wanted, Math.floor(state.budget / type.price)));
+  const spacing = Math.max(type.radius * 2.35, 34);
+  const offsets = batchOffsets(affordable, spacing);
+  let placed = 0;
+  for (const offset of offsets) {
+    const maxX = state.sandbox ? canvas.width - type.radius : blueZone() - 18;
+    const x = clamp(point.x + offset.x, type.radius, maxX);
+    const y = clamp(point.y + offset.y, type.radius, canvas.height - type.radius);
+    addUnit(type.id, team, x, y);
+    spendFor(type);
+    placed += 1;
+    if (!state.sandbox && state.budget < type.price) break;
+  }
+  const suffix = placed > 1 ? ` x${placed}` : "";
+  setToast(`${team === "blue" ? "Blue" : "Red"} ${type.name}${suffix} deployed`);
 }
 
 function nearestUnit(point, team = "blue") {
@@ -1705,6 +1965,23 @@ function burnUnit(unit, seconds = 5) {
 function freezeUnit(unit, seconds = 2.4) {
   if (unit.dead) return;
   unit.freezeTimer = Math.max(unit.freezeTimer || 0, seconds);
+}
+
+function isMagicOrPoisonDamage(source) {
+  return (
+    source.damageType === "poison" ||
+    source.damageType === "tornado" ||
+    source.damageType === "fire" ||
+    source.damageType === "ice" ||
+    source.damageType === "fireball" ||
+    source.applyBurn ||
+    source.applyFreeze ||
+    source.fireball
+  );
+}
+
+function isFireDamage(source) {
+  return source.damageType === "fire" || source.damageType === "fireball" || source.applyBurn || source.fireball;
 }
 
 function itemTeam() {
@@ -2004,6 +2281,7 @@ function castFireball(unit, target) {
     isRanged: true,
     applyBurn: true,
     fireDuration: unit.skills.fireDuration || 5,
+    damageType: "fireball",
     fireball: true,
     life: 2.2,
   });
@@ -2149,6 +2427,14 @@ function spawnEnemyArmy() {
     "sharpshooter",
     "portalmage",
     "unit67",
+    "hydra",
+    "voidbinder",
+    "wallcrusher",
+    "phoenixguard",
+    "stormlancer",
+    "whirlhammer",
+    "zombie",
+    "peashooter",
   ];
   for (let i = 0; i < count; i += 1) {
     const typeId = ids[Math.floor(Math.random() * ids.length)];
@@ -2217,6 +2503,14 @@ function randomFormation() {
     "sharpshooter",
     "portalmage",
     "unit67",
+    "hydra",
+    "voidbinder",
+    "wallcrusher",
+    "phoenixguard",
+    "stormlancer",
+    "whirlhammer",
+    "zombie",
+    "peashooter",
   ];
   const team = state.sandbox ? state.placeTeam : "blue";
   let guard = 0;
@@ -2268,7 +2562,7 @@ function pauseBattle() {
 function findTarget(unit) {
   const focus = state.focusTargets[unit.team];
   if (focus) {
-    const focused = state.units.find((other) => other.id === focus.id && !other.dead && other.team !== unit.team);
+    const focused = state.units.find((other) => other.id === focus.id && !other.dead && other.airborneTimer <= 0 && other.team !== unit.team);
     if (focused) {
       const distance = Math.hypot(focused.x - unit.x, focused.y - unit.y);
       const wallInfo = wallTargetNear(unit, focused);
@@ -2279,7 +2573,7 @@ function findTarget(unit) {
   let best = null;
   let bestDistance = Infinity;
   for (const other of state.units) {
-    if (other.team === unit.team || other.dead) continue;
+    if (other.team === unit.team || other.dead || other.airborneTimer > 0) continue;
     const distance = Math.hypot(other.x - unit.x, other.y - unit.y);
     if (distance < bestDistance) {
       best = other;
@@ -2319,6 +2613,7 @@ function applyAreaAttack(attacker, x, y, area = attacker.areaAttack, isRanged = 
       applyBurn: attacker.skills.fireBreath,
       fireDuration: attacker.skills.fireDuration || 5,
       applyFreeze: attacker.skills.freezeAttack,
+      damageType: attacker.skills.fireBreath ? "fire" : attacker.skills.freezeAttack ? "ice" : null,
       noKnockback: attacker.skills.fireBreath,
       owner: attacker,
     });
@@ -2389,8 +2684,126 @@ function spawnRandomUnit(unit) {
   state.particles.push({ x, y, life: 0.9, startLife: 0.9, color: "#c48cff", size: 58 });
 }
 
+function canBeInfected(unit) {
+  return !unit.dead && unit.typeId !== "zombie" && INFECTABLE_TYPE_IDS.has(unit.typeId);
+}
+
+function infectUnit(target, source) {
+  if (!source.skills.infectTouch || !canBeInfected(target)) return;
+  const seconds = source.skills.infectSeconds || 10;
+  if (target.infectionTimer > 0 && target.infectionTeam === source.team) return;
+  target.infectionTimer = seconds;
+  target.infectionDuration = seconds;
+  target.infectionTeam = source.team;
+  state.particles.push({ x: target.x, y: target.y, life: 0.65, startLife: 0.65, color: "#83d96f", size: target.radius * 3.2 });
+}
+
+function convertToZombie(unit) {
+  const zombie = typeById("zombie");
+  unit.team = unit.infectionTeam || unit.team;
+  unit.typeId = zombie.id;
+  unit.name = zombie.name;
+  unit.glyph = zombie.glyph;
+  unit.weapon = zombie.weapon;
+  unit.secondAttack = null;
+  unit.areaAttack = null;
+  unit.hp = zombie.hp;
+  unit.maxHp = zombie.hp;
+  unit.damage = zombie.damage;
+  unit.range = zombie.range;
+  unit.burstCount = 1;
+  unit.burstCooldown = 0;
+  unit.stopDistance = zombie.range;
+  unit.speed = zombie.speed;
+  unit.radius = zombie.radius;
+  unit.cooldownTime = zombie.cooldown;
+  unit.projectileSpeed = 0;
+  unit.splash = 0;
+  unit.knockback = zombie.knockback;
+  unit.dodgeChance = 0;
+  unit.canAttackWalls = true;
+  unit.skills = { infectTouch: true, infectSeconds: 10 };
+  unit.poisonTimer = 0;
+  unit.burnTimer = 0;
+  unit.freezeTimer = 0;
+  unit.stasisTimer = 0;
+  unit.defensePotionTimer = 0;
+  unit.powerPotionTimer = 0;
+  unit.speedPotionTimer = 0;
+  unit.infectionTimer = 0;
+  unit.infectionDuration = 0;
+  unit.infectionTeam = null;
+  unit.color = unit.team === "blue" ? zombie.color : "#ff706c";
+  unit.cooldown = 0.4;
+  unit.dead = false;
+  for (let i = 0; i < 24; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 40 + Math.random() * 110;
+    state.particles.push({
+      x: unit.x,
+      y: unit.y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.45 + Math.random() * 0.35,
+      startLife: 0.8,
+      color: "#83d96f",
+      size: 12 + Math.random() * 16,
+    });
+  }
+}
+
+function triggerWhirlwindLeap(unit) {
+  const duration = unit.skills.whirlwindDuration || 4;
+  unit.airborneTimer = duration;
+  unit.airborneTotal = duration;
+  unit.whirlwindCooldown = duration + (unit.skills.whirlwindCooldown || 5);
+  unit.cooldown = Math.max(unit.cooldown, duration + 0.2);
+  for (let i = 0; i < 18; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 70 + Math.random() * 120;
+    state.particles.push({
+      x: unit.x,
+      y: unit.y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.35 + Math.random() * 0.25,
+      startLife: 0.6,
+      color: "#d7ecff",
+      size: 12 + Math.random() * 16,
+    });
+  }
+}
+
+function finishWhirlwindLeap(unit) {
+  const radius = unit.skills.whirlwindRadius || 105;
+  const damage = unit.skills.whirlwindDamage || 200;
+  for (const other of state.units) {
+    if (other.team === unit.team || other.dead || other.airborneTimer > 0) continue;
+    const distance = Math.hypot(other.x - unit.x, other.y - unit.y);
+    if (distance > radius + other.radius) continue;
+    const falloff = Math.max(0.45, 1 - distance / Math.max(1, radius));
+    hurt(other, damage * falloff, {
+      x: unit.x,
+      y: unit.y,
+      knockback: 5.5,
+      ignoreDodge: true,
+      owner: unit,
+    });
+  }
+  damageWallsAt(unit.x, unit.y, radius, damage * 0.35);
+  addRingParticle(unit.x, unit.y, "#d7ecff", radius);
+  state.particles.push({ x: unit.x, y: unit.y, life: 0.85, startLife: 0.85, color: "#8ab4ff", size: radius * 1.25 });
+}
+
 function hurt(target, amount, source) {
+  if (target.airborneTimer > 0) {
+    state.particles.push({ x: target.x, y: target.y, life: 0.28, color: "#d7ecff", size: target.radius * 1.6 });
+    return;
+  }
   const killer = source.owner || source;
+  if (!source.isRanged && killer?.skills?.infectTouch) {
+    infectUnit(target, killer);
+  }
   if (source.isRanged && target.skills.blockRangedChance > 0 && Math.random() < target.skills.blockRangedChance) {
     state.particles.push({ x: target.x, y: target.y, life: 0.6, color: "#bde7ff", size: target.radius * 2.5 });
     return;
@@ -2408,21 +2821,35 @@ function hurt(target, amount, source) {
     amount *= 0.45;
     state.particles.push({ x: target.x, y: target.y, life: 0.38, color: "#ffeaa0", size: target.radius * 2.1 });
   }
+  if (target.skills.fireResist > 0 && isFireDamage(source)) {
+    amount *= Math.max(0, 1 - target.skills.fireResist);
+    state.particles.push({ x: target.x, y: target.y, life: 0.42, color: "#ffb15d", size: target.radius * 2.8 });
+  } else
+  if (target.skills.magicResist > 0 && isMagicOrPoisonDamage(source)) {
+    amount *= 1 - target.skills.magicResist;
+    state.particles.push({ x: target.x, y: target.y, life: 0.42, color: "#ffcf8a", size: target.radius * 2.6 });
+  }
   if (source.applyBurn) burnUnit(target, source.fireDuration || 5);
   if (source.applyFreeze) freezeUnit(target, 2.4);
   target.hp -= amount;
   updateBerserk(target);
   const angle = Math.atan2(target.y - source.y, target.x - source.x);
-  const knockback = source.noKnockback ? 0 : source.knockback || 2.3;
+  const knockback = target.skills.knockbackImmune || source.noKnockback ? 0 : source.knockback || 2.3;
   target.vx += Math.cos(angle) * amount * knockback;
   target.vy += Math.sin(angle) * amount * knockback;
   state.particles.push({ x: target.x, y: target.y, life: 0.45, color: target.team === "blue" ? "#78bbff" : "#ff8582" });
   if (target.hp <= 0) {
+    if (target.infectionTimer > 0 && target.infectionTeam) {
+      convertToZombie(target);
+      return;
+    }
     target.dead = true;
     handleKillEffects(killer, target);
     if (target.skills.explode) explodeUnit(target);
-    target.vx += Math.cos(angle) * 120;
-    target.vy += Math.sin(angle) * 120;
+    if (!target.skills.knockbackImmune) {
+      target.vx += Math.cos(angle) * 120;
+      target.vy += Math.sin(angle) * 120;
+    }
   }
 }
 
@@ -2491,9 +2918,11 @@ function attack(unit, target, mode = null) {
         radius: active.weapon === "cannon" ? 7 : 4,
         isRanged: true,
         areaAttack: unit.areaAttack,
+        passWalls: unit.skills.rooted,
         applyBurn: unit.skills.fireBreath,
         fireDuration: unit.skills.fireDuration || 5,
         applyFreeze: unit.skills.freezeAttack,
+        damageType: unit.skills.fireBreath ? "fire" : unit.skills.freezeAttack ? "ice" : null,
         life: active.weapon === "musket" ? 0.85 : 1.6,
       });
     }
@@ -2505,6 +2934,7 @@ function attack(unit, target, mode = null) {
       applyBurn: unit.skills.fireBreath,
       fireDuration: unit.skills.fireDuration || 5,
       applyFreeze: unit.skills.freezeAttack,
+      damageType: unit.skills.fireBreath ? "fire" : unit.skills.freezeAttack ? "ice" : null,
       noKnockback: unit.skills.fireBreath && !unit.skills.meleeKnockbackWithFire,
     });
   }
@@ -2522,6 +2952,7 @@ function updateUnit(unit, dt) {
   unit.stasisCooldown = Math.max(0, unit.stasisCooldown - dt);
   unit.fireballCooldown = Math.max(0, unit.fireballCooldown - dt);
   unit.randomSpawnCooldown = Math.max(0, unit.randomSpawnCooldown - dt);
+  unit.whirlwindCooldown = Math.max(0, unit.whirlwindCooldown - dt);
   unit.wobble += dt * (5 + unit.speed / 25);
   updateBerserk(unit);
   if (!unit.dead && unit.poisonTimer > 0) {
@@ -2529,7 +2960,7 @@ function updateUnit(unit, dt) {
     unit.poisonTick -= dt;
     if (unit.poisonTick <= 0) {
       unit.poisonTick += 1;
-      hurt(unit, 20, { x: unit.x - 1, y: unit.y, knockback: 0.4, ignoreDodge: true });
+      hurt(unit, 20, { x: unit.x - 1, y: unit.y, knockback: 0.4, ignoreDodge: true, damageType: "poison" });
       state.particles.push({ x: unit.x, y: unit.y, life: 0.4, color: "#70e071", size: 18 });
     }
   }
@@ -2538,7 +2969,7 @@ function updateUnit(unit, dt) {
     unit.burnTick -= dt;
     if (unit.burnTick <= 0) {
       unit.burnTick += 1;
-      hurt(unit, 16, { x: unit.x - 1, y: unit.y, knockback: 0, ignoreDodge: true, noKnockback: true });
+      hurt(unit, 16, { x: unit.x - 1, y: unit.y, knockback: 0, ignoreDodge: true, noKnockback: true, damageType: "fire" });
       state.particles.push({ x: unit.x, y: unit.y, life: 0.4, color: "#ff8a38", size: 20 });
     }
   }
@@ -2547,11 +2978,43 @@ function updateUnit(unit, dt) {
   unit.defensePotionTimer = Math.max(0, unit.defensePotionTimer - dt);
   unit.powerPotionTimer = Math.max(0, unit.powerPotionTimer - dt);
   unit.speedPotionTimer = Math.max(0, unit.speedPotionTimer - dt);
+  if (!unit.dead && unit.infectionTimer > 0) {
+    unit.infectionTimer = Math.max(0, unit.infectionTimer - dt);
+    if (unit.infectionTimer <= 0) {
+      convertToZombie(unit);
+      return;
+    }
+  }
   if (unit.dead) {
     unit.vx *= 0.972;
     unit.vy *= 0.972;
     unit.x += unit.vx * dt;
     unit.y += unit.vy * dt;
+    return;
+  }
+  if (unit.airborneTimer > 0) {
+    unit.airborneTimer = Math.max(0, unit.airborneTimer - dt);
+    unit.vx *= 0.965;
+    unit.vy *= 0.965;
+    unit.x += unit.vx * dt;
+    unit.y += unit.vy * dt;
+    unit.x = Math.max(unit.radius, Math.min(canvas.width - unit.radius, unit.x));
+    unit.y = Math.max(unit.radius, Math.min(canvas.height - unit.radius, unit.y));
+    if (unit.airborneTimer <= 0) {
+      finishWhirlwindLeap(unit);
+      unit.airborneTotal = 0;
+    } else if (Math.random() < dt * 16) {
+      state.particles.push({
+        x: unit.x + (Math.random() - 0.5) * unit.radius * 2,
+        y: unit.y + (Math.random() - 0.5) * unit.radius * 2,
+        vx: (Math.random() - 0.5) * 120,
+        vy: (Math.random() - 0.5) * 120,
+        life: 0.25,
+        startLife: 0.25,
+        color: "#d7ecff",
+        size: 10 + Math.random() * 12,
+      });
+    }
     return;
   }
   applyDamageAura(unit, dt);
@@ -2564,8 +3027,12 @@ function updateUnit(unit, dt) {
     unit.vy = 0;
     return;
   }
+  if (unit.skills.rooted) {
+    unit.vx = 0;
+    unit.vy = 0;
+  }
   const command = state.commands[unit.team];
-  if (command) {
+  if (command && !unit.skills.rooted) {
     const goal = wallAvoidancePoint(unit, command);
     const commandDistance = Math.hypot(goal.x - unit.x, goal.y - unit.y);
     const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1);
@@ -2588,6 +3055,10 @@ function updateUnit(unit, dt) {
   const info = findTarget(unit);
   if (!info) return;
   const { target, distance } = info;
+  if (unit.skills.whirlwindLeap && unit.whirlwindCooldown <= 0 && target.kind !== "wall" && distance <= (unit.skills.whirlwindTriggerRange || 92)) {
+    triggerWhirlwindLeap(unit);
+    return;
+  }
   if (unit.skills.stasisGaze && unit.stasisCooldown <= 0) {
     triggerStasisGaze(unit);
   }
@@ -2611,7 +3082,7 @@ function updateUnit(unit, dt) {
   const attackDistance = Math.max(primaryAttackDistance, secondAttackDistance);
   const stopDistance = isRanged ? unit.stopDistance : Math.min(unit.stopDistance, attackDistance);
   const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1);
-  if (engagementDistance > stopDistance) {
+  if (!unit.skills.rooted && engagementDistance > stopDistance) {
     unit.vx += Math.cos(angle) * unit.speed * speedFactor * dt * 2.8;
     unit.vy += Math.sin(angle) * unit.speed * speedFactor * dt * 2.8;
   }
@@ -2624,13 +3095,18 @@ function updateUnit(unit, dt) {
       attack(unit, target, second);
     }
   }
-  unit.vx += Math.cos(unit.wobble) * 9 * dt;
-  unit.vy += Math.sin(unit.wobble * 1.7) * 8 * dt;
-  unit.vx *= 0.91;
-  unit.vy *= 0.91;
-  unit.x += unit.vx * dt;
-  unit.y += unit.vy * dt;
-  pushOutOfWalls(unit);
+  if (!unit.skills.rooted) {
+    unit.vx += Math.cos(unit.wobble) * 9 * dt;
+    unit.vy += Math.sin(unit.wobble * 1.7) * 8 * dt;
+    unit.vx *= 0.91;
+    unit.vy *= 0.91;
+    unit.x += unit.vx * dt;
+    unit.y += unit.vy * dt;
+    pushOutOfWalls(unit);
+  } else {
+    unit.vx = 0;
+    unit.vy = 0;
+  }
   unit.x = Math.max(unit.radius, Math.min(canvas.width - unit.radius, unit.x));
   unit.y = Math.max(unit.radius, Math.min(canvas.height - unit.radius, unit.y));
 }
@@ -2646,6 +3122,10 @@ function resolveCrowding() {
       const distance = Math.max(0.01, Math.hypot(dx, dy));
       const min = a.radius + b.radius;
       if (distance >= min) continue;
+      if (!a.dead && !b.dead && a.team !== b.team) {
+        infectUnit(b, a);
+        infectUnit(a, b);
+      }
       const push = (min - distance) * 0.5;
       const nx = dx / distance;
       const ny = dy / distance;
@@ -2744,6 +3224,8 @@ function updateProjectiles(dt) {
               applyBurn: projectile.applyBurn,
               fireDuration: projectile.fireDuration || 5,
               applyFreeze: projectile.applyFreeze,
+              fireball: projectile.fireball,
+              damageType: projectile.fireball ? "fireball" : projectile.applyBurn ? "fire" : projectile.applyFreeze ? "ice" : null,
               noKnockback: projectile.applyBurn,
               owner,
             });
@@ -2764,6 +3246,8 @@ function updateProjectiles(dt) {
           applyBurn: projectile.applyBurn,
           fireDuration: projectile.fireDuration || 5,
           applyFreeze: projectile.applyFreeze,
+          fireball: projectile.fireball,
+          damageType: projectile.fireball ? "fireball" : projectile.applyBurn ? "fire" : projectile.applyFreeze ? "ice" : null,
           noKnockback: projectile.applyBurn,
           owner,
         });
@@ -2823,31 +3307,33 @@ function updateTornadoes(dt) {
       const distance = Math.max(1, Math.hypot(dx, dy));
       if (distance > tornado.radius + unit.radius) continue;
       const effect = 1 - distance / (tornado.radius + unit.radius);
-      const edgePressure = Math.max(0, distance / tornado.radius - 0.62);
-      const pull = effect * 145 + edgePressure * 540;
-      const orbit = (0.35 + effect * 0.65) * 640 * tornado.spin;
       const nx = dx / distance;
       const ny = dy / distance;
-      const tx = -ny;
-      const ty = nx;
-      unit.vx += (dx / distance) * pull * dt;
-      unit.vy += (dy / distance) * pull * dt;
-      unit.vx += tx * orbit * dt;
-      unit.vy += ty * orbit * dt;
-      const containment = 1 - Math.min(0.38, (0.12 + edgePressure * 0.38) * dt * 60);
-      unit.vx *= containment;
-      unit.vy *= containment;
-      const carry = 0.42 + effect * 0.28;
-      unit.vx += tornado.vx * carry * 0.08;
-      unit.vy += tornado.vy * carry * 0.08;
-      unit.x += tornado.vx * carry * dt;
-      unit.y += tornado.vy * carry * dt;
-      const innerRadius = tornado.radius * 0.34;
-      if (distance < innerRadius) {
-        unit.vx -= nx * 190 * dt;
-        unit.vy -= ny * 190 * dt;
+      if (!unit.skills.knockbackImmune) {
+        const edgePressure = Math.max(0, distance / tornado.radius - 0.62);
+        const pull = effect * 145 + edgePressure * 540;
+        const orbit = (0.35 + effect * 0.65) * 640 * tornado.spin;
+        const tx = -ny;
+        const ty = nx;
+        unit.vx += (dx / distance) * pull * dt;
+        unit.vy += (dy / distance) * pull * dt;
+        unit.vx += tx * orbit * dt;
+        unit.vy += ty * orbit * dt;
+        const containment = 1 - Math.min(0.38, (0.12 + edgePressure * 0.38) * dt * 60);
+        unit.vx *= containment;
+        unit.vy *= containment;
+        const carry = 0.42 + effect * 0.28;
+        unit.vx += tornado.vx * carry * 0.08;
+        unit.vy += tornado.vy * carry * 0.08;
+        unit.x += tornado.vx * carry * dt;
+        unit.y += tornado.vy * carry * dt;
+        const innerRadius = tornado.radius * 0.34;
+        if (distance < innerRadius) {
+          unit.vx -= nx * 190 * dt;
+          unit.vy -= ny * 190 * dt;
+        }
       }
-      hurt(unit, (tornado.damage || 6) * dt, { x: tornado.x, y: tornado.y, knockback: 0.35 });
+      hurt(unit, (tornado.damage || 6) * dt, { x: tornado.x, y: tornado.y, knockback: 0.35, damageType: "tornado" });
       if (tornado.poison) poisonUnit(unit, 5);
     }
   }
@@ -3012,15 +3498,27 @@ function drawUnit(unit) {
   const faceAngle = stasisSource ? Math.atan2(stasisSource.y - unit.y, stasisSource.x - unit.x) : 0;
   const stasisShake = unit.stasisTimer > 0 ? Math.sin(performance.now() / 42 + unit.id) * 0.82 : 0;
   const stasisSlide = unit.stasisTimer > 0 ? Math.sin(performance.now() / 35 + unit.id * 1.7) * 8 : 0;
-  const tilt = unit.stasisTimer > 0 ? stasisShake : Math.sin(unit.wobble) * (unit.dead ? 0.7 : 0.18);
+  const airProgress = unit.airborneTotal > 0 ? 1 - unit.airborneTimer / unit.airborneTotal : 0;
+  const airHeight = unit.airborneTimer > 0 ? Math.sin(airProgress * Math.PI) * 82 + 26 : 0;
+  const tilt = unit.airborneTimer > 0 ? performance.now() / 90 : unit.stasisTimer > 0 ? stasisShake : Math.sin(unit.wobble) * (unit.dead ? 0.7 : 0.18);
   ctx.save();
   ctx.translate(unit.x + stasisSlide, unit.y);
-  ctx.rotate(faceAngle + tilt);
   ctx.globalAlpha = unit.dead ? 0.45 : 1;
   ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
   ctx.beginPath();
-  ctx.ellipse(3, unit.radius * 0.86, unit.radius * 1.1, unit.radius * 0.42, 0, 0, Math.PI * 2);
+  ctx.ellipse(3, unit.radius * 0.86, unit.radius * (unit.airborneTimer > 0 ? 1.35 : 1.1), unit.radius * (unit.airborneTimer > 0 ? 0.24 : 0.42), 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.translate(0, -airHeight);
+  ctx.rotate(faceAngle + tilt);
+  if (!unit.dead && unit.airborneTimer > 0) {
+    ctx.strokeStyle = "#d7ecff";
+    ctx.lineWidth = 4;
+    for (let i = 0; i < 3; i += 1) {
+      ctx.beginPath();
+      ctx.ellipse(0, i * 7 - 5, unit.radius * (1.25 + i * 0.22), unit.radius * 0.38, performance.now() / (220 - i * 35), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
   if (!unit.dead && unit.skills.holyShield) {
     const shieldRange = unit.skills.holyShieldRange ?? 160;
     ctx.save();
@@ -3088,6 +3586,16 @@ function drawUnit(unit) {
     ctx.beginPath();
     ctx.arc(0, 0, unit.radius + 14, 0, Math.PI * 2);
     ctx.stroke();
+  }
+  if (!unit.dead && unit.infectionTimer > 0) {
+    const pulse = 0.55 + Math.sin(performance.now() / 120) * 0.25;
+    ctx.strokeStyle = "#83d96f";
+    ctx.lineWidth = 4;
+    ctx.globalAlpha = pulse;
+    ctx.beginPath();
+    ctx.arc(0, 0, unit.radius + 17, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = unit.dead ? 0.45 : 1;
   }
   ctx.fillStyle = unit.team === "blue" ? "#0b2038" : "#3b1010";
   ctx.beginPath();
@@ -3202,6 +3710,119 @@ function drawUnitSkin(unit) {
       ctx.stroke();
     }
   }
+  if (unit.typeId === "hydra") {
+    ctx.fillStyle = "#7b2432";
+    for (const offset of [-0.62, 0, 0.62]) {
+      ctx.beginPath();
+      ctx.arc(r * offset, -r * 0.72, r * 0.34, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#ffc36d";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(r * offset - r * 0.14, -r * 1.02);
+      ctx.lineTo(r * offset, -r * 1.34);
+      ctx.lineTo(r * offset + r * 0.14, -r * 1.02);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#4a1420";
+    ctx.beginPath();
+    ctx.moveTo(-r * 1.35, r * 0.12);
+    ctx.lineTo(-r * 0.35, -r * 0.7);
+    ctx.lineTo(-r * 0.12, r * 0.45);
+    ctx.closePath();
+    ctx.moveTo(r * 1.35, r * 0.12);
+    ctx.lineTo(r * 0.35, -r * 0.7);
+    ctx.lineTo(r * 0.12, r * 0.45);
+    ctx.closePath();
+    ctx.fill();
+  }
+  if (unit.typeId === "voidbinder") {
+    ctx.strokeStyle = "#d8c2ff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.08, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "#6bffef";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 4; i += 1) {
+      const a = i * Math.PI * 0.5 + performance.now() / 900;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55);
+      ctx.lineTo(Math.cos(a) * r * 1.35, Math.sin(a) * r * 1.35);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#1b133d";
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (unit.typeId === "wallcrusher") {
+    ctx.fillStyle = "#3f3b32";
+    ctx.fillRect(r * 0.55, -r * 0.82, r * 1.05, r * 0.78);
+    ctx.strokeStyle = "#f0dfae";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(r * 0.55, -r * 0.82, r * 1.05, r * 0.78);
+    ctx.strokeStyle = "#2f2a20";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.76, r * 0.72);
+    ctx.lineTo(r * 0.86, -r * 0.42);
+    ctx.stroke();
+    ctx.fillStyle = "#d8d0a8";
+    ctx.fillRect(-r * 0.74, r * 0.26, r * 0.52, r * 0.28);
+  }
+  if (unit.typeId === "phoenixguard") {
+    ctx.fillStyle = "#ffcf5f";
+    ctx.beginPath();
+    ctx.moveTo(-r * 1.38, r * 0.2);
+    ctx.quadraticCurveTo(-r * 0.75, -r * 1.3, -r * 0.12, -r * 0.12);
+    ctx.quadraticCurveTo(-r * 0.6, -r * 0.05, -r * 1.38, r * 0.2);
+    ctx.moveTo(r * 1.38, r * 0.2);
+    ctx.quadraticCurveTo(r * 0.75, -r * 1.3, r * 0.12, -r * 0.12);
+    ctx.quadraticCurveTo(r * 0.6, -r * 0.05, r * 1.38, r * 0.2);
+    ctx.fill();
+    ctx.strokeStyle = "#fff0a8";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, -r * 0.08, r * 0.82, Math.PI * 0.15, Math.PI * 1.85);
+    ctx.stroke();
+  }
+  if (unit.typeId === "stormlancer") {
+    ctx.strokeStyle = "#bde7ff";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.45, r * 0.72);
+    ctx.lineTo(r * 1.15, -r * 0.92);
+    ctx.stroke();
+    ctx.strokeStyle = "#fff36d";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(r * 0.1, -r * 0.1);
+    ctx.lineTo(r * 0.45, -r * 0.46);
+    ctx.lineTo(r * 0.28, -r * 0.48);
+    ctx.lineTo(r * 0.76, -r * 0.94);
+    ctx.stroke();
+    ctx.strokeStyle = "#75d7ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.05, Math.PI * 0.2, Math.PI * 1.65);
+    ctx.stroke();
+  }
+  if (unit.typeId === "whirlhammer") {
+    ctx.strokeStyle = "#d7ecff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.05, Math.PI * 0.12, Math.PI * 1.72);
+    ctx.stroke();
+    ctx.fillStyle = "#5f6f96";
+    ctx.fillRect(r * 0.7, -r * 0.82, r * 0.82, r * 0.58);
+    ctx.strokeStyle = "#f0dfae";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.55, r * 0.62);
+    ctx.lineTo(r * 0.95, -r * 0.52);
+    ctx.stroke();
+  }
   if (unit.typeId === "bomber" || unit.typeId === "cannon") {
     ctx.fillStyle = "#2d3036";
     ctx.fillRect(-r * 0.62, -r * 0.28, r * 1.24, r * 0.56);
@@ -3257,6 +3878,46 @@ function drawUnitSkin(unit) {
     ctx.beginPath();
     ctx.arc(-r * 0.28, -r * 0.12, r * 0.12, 0, Math.PI * 2);
     ctx.arc(r * 0.28, -r * 0.12, r * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (unit.typeId === "zombie") {
+    ctx.fillStyle = "#2d5b35";
+    ctx.beginPath();
+    ctx.arc(-r * 0.3, -r * 0.18, r * 0.12, 0, Math.PI * 2);
+    ctx.arc(r * 0.3, -r * 0.18, r * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#dff5c8";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.72, r * 0.22);
+    ctx.lineTo(-r * 1.16, r * 0.72);
+    ctx.moveTo(r * 0.72, r * 0.22);
+    ctx.lineTo(r * 1.16, r * 0.72);
+    ctx.moveTo(-r * 0.42, -r * 0.68);
+    ctx.lineTo(r * 0.42, -r * 0.68);
+    ctx.stroke();
+    ctx.fillStyle = "#83d96f";
+    ctx.beginPath();
+    ctx.arc(0, r * 0.34, r * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (unit.typeId === "peashooter") {
+    ctx.fillStyle = "#2f8f46";
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.7, r * 0.55, r * 0.24, -0.25, 0, Math.PI * 2);
+    ctx.ellipse(-r * 0.52, r * 0.5, r * 0.38, r * 0.18, -0.65, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#3fbf5e";
+    ctx.beginPath();
+    ctx.arc(-r * 0.12, -r * 0.22, r * 0.62, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#205c34";
+    ctx.beginPath();
+    ctx.ellipse(r * 0.72, -r * 0.2, r * 0.62, r * 0.34, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#80e88a";
+    ctx.beginPath();
+    ctx.ellipse(r * 0.9, -r * 0.2, r * 0.26, r * 0.15, 0, 0, Math.PI * 2);
     ctx.fill();
   }
   if (unit.typeId === "dragonling") {

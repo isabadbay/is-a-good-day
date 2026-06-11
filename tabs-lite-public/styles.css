@@ -369,6 +369,25 @@ h1 {
   border-color: var(--red);
 }
 
+.placement-batch {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.placement-batch input {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #151a21;
+  color: var(--text);
+  padding: 7px 9px;
+}
+
 .battlefield-wrap {
   position: relative;
   min-height: 420px;
