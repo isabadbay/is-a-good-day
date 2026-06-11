@@ -2919,6 +2919,7 @@ function attack(unit, target, mode = null) {
         isRanged: true,
         areaAttack: unit.areaAttack,
         passWalls: unit.skills.rooted,
+        continueOnTargetDeath: unit.typeId === "peashooter",
         applyBurn: unit.skills.fireBreath,
         fireDuration: unit.skills.fireDuration || 5,
         applyFreeze: unit.skills.freezeAttack,
@@ -3185,10 +3186,41 @@ function updateProjectiles(dt) {
     const target = state.units.find((unit) => unit.id === projectile.tx && !unit.dead);
     projectile.life -= dt;
     if (!target) {
-      projectile.life = 0;
+      if (!projectile.continueOnTargetDeath) {
+        projectile.life = 0;
+        continue;
+      }
+      projectile.vx ??= Math.cos(projectile.lastAngle || 0) * projectile.speed;
+      projectile.vy ??= Math.sin(projectile.lastAngle || 0) * projectile.speed;
+      projectile.x += projectile.vx * dt;
+      projectile.y += projectile.vy * dt;
+      const replacement = state.units.find((unit) => {
+        if (unit.team === projectile.team || unit.dead) return false;
+        return Math.hypot(unit.x - projectile.x, unit.y - projectile.y) < unit.radius + 6;
+      });
+      if (replacement) {
+        const owner = state.units.find((unit) => unit.id === projectile.ownerId);
+        const angle = Math.atan2(replacement.y - projectile.y, replacement.x - projectile.x);
+        hurt(replacement, projectile.damage, {
+          x: projectile.x - Math.cos(angle),
+          y: projectile.y - Math.sin(angle),
+          isRanged: true,
+          applyBurn: projectile.applyBurn,
+          fireDuration: projectile.fireDuration || 5,
+          applyFreeze: projectile.applyFreeze,
+          fireball: projectile.fireball,
+          damageType: projectile.fireball ? "fireball" : projectile.applyBurn ? "fire" : projectile.applyFreeze ? "ice" : null,
+          noKnockback: projectile.applyBurn,
+          owner,
+        });
+        projectile.life = 0;
+      }
       continue;
     }
     const angle = Math.atan2(target.y - projectile.y, target.x - projectile.x);
+    projectile.lastAngle = angle;
+    projectile.vx = Math.cos(angle) * projectile.speed;
+    projectile.vy = Math.sin(angle) * projectile.speed;
     projectile.x += Math.cos(angle) * projectile.speed * dt;
     projectile.y += Math.sin(angle) * projectile.speed * dt;
     if (projectileHitsWall(projectile)) {
