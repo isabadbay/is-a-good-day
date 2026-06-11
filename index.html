@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>TABS Lite</title>
-    <link rel="stylesheet" href="./styles.css?v=20260610-dragon-berserk" />
+    <link rel="stylesheet" href="./styles.css?v=20260611-dragon-resist" />
   </head>
   <body>
     <main class="app-shell">
@@ -131,6 +131,14 @@
                 Area Damage
                 <input id="customAreaDamage" type="number" min="0" max="500000000" value="0" />
               </label>
+              <label>
+                Burst Cooldown
+                <input id="customBurstCooldown" type="number" min="0" max="500000000" step="0.1" value="0" />
+              </label>
+              <label>
+                Burst Count
+                <input id="customBurstCount" type="number" min="1" max="500000000" value="1" />
+              </label>
             </div>
 
             <div class="skill-box">
@@ -158,6 +166,14 @@
               <label>
                 Second Damage
                 <input id="customSecondDamage" type="number" min="0" max="500000000" value="0" />
+              </label>
+              <label>
+                Second Burst Cooldown
+                <input id="customSecondBurstCooldown" type="number" min="0" max="500000000" step="0.1" value="0" />
+              </label>
+              <label>
+                Second Burst Count
+                <input id="customSecondBurstCount" type="number" min="1" max="500000000" value="1" />
               </label>
             </div>
 
@@ -227,13 +243,41 @@
                 <input id="skillTornado" type="checkbox" />
                 Tornado
               </label>
+              <label>
+                Tornado Damage
+                <input id="skillTornadoDamage" type="number" min="0" max="500000000" value="6" />
+              </label>
+              <label>
+                Tornado Duration
+                <input id="skillTornadoDuration" type="number" min="0" max="500000000" step="0.1" value="4.2" />
+              </label>
+              <label>
+                Tornado Range
+                <input id="skillTornadoRange" type="number" min="0" max="500000000" value="82" />
+              </label>
               <label class="toggle-row inline-toggle">
                 <input id="skillFireBreath" type="checkbox" />
                 Fire Breath
               </label>
+              <label>
+                Fire Particle Size
+                <input id="skillFireParticleSize" type="number" min="0" max="500000000" step="0.1" value="1" />
+              </label>
+              <label>
+                Burn Duration
+                <input id="skillFireDuration" type="number" min="0" max="500000000" step="0.1" value="5" />
+              </label>
+              <label>
+                Fire Range
+                <input id="skillFireRange" type="number" min="0" max="500000000" value="95" />
+              </label>
               <label class="toggle-row inline-toggle">
                 <input id="skillFireball" type="checkbox" />
                 Fireball
+              </label>
+              <label>
+                Fireball Damage
+                <input id="skillFireballDamage" type="number" min="0" max="500000000" value="52" />
               </label>
               <label class="toggle-row inline-toggle">
                 <input id="skillHolyShield" type="checkbox" />
@@ -355,6 +399,6 @@
       </section>
     </main>
 
-    <script src="./game.js?v=20260610-dragon-berserk"></script>
+    <script src="./game.js?v=20260611-dragon-resist"></script>
   </body>
 </html>

@@ -40,10 +40,14 @@ const customAttackWalls = document.querySelector("#customAttackWalls");
 const customAreaAttack = document.querySelector("#customAreaAttack");
 const customAreaRange = document.querySelector("#customAreaRange");
 const customAreaDamage = document.querySelector("#customAreaDamage");
+const customBurstCooldown = document.querySelector("#customBurstCooldown");
+const customBurstCount = document.querySelector("#customBurstCount");
 const customSecondWeapon = document.querySelector("#customSecondWeapon");
 const customSecondRange = document.querySelector("#customSecondRange");
 const customSecondRanged = document.querySelector("#customSecondRanged");
 const customSecondDamage = document.querySelector("#customSecondDamage");
+const customSecondBurstCooldown = document.querySelector("#customSecondBurstCooldown");
+const customSecondBurstCount = document.querySelector("#customSecondBurstCount");
 const createCustomBtn = document.querySelector("#createCustomBtn");
 const skillExplode = document.querySelector("#skillExplode");
 const skillExplodeDamage = document.querySelector("#skillExplodeDamage");
@@ -61,8 +65,15 @@ const skillDamageAura = document.querySelector("#skillDamageAura");
 const skillDamageAuraRange = document.querySelector("#skillDamageAuraRange");
 const skillDamageAuraDamage = document.querySelector("#skillDamageAuraDamage");
 const skillTornado = document.querySelector("#skillTornado");
+const skillTornadoDamage = document.querySelector("#skillTornadoDamage");
+const skillTornadoDuration = document.querySelector("#skillTornadoDuration");
+const skillTornadoRange = document.querySelector("#skillTornadoRange");
 const skillFireBreath = document.querySelector("#skillFireBreath");
+const skillFireParticleSize = document.querySelector("#skillFireParticleSize");
+const skillFireDuration = document.querySelector("#skillFireDuration");
+const skillFireRange = document.querySelector("#skillFireRange");
 const skillFireball = document.querySelector("#skillFireball");
+const skillFireballDamage = document.querySelector("#skillFireballDamage");
 const skillHolyShield = document.querySelector("#skillHolyShield");
 const skillHolyShieldRange = document.querySelector("#skillHolyShieldRange");
 const skillHolyShieldReduction = document.querySelector("#skillHolyShieldReduction");
@@ -200,11 +211,15 @@ const translations = {
       customAreaAttack: "是否范围攻击",
       customAreaRange: "范围攻击范围",
       customAreaDamage: "范围攻击伤害",
+      customBurstCooldown: "爆发攻击冷却",
+      customBurstCount: "爆发攻击次数",
       secondAttack: "第二攻击",
       customSecondWeapon: "第2攻击物品",
       customSecondRange: "第2攻击范围",
       customSecondRanged: "第2攻击是远程",
       customSecondDamage: "第2攻击伤害",
+      customSecondBurstCooldown: "第2爆发攻击冷却",
+      customSecondBurstCount: "第2爆发攻击次数",
       skills: "特殊技能",
       skillExplode: "死亡自爆",
       skillExplodeDamage: "自爆伤害",
@@ -222,8 +237,15 @@ const translations = {
       skillDamageAuraRange: "范围伤害半径",
       skillDamageAuraDamage: "每秒范围伤害",
       skillTornado: "龙卷风",
+      skillTornadoDamage: "龙卷风伤害",
+      skillTornadoDuration: "龙卷风持续时间",
+      skillTornadoRange: "龙卷风范围",
       skillFireBreath: "喷火",
+      skillFireParticleSize: "火焰粒子大小",
+      skillFireDuration: "火焰持续时间",
+      skillFireRange: "火焰范围",
       skillFireball: "火球术",
+      skillFireballDamage: "火球伤害",
       skillHolyShield: "圣光护盾",
       skillHolyShieldRange: "圣光护盾范围",
       skillHolyShieldReduction: "圣光护盾减伤%",
@@ -368,11 +390,15 @@ const translations = {
       customAreaAttack: "Use Area Attack",
       customAreaRange: "Area Radius",
       customAreaDamage: "Area Damage",
+      customBurstCooldown: "Burst Cooldown",
+      customBurstCount: "Burst Count",
       secondAttack: "Second Attack",
       customSecondWeapon: "Second Weapon",
       customSecondRange: "Second Range",
       customSecondRanged: "Second Attack Is Ranged",
       customSecondDamage: "Second Damage",
+      customSecondBurstCooldown: "Second Burst Cooldown",
+      customSecondBurstCount: "Second Burst Count",
       skills: "Special Skills",
       skillExplode: "Death Explosion",
       skillExplodeDamage: "Explosion Damage",
@@ -390,8 +416,15 @@ const translations = {
       skillDamageAuraRange: "Aura Radius",
       skillDamageAuraDamage: "Aura Damage Per Second",
       skillTornado: "Tornado",
+      skillTornadoDamage: "Tornado Damage",
+      skillTornadoDuration: "Tornado Duration",
+      skillTornadoRange: "Tornado Range",
       skillFireBreath: "Fire Breath",
+      skillFireParticleSize: "Fire Particle Size",
+      skillFireDuration: "Burn Duration",
+      skillFireRange: "Fire Range",
       skillFireball: "Fireball",
+      skillFireballDamage: "Fireball Damage",
       skillHolyShield: "Holy Shield",
       skillHolyShieldRange: "Holy Shield Range",
       skillHolyShieldReduction: "Holy Shield Damage Reduction %",
@@ -867,6 +900,8 @@ const unitTypes = [
       explodeDamage: 120,
       explodeRange: 120,
       burnImmune: true,
+      magicResist: 0.85,
+      knockbackImmune: true,
       berserkHp: 400,
       berserkDamage: 0.5,
       berserkHeal: 80,
@@ -1419,6 +1454,8 @@ function createCustomUnitType() {
   const customAttackRange = clamp(Number(customRange.value) || profile.range, 8, CUSTOM_LIMIT);
   const stopDistance = clamp(Number(customStopDistance.value) || customAttackRange, 0, CUSTOM_LIMIT);
   const dodgeChance = clamp(Number(customDodge.value) || 0, 0, CUSTOM_LIMIT) / 100;
+  const burstCount = Math.max(1, Math.floor(clamp(Number(customBurstCount.value) || 1, 1, CUSTOM_LIMIT)));
+  const burstCooldown = clamp(Number(customBurstCooldown.value) || 0, 0, CUSTOM_LIMIT);
   const skills = {
     explode: skillExplode.checked,
     explodeDamage: clamp(Number(skillExplodeDamage.value) || 120, 10, CUSTOM_LIMIT),
@@ -1436,8 +1473,15 @@ function createCustomUnitType() {
     damageAuraRange: clamp(Number(skillDamageAuraRange.value) || 120, 0, CUSTOM_LIMIT),
     damageAuraDamage: clamp(Number(skillDamageAuraDamage.value) || 10, 0, CUSTOM_LIMIT),
     tornado: skillTornado.checked,
+    tornadoDamage: clamp(Number(skillTornadoDamage.value) || 6, 0, CUSTOM_LIMIT),
+    tornadoDuration: clamp(Number(skillTornadoDuration.value) || 4.2, 0, CUSTOM_LIMIT),
+    tornadoRange: clamp(Number(skillTornadoRange.value) || 82, 0, CUSTOM_LIMIT),
     fireBreath: skillFireBreath.checked,
+    fireParticleSize: clamp(Number(skillFireParticleSize.value) || 1, 0, CUSTOM_LIMIT),
+    fireDuration: clamp(Number(skillFireDuration.value) || 5, 0, CUSTOM_LIMIT),
+    fireRange: clamp(Number(skillFireRange.value) || 95, 0, CUSTOM_LIMIT),
     fireball: skillFireball.checked,
+    fireballDamage: clamp(Number(skillFireballDamage.value) || 52, 0, CUSTOM_LIMIT),
     holyShield: skillHolyShield.checked,
     holyShieldRange: clamp(Number(skillHolyShieldRange.value) || 160, 0, CUSTOM_LIMIT),
     holyShieldReduction: clamp(Number(skillHolyShieldReduction.value) || 45, 0, CUSTOM_LIMIT) / 100,
@@ -1453,6 +1497,8 @@ function createCustomUnitType() {
   const secondRange = clamp(Number(customSecondRange.value) || 0, 0, CUSTOM_LIMIT);
   const secondDamage = clamp(Number(customSecondDamage.value) || 0, 0, CUSTOM_LIMIT);
   const secondRanged = customSecondRanged.checked;
+  const secondBurstCount = Math.max(1, Math.floor(clamp(Number(customSecondBurstCount.value) || 1, 1, CUSTOM_LIMIT)));
+  const secondBurstCooldown = clamp(Number(customSecondBurstCooldown.value) || 0, 0, CUSTOM_LIMIT);
   const secondAttack =
     customSecondWeapon.value !== "none" && secondRange > 0 && secondDamage > 0
       ? {
@@ -1463,6 +1509,8 @@ function createCustomUnitType() {
           projectileSpeed: secondRanged ? secondProfile.projectileSpeed || 390 : 0,
           splash: secondRanged && customSecondWeapon.value === "cannon" ? secondProfile.splash : 0,
           cooldown: Math.max(0.25, 1 / attackSpeed),
+          burstCount: secondBurstCount,
+          burstCooldown: secondBurstCooldown,
         }
       : null;
   const cleanName = customName.value.trim() || `鑷畾涔?{customUnitCounter}`;
@@ -1480,20 +1528,21 @@ function createCustomUnitType() {
       size * 3 +
       range * 0.45 +
       dodgeChance * 260 +
+      (burstCount > 1 ? burstCount * 55 + burstCooldown * 18 : 0) +
       (areaAttack ? areaAttack.range * 0.35 + areaAttack.damage * 4.5 : 0) +
       (skills.explode ? skills.explodeDamage * 0.7 + skills.explodeRange * 0.55 : 0) +
       (skills.poisonSlime ? 120 + skills.slimeChance * 120 : 0) +
       (skills.summonOnKill ? 130 + skills.summonChance * 100 : 0) +
       (skills.damageOnKill ? 120 + skills.damageGain * 8 : 0) +
       (skills.damageAura ? 160 + skills.damageAuraRange * 0.35 + skills.damageAuraDamage * 8 : 0) +
-      (skills.tornado ? 260 : 0) +
-      (skills.fireBreath ? 150 : 0) +
-      (skills.fireball ? 230 : 0) +
+      (skills.tornado ? 180 + skills.tornadoRange * 0.45 + skills.tornadoDamage * 12 + skills.tornadoDuration * 25 : 0) +
+      (skills.fireBreath ? 120 + skills.fireRange * 0.35 + skills.fireDuration * 18 + skills.fireParticleSize * 30 : 0) +
+      (skills.fireball ? 130 + skills.fireballDamage * 3 : 0) +
       (skills.holyShield ? 140 + skills.holyShieldRange * 0.45 + skills.holyShieldReduction * 320 : 0) +
       (skills.freezeAttack ? 140 : 0) +
       skills.blockRangedChance * 220 +
       (skills.berserkHp > 0 ? skills.berserkDamage * 180 + skills.berserkHeal * 0.8 : 0) +
-      (secondAttack ? secondAttack.damage * 5 + secondAttack.range * 0.22 + (secondAttack.ranged ? 80 : 0) : 0) +
+      (secondAttack ? secondAttack.damage * 5 + secondAttack.range * 0.22 + (secondAttack.ranged ? 80 : 0) + (secondBurstCount > 1 ? secondBurstCount * 45 + secondBurstCooldown * 16 : 0) : 0) +
       (ranged ? 95 : 0) +
       splash * 1.5,
   );
@@ -1510,6 +1559,8 @@ function createCustomUnitType() {
     speed,
     radius: size,
     cooldown: 1 / attackSpeed,
+    burstCount,
+    burstCooldown,
     projectileSpeed,
     splash,
     areaAttack,
@@ -1549,6 +1600,8 @@ function addUnit(typeId, team, x, y) {
     maxHp: type.hp,
     damage: type.damage,
     range: type.range,
+    burstCount: type.burstCount || 1,
+    burstCooldown: type.burstCooldown || 0,
     stopDistance: type.stopDistance ?? type.range,
     speed: type.speed,
     radius: type.radius,
@@ -1654,6 +1707,19 @@ function burnUnit(unit, seconds = 5) {
 function freezeUnit(unit, seconds = 2.4) {
   if (unit.dead) return;
   unit.freezeTimer = Math.max(unit.freezeTimer || 0, seconds);
+}
+
+function isMagicOrPoisonDamage(source) {
+  return (
+    source.damageType === "poison" ||
+    source.damageType === "tornado" ||
+    source.damageType === "fire" ||
+    source.damageType === "ice" ||
+    source.damageType === "fireball" ||
+    source.applyBurn ||
+    source.applyFreeze ||
+    source.fireball
+  );
 }
 
 function itemTeam() {
@@ -1913,9 +1979,12 @@ function castItemAt(itemId, point) {
 
 function spawnFireBreathParticles(from, to, count = 14) {
   const angle = Math.atan2(to.y - from.y, to.x - from.x);
-  const scale = from.typeId === "adultdragon" ? 2.15 : Math.max(1, from.radius / 22);
+  const baseScale = from.typeId === "adultdragon" ? 2.15 : Math.max(1, from.radius / 22);
+  const particleScale = Math.max(0.2, from.skills?.fireParticleSize || 1);
+  const scale = baseScale * particleScale;
   const flameCount = Math.ceil(count * scale);
-  const distance = Math.min(95 * scale, Math.hypot(to.x - from.x, to.y - from.y));
+  const fireRange = Math.max(8, from.skills?.fireRange || 95);
+  const distance = Math.min(fireRange * baseScale, Math.hypot(to.x - from.x, to.y - from.y));
   for (let i = 0; i < flameCount; i += 1) {
     const t = (i + Math.random() * 0.7) / flameCount;
     const spread = (Math.random() - 0.5) * (0.65 + scale * 0.12);
@@ -1943,12 +2012,14 @@ function castFireball(unit, target) {
     tx: target.id,
     team: unit.team,
     ownerId: unit.id,
-    damage: damageFor(unit, 52),
+    damage: damageFor(unit, unit.skills.fireballDamage || 52),
     speed: 360,
     splash: 92,
     radius: 11,
     isRanged: true,
     applyBurn: true,
+    fireDuration: unit.skills.fireDuration || 5,
+    damageType: "fireball",
     fireball: true,
     life: 2.2,
   });
@@ -1979,9 +2050,10 @@ function spawnTornado(unit, target) {
     team: unit.team,
     vx: (target.x - unit.x) * 0.32,
     vy: (target.y - unit.y) * 0.32,
-    radius: 82,
+    radius: unit.skills.tornadoRange || 82,
+    damage: unit.skills.tornadoDamage || 6,
     spin: Math.random() < 0.5 ? -1 : 1,
-    life: 4.2,
+    life: unit.skills.tornadoDuration || 4.2,
     poison: Boolean(unit.skills.poisonSlime),
   });
 }
@@ -2261,7 +2333,9 @@ function applyAreaAttack(attacker, x, y, area = attacker.areaAttack, isRanged = 
       knockback: 2.2,
       isRanged,
       applyBurn: attacker.skills.fireBreath,
+      fireDuration: attacker.skills.fireDuration || 5,
       applyFreeze: attacker.skills.freezeAttack,
+      damageType: attacker.skills.fireBreath ? "fire" : attacker.skills.freezeAttack ? "ice" : null,
       noKnockback: attacker.skills.fireBreath,
       owner: attacker,
     });
@@ -2351,12 +2425,16 @@ function hurt(target, amount, source) {
     amount *= 0.45;
     state.particles.push({ x: target.x, y: target.y, life: 0.38, color: "#ffeaa0", size: target.radius * 2.1 });
   }
-  if (source.applyBurn) burnUnit(target, 5);
+  if (target.skills.magicResist > 0 && isMagicOrPoisonDamage(source)) {
+    amount *= 1 - target.skills.magicResist;
+    state.particles.push({ x: target.x, y: target.y, life: 0.42, color: "#ffcf8a", size: target.radius * 2.6 });
+  }
+  if (source.applyBurn) burnUnit(target, source.fireDuration || 5);
   if (source.applyFreeze) freezeUnit(target, 2.4);
   target.hp -= amount;
   updateBerserk(target);
   const angle = Math.atan2(target.y - source.y, target.x - source.x);
-  const knockback = source.noKnockback ? 0 : source.knockback || 2.3;
+  const knockback = target.skills.knockbackImmune || source.noKnockback ? 0 : source.knockback || 2.3;
   target.vx += Math.cos(angle) * amount * knockback;
   target.vy += Math.sin(angle) * amount * knockback;
   state.particles.push({ x: target.x, y: target.y, life: 0.45, color: target.team === "blue" ? "#78bbff" : "#ff8582" });
@@ -2364,8 +2442,10 @@ function hurt(target, amount, source) {
     target.dead = true;
     handleKillEffects(killer, target);
     if (target.skills.explode) explodeUnit(target);
-    target.vx += Math.cos(angle) * 120;
-    target.vy += Math.sin(angle) * 120;
+    if (!target.skills.knockbackImmune) {
+      target.vx += Math.cos(angle) * 120;
+      target.vy += Math.sin(angle) * 120;
+    }
   }
 }
 
@@ -2377,29 +2457,36 @@ function attack(unit, target, mode = null) {
     projectileSpeed: unit.projectileSpeed,
     splash: unit.splash,
     cooldown: unit.cooldownTime,
+    burstCount: unit.burstCount || 1,
+    burstCooldown: unit.burstCooldown || 0,
   };
-  unit.cooldown = active.cooldown || unit.cooldownTime;
+  const burstCount = Math.max(1, Math.floor(active.burstCount || 1));
+  unit.cooldown = burstCount > 1 && active.burstCooldown > 0 ? active.burstCooldown : active.cooldown || unit.cooldownTime;
   if (target.kind === "wall") {
     if (unit.canAttackWalls === false) return;
     if (active.ranged && active.projectileSpeed) {
-      state.projectiles.push({
-        x: unit.x,
-        y: unit.y,
-        targetWall: target.wall,
-        targetX: target.x,
-        targetY: target.y,
-        team: unit.team,
-        ownerId: unit.id,
-        damage: damageFor(unit, active.damage),
-        speed: active.projectileSpeed,
-        splash: active.splash || 0,
-        radius: active.weapon === "cannon" ? 7 : 4,
-        isRanged: true,
-        life: active.weapon === "musket" ? 0.85 : 1.6,
-      });
+      for (let i = 0; i < burstCount; i += 1) {
+        state.projectiles.push({
+          x: unit.x + (Math.random() - 0.5) * unit.radius * 0.35,
+          y: unit.y + (Math.random() - 0.5) * unit.radius * 0.35,
+          targetWall: target.wall,
+          targetX: target.x,
+          targetY: target.y,
+          team: unit.team,
+          ownerId: unit.id,
+          damage: damageFor(unit, active.damage),
+          speed: active.projectileSpeed,
+          splash: active.splash || 0,
+          radius: active.weapon === "cannon" ? 7 : 4,
+          isRanged: true,
+          life: active.weapon === "musket" ? 0.85 : 1.6,
+        });
+      }
       return;
     }
-    damageWall(target.wall, damageFor(unit, active.damage * (0.85 + Math.random() * 0.3)), target.x, target.y);
+    for (let i = 0; i < burstCount; i += 1) {
+      damageWall(target.wall, damageFor(unit, active.damage * (0.85 + Math.random() * 0.3)), target.x, target.y);
+    }
     applyAreaAttack(unit, target.x, target.y);
     const angle = Math.atan2(target.y - unit.y, target.x - unit.x);
     unit.vx -= Math.cos(angle) * 20;
@@ -2414,30 +2501,38 @@ function attack(unit, target, mode = null) {
     spawnFireBreathParticles(unit, target, active.ranged ? 18 : 12);
   }
   if (active.ranged && active.projectileSpeed) {
-    state.projectiles.push({
-      x: unit.x,
-      y: unit.y,
-      tx: target.id,
-      team: unit.team,
-      ownerId: unit.id,
-      damage: damageFor(unit, active.damage),
-      speed: active.projectileSpeed,
-      splash: active.splash || 0,
-      radius: active.weapon === "cannon" ? 7 : 4,
-      isRanged: true,
-      areaAttack: unit.areaAttack,
-      applyBurn: unit.skills.fireBreath,
-      applyFreeze: unit.skills.freezeAttack,
-      life: active.weapon === "musket" ? 0.85 : 1.6,
-    });
+    for (let i = 0; i < burstCount; i += 1) {
+      state.projectiles.push({
+        x: unit.x + (Math.random() - 0.5) * unit.radius * 0.35,
+        y: unit.y + (Math.random() - 0.5) * unit.radius * 0.35,
+        tx: target.id,
+        team: unit.team,
+        ownerId: unit.id,
+        damage: damageFor(unit, active.damage),
+        speed: active.projectileSpeed,
+        splash: active.splash || 0,
+        radius: active.weapon === "cannon" ? 7 : 4,
+        isRanged: true,
+        areaAttack: unit.areaAttack,
+        applyBurn: unit.skills.fireBreath,
+        fireDuration: unit.skills.fireDuration || 5,
+        applyFreeze: unit.skills.freezeAttack,
+        damageType: unit.skills.fireBreath ? "fire" : unit.skills.freezeAttack ? "ice" : null,
+        life: active.weapon === "musket" ? 0.85 : 1.6,
+      });
+    }
     return;
   }
-  hurt(target, damageFor(unit, active.damage * (0.85 + Math.random() * 0.3)), {
-    ...unit,
-    applyBurn: unit.skills.fireBreath,
-    applyFreeze: unit.skills.freezeAttack,
-    noKnockback: unit.skills.fireBreath && !unit.skills.meleeKnockbackWithFire,
-  });
+  for (let i = 0; i < burstCount; i += 1) {
+    hurt(target, damageFor(unit, active.damage * (0.85 + Math.random() * 0.3)), {
+      ...unit,
+      applyBurn: unit.skills.fireBreath,
+      fireDuration: unit.skills.fireDuration || 5,
+      applyFreeze: unit.skills.freezeAttack,
+      damageType: unit.skills.fireBreath ? "fire" : unit.skills.freezeAttack ? "ice" : null,
+      noKnockback: unit.skills.fireBreath && !unit.skills.meleeKnockbackWithFire,
+    });
+  }
   applyAreaAttack(unit, target.x, target.y);
   const moveTarget = wallAvoidancePoint(unit, target);
   const angle = Math.atan2(moveTarget.y - unit.y, moveTarget.x - unit.x);
@@ -2459,7 +2554,7 @@ function updateUnit(unit, dt) {
     unit.poisonTick -= dt;
     if (unit.poisonTick <= 0) {
       unit.poisonTick += 1;
-      hurt(unit, 20, { x: unit.x - 1, y: unit.y, knockback: 0.4, ignoreDodge: true });
+      hurt(unit, 20, { x: unit.x - 1, y: unit.y, knockback: 0.4, ignoreDodge: true, damageType: "poison" });
       state.particles.push({ x: unit.x, y: unit.y, life: 0.4, color: "#70e071", size: 18 });
     }
   }
@@ -2468,7 +2563,7 @@ function updateUnit(unit, dt) {
     unit.burnTick -= dt;
     if (unit.burnTick <= 0) {
       unit.burnTick += 1;
-      hurt(unit, 16, { x: unit.x - 1, y: unit.y, knockback: 0, ignoreDodge: true, noKnockback: true });
+      hurt(unit, 16, { x: unit.x - 1, y: unit.y, knockback: 0, ignoreDodge: true, noKnockback: true, damageType: "fire" });
       state.particles.push({ x: unit.x, y: unit.y, life: 0.4, color: "#ff8a38", size: 20 });
     }
   }
@@ -2672,7 +2767,10 @@ function updateProjectiles(dt) {
               knockback: 3.8,
               isRanged: true,
               applyBurn: projectile.applyBurn,
+              fireDuration: projectile.fireDuration || 5,
               applyFreeze: projectile.applyFreeze,
+              fireball: projectile.fireball,
+              damageType: projectile.fireball ? "fireball" : projectile.applyBurn ? "fire" : projectile.applyFreeze ? "ice" : null,
               noKnockback: projectile.applyBurn,
               owner,
             });
@@ -2691,7 +2789,10 @@ function updateProjectiles(dt) {
           y: projectile.y - Math.sin(angle),
           isRanged: true,
           applyBurn: projectile.applyBurn,
+          fireDuration: projectile.fireDuration || 5,
           applyFreeze: projectile.applyFreeze,
+          fireball: projectile.fireball,
+          damageType: projectile.fireball ? "fireball" : projectile.applyBurn ? "fire" : projectile.applyFreeze ? "ice" : null,
           noKnockback: projectile.applyBurn,
           owner,
         });
@@ -2751,31 +2852,33 @@ function updateTornadoes(dt) {
       const distance = Math.max(1, Math.hypot(dx, dy));
       if (distance > tornado.radius + unit.radius) continue;
       const effect = 1 - distance / (tornado.radius + unit.radius);
-      const edgePressure = Math.max(0, distance / tornado.radius - 0.62);
-      const pull = effect * 145 + edgePressure * 540;
-      const orbit = (0.35 + effect * 0.65) * 640 * tornado.spin;
       const nx = dx / distance;
       const ny = dy / distance;
-      const tx = -ny;
-      const ty = nx;
-      unit.vx += (dx / distance) * pull * dt;
-      unit.vy += (dy / distance) * pull * dt;
-      unit.vx += tx * orbit * dt;
-      unit.vy += ty * orbit * dt;
-      const containment = 1 - Math.min(0.38, (0.12 + edgePressure * 0.38) * dt * 60);
-      unit.vx *= containment;
-      unit.vy *= containment;
-      const carry = 0.42 + effect * 0.28;
-      unit.vx += tornado.vx * carry * 0.08;
-      unit.vy += tornado.vy * carry * 0.08;
-      unit.x += tornado.vx * carry * dt;
-      unit.y += tornado.vy * carry * dt;
-      const innerRadius = tornado.radius * 0.34;
-      if (distance < innerRadius) {
-        unit.vx -= nx * 190 * dt;
-        unit.vy -= ny * 190 * dt;
+      if (!unit.skills.knockbackImmune) {
+        const edgePressure = Math.max(0, distance / tornado.radius - 0.62);
+        const pull = effect * 145 + edgePressure * 540;
+        const orbit = (0.35 + effect * 0.65) * 640 * tornado.spin;
+        const tx = -ny;
+        const ty = nx;
+        unit.vx += (dx / distance) * pull * dt;
+        unit.vy += (dy / distance) * pull * dt;
+        unit.vx += tx * orbit * dt;
+        unit.vy += ty * orbit * dt;
+        const containment = 1 - Math.min(0.38, (0.12 + edgePressure * 0.38) * dt * 60);
+        unit.vx *= containment;
+        unit.vy *= containment;
+        const carry = 0.42 + effect * 0.28;
+        unit.vx += tornado.vx * carry * 0.08;
+        unit.vy += tornado.vy * carry * 0.08;
+        unit.x += tornado.vx * carry * dt;
+        unit.y += tornado.vy * carry * dt;
+        const innerRadius = tornado.radius * 0.34;
+        if (distance < innerRadius) {
+          unit.vx -= nx * 190 * dt;
+          unit.vy -= ny * 190 * dt;
+        }
       }
-      hurt(unit, 6 * dt, { x: tornado.x, y: tornado.y, knockback: 0.35 });
+      hurt(unit, (tornado.damage || 6) * dt, { x: tornado.x, y: tornado.y, knockback: 0.35, damageType: "tornado" });
       if (tornado.poison) poisonUnit(unit, 5);
     }
   }
