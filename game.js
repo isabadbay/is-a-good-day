@@ -2732,6 +2732,9 @@ function hurt(target, amount, source) {
     return;
   }
   const killer = source.owner || source;
+  if (!source.isRanged && killer?.skills?.infectTouch) {
+    infectUnit(target, killer);
+  }
   if (source.isRanged && target.skills.blockRangedChance > 0 && Math.random() < target.skills.blockRangedChance) {
     state.particles.push({ x: target.x, y: target.y, life: 0.6, color: "#bde7ff", size: target.radius * 2.5 });
     return;
@@ -2767,6 +2770,10 @@ function hurt(target, amount, source) {
   target.vy += Math.sin(angle) * amount * knockback;
   state.particles.push({ x: target.x, y: target.y, life: 0.45, color: target.team === "blue" ? "#78bbff" : "#ff8582" });
   if (target.hp <= 0) {
+    if (target.infectionTimer > 0 && target.infectionTeam) {
+      convertToZombie(target);
+      return;
+    }
     target.dead = true;
     handleKillEffects(killer, target);
     if (target.skills.explode) explodeUnit(target);
