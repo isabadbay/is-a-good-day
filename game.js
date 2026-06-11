@@ -2342,7 +2342,7 @@ function castFireballAtPoint(unit, point) {
   unit.fireballCooldown = 5.2;
 }
 
-function castFireBreathAtPoint(unit, point) {
+function castFireBreathAtPoint(unit, point, freeCast = false) {
   const angle = Math.atan2(point.y - unit.y, point.x - unit.x);
   const baseScale = unit.typeId === "adultdragon" ? 2.15 : Math.max(1, unit.radius / 22);
   const range = Math.max(35, (unit.skills.fireRange || 95) * baseScale);
@@ -2382,7 +2382,7 @@ function castFireBreathAtPoint(unit, point) {
     const delta = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - angle), Math.cos(Math.atan2(dy, dx) - angle)));
     if (delta <= width) damageWall(wall, Math.max(8, unit.damage * 0.22), closestX, closestY);
   }
-  unit.fireBreathCooldown = unit.typeId === "adultdragon" ? 2.6 : 3.4;
+  if (!freeCast) unit.fireBreathCooldown = unit.typeId === "adultdragon" ? 2.6 : 3.4;
 }
 
 function holyShieldReduction(target) {
@@ -2433,6 +2433,42 @@ function triggerStasisGaze(unit) {
   if (affected > 0) {
     state.particles.push({ x: unit.x, y: unit.y, life: 0.9, color: "#80c8ff", size: radius });
   }
+  unit.stasisCooldown = unit.skills.stasisCooldown || 20;
+}
+
+function triggerStasisGazeAtPoint(unit, point) {
+  const radius = unit.skills.stasisRange || 200;
+  const angle = Math.atan2(point.y - unit.y, point.x - unit.x);
+  const width = 0.95;
+  let affected = 0;
+  for (const other of state.units) {
+    if (other.team === unit.team || other.dead) continue;
+    const dx = other.x - unit.x;
+    const dy = other.y - unit.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance > radius + other.radius || distance < 1) continue;
+    const delta = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - angle), Math.cos(Math.atan2(dy, dx) - angle)));
+    if (delta > width) continue;
+    other.stasisTimer = Math.max(other.stasisTimer || 0, unit.skills.stasisDuration || 5);
+    other.stasisSourceId = unit.id;
+    other.vx = 0;
+    other.vy = 0;
+    affected += 1;
+  }
+  const endX = unit.x + Math.cos(angle) * radius;
+  const endY = unit.y + Math.sin(angle) * radius;
+  for (let i = 0; i < 18; i += 1) {
+    const t = i / 17;
+    state.particles.push({
+      x: unit.x + (endX - unit.x) * t + (Math.random() - 0.5) * 18,
+      y: unit.y + (endY - unit.y) * t + (Math.random() - 0.5) * 18,
+      life: 0.35,
+      startLife: 0.35,
+      color: "#80c8ff",
+      size: 18 + Math.random() * 16,
+    });
+  }
+  if (affected > 0) state.particles.push({ x: endX, y: endY, life: 0.65, color: "#80c8ff", size: radius * 0.45 });
   unit.stasisCooldown = unit.skills.stasisCooldown || 20;
 }
 
@@ -2721,6 +2757,11 @@ function controlAimPoint(unit, fallbackDistance = 360) {
   };
 }
 
+function controlAimAngle(unit, fallbackDistance = 360) {
+  const point = controlAimPoint(unit, fallbackDistance);
+  return Math.atan2(point.y - unit.y, point.x - unit.x);
+}
+
 function selectControlledUnit(unit) {
   state.controlledId = unit?.id || null;
   state.controlSpecialIndex = 0;
@@ -2731,6 +2772,18 @@ function selectControlledUnit(unit) {
 
 function controlledPrimaryAttack(unit) {
   if (!unit || unit.cooldown > 0) return;
+  if (unit.projectileSpeed) {
+    controlledRangedAttack(unit, {
+      weapon: unit.weapon,
+      damage: unit.damage,
+      projectileSpeed: unit.projectileSpeed,
+      splash: unit.splash,
+      cooldown: unit.cooldownTime,
+      burstCount: unit.burstCount || 1,
+      burstCooldown: unit.burstCooldown || 0,
+    });
+    return;
+  }
   const info = nearestEnemyFor(unit, Math.max(unit.range, 16) + unit.radius + 80);
   if (!info) return;
   const distance = Math.max(0, info.distance - unit.radius - info.target.radius);
@@ -2741,6 +2794,10 @@ function controlledPrimaryAttack(unit) {
 function controlledSecondAttack(unit) {
   if (!unit || unit.cooldown > 0 || !unit.secondAttack) return;
   const second = unit.secondAttack;
+  if (second.ranged && second.projectileSpeed) {
+    controlledRangedAttack(unit, second);
+    return;
+  }
   const info = nearestEnemyFor(unit, second.range + unit.radius + 80);
   if (!info) return;
   const edgeDistance = Math.max(0, info.distance - unit.radius - info.target.radius);
@@ -2748,10 +2805,51 @@ function controlledSecondAttack(unit) {
   if (engagementDistance <= second.range) attack(unit, info.target, second);
 }
 
+function controlledRangedAttack(unit, mode) {
+  const burstCount = Math.max(1, Math.floor(mode.burstCount || 1));
+  unit.cooldown = burstCount > 1 && mode.burstCooldown > 0 ? mode.burstCooldown : mode.cooldown || unit.cooldownTime;
+  const baseAngle = controlAimAngle(unit, Math.max(mode.range || unit.range || 280, 280));
+  unit.lastControlAngle = baseAngle;
+  if (unit.skills.fireBreath) {
+    castFireBreathAtPoint(unit, {
+      x: unit.x + Math.cos(baseAngle) * Math.max(80, unit.skills.fireRange || 95),
+      y: unit.y + Math.sin(baseAngle) * Math.max(80, unit.skills.fireRange || 95),
+    }, true);
+  }
+  for (let i = 0; i < burstCount; i += 1) {
+    const spread = burstCount > 1 ? (i - (burstCount - 1) / 2) * 0.055 : 0;
+    const angle = baseAngle + spread;
+    state.projectiles.push({
+      x: unit.x + Math.cos(angle) * unit.radius * 0.45,
+      y: unit.y + Math.sin(angle) * unit.radius * 0.45,
+      vx: Math.cos(angle) * mode.projectileSpeed,
+      vy: Math.sin(angle) * mode.projectileSpeed,
+      team: unit.team,
+      ownerId: unit.id,
+      damage: damageFor(unit, mode.damage),
+      speed: mode.projectileSpeed,
+      splash: mode.splash || 0,
+      radius: mode.weapon === "cannon" ? 7 : 4,
+      isRanged: true,
+      manualShot: true,
+      areaAttack: unit.areaAttack,
+      passWalls: unit.skills.rooted,
+      continueOnTargetDeath: true,
+      applyBurn: unit.skills.fireBreath,
+      fireDuration: unit.skills.fireDuration || 5,
+      applyFreeze: unit.skills.freezeAttack,
+      damageType: unit.skills.fireBreath ? "fire" : unit.skills.freezeAttack ? "ice" : null,
+      life: mode.weapon === "musket" ? 0.9 : 1.8,
+    });
+  }
+}
+
 function controlledSpecials(unit) {
   if (!unit) return [];
   const specials = [];
-  if (unit.skills.stasisGaze) specials.push({ name: "Stasis", cd: unit.stasisCooldown, ready: unit.stasisCooldown <= 0, cast: () => triggerStasisGaze(unit) });
+  if (unit.skills.stasisGaze) {
+    specials.push({ name: "Stasis", cd: unit.stasisCooldown, ready: unit.stasisCooldown <= 0, cast: () => triggerStasisGazeAtPoint(unit, controlAimPoint(unit, unit.skills.stasisRange || 200)) });
+  }
   if (unit.skills.fireBreath) {
     specials.push({
       name: "Fire Breath",
@@ -2775,8 +2873,7 @@ function controlledSpecials(unit) {
     });
   }
   if (unit.skills.whirlwindLeap) {
-    const info = nearestEnemyFor(unit, unit.skills.whirlwindTriggerRange || 92);
-    specials.push({ name: "Sky Slam", cd: unit.whirlwindCooldown, ready: unit.whirlwindCooldown <= 0 && Boolean(info), cast: () => triggerWhirlwindLeap(unit) });
+    specials.push({ name: "Sky Slam", cd: unit.whirlwindCooldown, ready: unit.whirlwindCooldown <= 0, cast: () => triggerWhirlwindLeapAtPoint(unit, controlAimPoint(unit, 240)) });
   }
   if (unit.skills.randomSpawn) {
     specials.push({
@@ -3016,6 +3113,15 @@ function triggerWhirlwindLeap(unit) {
       size: 12 + Math.random() * 16,
     });
   }
+}
+
+function triggerWhirlwindLeapAtPoint(unit, point) {
+  const angle = Math.atan2(point.y - unit.y, point.x - unit.x);
+  triggerWhirlwindLeap(unit);
+  const burst = Math.max(120, unit.speed * 5.2);
+  unit.vx += Math.cos(angle) * burst;
+  unit.vy += Math.sin(angle) * burst;
+  unit.lastControlAngle = angle;
 }
 
 function finishWhirlwindLeap(unit) {
@@ -3398,6 +3504,77 @@ function resolveCrowding() {
 
 function updateProjectiles(dt) {
   for (const projectile of state.projectiles) {
+    if (projectile.manualShot) {
+      projectile.life -= dt;
+      const angle = Math.atan2(projectile.vy || 0, projectile.vx || 1);
+      projectile.x += projectile.vx * dt;
+      projectile.y += projectile.vy * dt;
+      if ((projectile.applyBurn || projectile.applyFreeze) && Math.random() < 0.85) {
+        state.particles.push({
+          x: projectile.x + (Math.random() - 0.5) * 8,
+          y: projectile.y + (Math.random() - 0.5) * 8,
+          vx: -Math.cos(angle) * (25 + Math.random() * 60),
+          vy: -Math.sin(angle) * (25 + Math.random() * 60),
+          life: 0.15 + Math.random() * 0.12,
+          startLife: 0.28,
+          color: projectile.applyFreeze ? "#9bdcff" : "#ff8a38",
+          size: 8 + Math.random() * 8,
+        });
+      }
+      if (!projectile.passWalls && projectileHitsWall(projectile)) {
+        state.particles.push({ x: projectile.x, y: projectile.y, life: 0.45, startLife: 0.45, color: "#d8d0a8", size: 24 });
+        projectile.life = 0;
+        continue;
+      }
+      const hit = state.units.find((unit) => {
+        if (unit.team === projectile.team || unit.dead || unit.airborneTimer > 0) return false;
+        return Math.hypot(unit.x - projectile.x, unit.y - projectile.y) <= unit.radius + projectile.radius + 3;
+      });
+      if (hit) {
+        const owner = state.units.find((unit) => unit.id === projectile.ownerId);
+        if (projectile.splash) {
+          for (const unit of state.units) {
+            if (unit.team === projectile.team || unit.dead) continue;
+            const distance = Math.hypot(unit.x - projectile.x, unit.y - projectile.y);
+            if (distance <= projectile.splash + unit.radius) {
+              const falloff = Math.max(0.35, 1 - distance / Math.max(1, projectile.splash));
+              hurt(unit, projectile.damage * falloff, {
+                x: projectile.x - Math.cos(angle),
+                y: projectile.y - Math.sin(angle),
+                knockback: 3.2,
+                isRanged: true,
+                applyBurn: projectile.applyBurn,
+                fireDuration: projectile.fireDuration || 5,
+                applyFreeze: projectile.applyFreeze,
+                damageType: projectile.damageType,
+                noKnockback: projectile.applyBurn,
+                owner,
+              });
+            }
+          }
+          damageWallsAt(projectile.x, projectile.y, projectile.splash, projectile.damage * 0.35);
+        } else {
+          hurt(hit, projectile.damage, {
+            x: projectile.x - Math.cos(angle),
+            y: projectile.y - Math.sin(angle),
+            isRanged: true,
+            applyBurn: projectile.applyBurn,
+            fireDuration: projectile.fireDuration || 5,
+            applyFreeze: projectile.applyFreeze,
+            damageType: projectile.damageType,
+            noKnockback: projectile.applyBurn,
+            owner,
+          });
+          if (projectile.areaAttack && owner) applyAreaAttack(owner, projectile.x, projectile.y, projectile.areaAttack, true);
+        }
+        projectile.life = 0;
+        continue;
+      }
+      if (projectile.life <= 0 || projectile.x < -40 || projectile.x > canvas.width + 40 || projectile.y < -40 || projectile.y > canvas.height + 40) {
+        projectile.life = 0;
+      }
+      continue;
+    }
     if (projectile.itemFireball) {
       projectile.life -= dt;
       const angle = Math.atan2(projectile.targetY - projectile.y, projectile.targetX - projectile.x);
