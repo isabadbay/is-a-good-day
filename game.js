@@ -3492,6 +3492,104 @@ function drawUnitSkin(unit) {
       ctx.stroke();
     }
   }
+  if (unit.typeId === "hydra") {
+    ctx.fillStyle = "#7b2432";
+    for (const offset of [-0.62, 0, 0.62]) {
+      ctx.beginPath();
+      ctx.arc(r * offset, -r * 0.72, r * 0.34, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#ffc36d";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(r * offset - r * 0.14, -r * 1.02);
+      ctx.lineTo(r * offset, -r * 1.34);
+      ctx.lineTo(r * offset + r * 0.14, -r * 1.02);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#4a1420";
+    ctx.beginPath();
+    ctx.moveTo(-r * 1.35, r * 0.12);
+    ctx.lineTo(-r * 0.35, -r * 0.7);
+    ctx.lineTo(-r * 0.12, r * 0.45);
+    ctx.closePath();
+    ctx.moveTo(r * 1.35, r * 0.12);
+    ctx.lineTo(r * 0.35, -r * 0.7);
+    ctx.lineTo(r * 0.12, r * 0.45);
+    ctx.closePath();
+    ctx.fill();
+  }
+  if (unit.typeId === "voidbinder") {
+    ctx.strokeStyle = "#d8c2ff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.08, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "#6bffef";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 4; i += 1) {
+      const a = i * Math.PI * 0.5 + performance.now() / 900;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55);
+      ctx.lineTo(Math.cos(a) * r * 1.35, Math.sin(a) * r * 1.35);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#1b133d";
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (unit.typeId === "wallcrusher") {
+    ctx.fillStyle = "#3f3b32";
+    ctx.fillRect(r * 0.55, -r * 0.82, r * 1.05, r * 0.78);
+    ctx.strokeStyle = "#f0dfae";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(r * 0.55, -r * 0.82, r * 1.05, r * 0.78);
+    ctx.strokeStyle = "#2f2a20";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.76, r * 0.72);
+    ctx.lineTo(r * 0.86, -r * 0.42);
+    ctx.stroke();
+    ctx.fillStyle = "#d8d0a8";
+    ctx.fillRect(-r * 0.74, r * 0.26, r * 0.52, r * 0.28);
+  }
+  if (unit.typeId === "phoenixguard") {
+    ctx.fillStyle = "#ffcf5f";
+    ctx.beginPath();
+    ctx.moveTo(-r * 1.38, r * 0.2);
+    ctx.quadraticCurveTo(-r * 0.75, -r * 1.3, -r * 0.12, -r * 0.12);
+    ctx.quadraticCurveTo(-r * 0.6, -r * 0.05, -r * 1.38, r * 0.2);
+    ctx.moveTo(r * 1.38, r * 0.2);
+    ctx.quadraticCurveTo(r * 0.75, -r * 1.3, r * 0.12, -r * 0.12);
+    ctx.quadraticCurveTo(r * 0.6, -r * 0.05, r * 1.38, r * 0.2);
+    ctx.fill();
+    ctx.strokeStyle = "#fff0a8";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, -r * 0.08, r * 0.82, Math.PI * 0.15, Math.PI * 1.85);
+    ctx.stroke();
+  }
+  if (unit.typeId === "stormlancer") {
+    ctx.strokeStyle = "#bde7ff";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.45, r * 0.72);
+    ctx.lineTo(r * 1.15, -r * 0.92);
+    ctx.stroke();
+    ctx.strokeStyle = "#fff36d";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(r * 0.1, -r * 0.1);
+    ctx.lineTo(r * 0.45, -r * 0.46);
+    ctx.lineTo(r * 0.28, -r * 0.48);
+    ctx.lineTo(r * 0.76, -r * 0.94);
+    ctx.stroke();
+    ctx.strokeStyle = "#75d7ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.05, Math.PI * 0.2, Math.PI * 1.65);
+    ctx.stroke();
+  }
   if (unit.typeId === "whirlhammer") {
     ctx.strokeStyle = "#d7ecff";
     ctx.lineWidth = 3;
