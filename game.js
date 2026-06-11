@@ -875,12 +875,12 @@ const unitTypes = [
     name: "Adult Dragon",
     tag: "Fire Tyrant",
     glyph: "D",
-    price: 980,
+    price: 1200,
     hp: 750,
     damage: 58,
     range: 290,
     stopDistance: 210,
-    speed: 38,
+    speed: 114,
     radius: 38,
     cooldown: 1.45,
     projectileSpeed: 340,
@@ -900,6 +900,7 @@ const unitTypes = [
       explodeDamage: 120,
       explodeRange: 120,
       burnImmune: true,
+      fireResist: 1,
       magicResist: 0.85,
       knockbackImmune: true,
       berserkHp: 400,
@@ -1722,6 +1723,10 @@ function isMagicOrPoisonDamage(source) {
   );
 }
 
+function isFireDamage(source) {
+  return source.damageType === "fire" || source.damageType === "fireball" || source.applyBurn || source.fireball;
+}
+
 function itemTeam() {
   return state.selectedItem ? state.placeTeam : state.sandbox ? state.placeTeam : "blue";
 }
@@ -2425,6 +2430,10 @@ function hurt(target, amount, source) {
     amount *= 0.45;
     state.particles.push({ x: target.x, y: target.y, life: 0.38, color: "#ffeaa0", size: target.radius * 2.1 });
   }
+  if (target.skills.fireResist > 0 && isFireDamage(source)) {
+    amount *= Math.max(0, 1 - target.skills.fireResist);
+    state.particles.push({ x: target.x, y: target.y, life: 0.42, color: "#ffb15d", size: target.radius * 2.8 });
+  } else
   if (target.skills.magicResist > 0 && isMagicOrPoisonDamage(source)) {
     amount *= 1 - target.skills.magicResist;
     state.particles.push({ x: target.x, y: target.y, life: 0.42, color: "#ffcf8a", size: target.radius * 2.6 });
