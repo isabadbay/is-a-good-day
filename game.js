@@ -6,6 +6,10 @@ const budgetText = document.querySelector("#budgetText");
 const blueCount = document.querySelector("#blueCount");
 const redCount = document.querySelector("#redCount");
 const phaseText = document.querySelector("#phaseText");
+const controlPanel = document.querySelector("#controlPanel");
+const controlTitle = document.querySelector("#controlTitle");
+const controlName = document.querySelector("#controlName");
+const controlCooldowns = document.querySelector("#controlCooldowns");
 const toast = document.querySelector("#toast");
 const startBtn = document.querySelector("#startBtn");
 const pauseBtn = document.querySelector("#pauseBtn");
@@ -178,6 +182,12 @@ const translations = {
     custom: "自定义兵种",
     create: "创建兵种",
     battle: "战况",
+    control: "操控",
+    controlEmpty: "战斗中点击兵种操控",
+    controlKeys: "WASD移动 / 空格攻击 / V第二攻击 / B特殊",
+    controlSelected: "正在操控",
+    noControlTarget: "没有可操控兵种",
+    noSpecialReady: "没有可用特殊技能",
     enemySize: "敌军规模",
     speed: "镜头速度",
     erase: "橡皮擦",
@@ -366,6 +376,12 @@ const translations = {
     custom: "Custom Unit",
     create: "Create Unit",
     battle: "Battle",
+    control: "Control",
+    controlEmpty: "Click a unit during battle",
+    controlKeys: "WASD Move / Space Attack / V Second / B Skill",
+    controlSelected: "Controlling",
+    noControlTarget: "No controllable unit",
+    noSpecialReady: "No special skill ready",
     enemySize: "Enemy Size",
     speed: "Camera Speed",
     erase: "Erase",
@@ -572,6 +588,7 @@ function applyLanguage(lang) {
   setText(".custom-builder summary", text.custom);
   createCustomBtn.textContent = text.create;
   setText(".inspector .panel-title h2", text.battle);
+  if (controlTitle) controlTitle.textContent = text.control;
   const rangeRows = document.querySelectorAll(".range-row");
   if (rangeRows[0]) rangeRows[0].childNodes[0].textContent = text.enemySize;
   if (rangeRows[1]) rangeRows[1].childNodes[0].textContent = text.speed;
@@ -1343,6 +1360,9 @@ const state = {
   walls: [],
   commands: { blue: null, red: null },
   focusTargets: { blue: null, red: null },
+  controlledId: null,
+  controlKeys: {},
+  controlSpecialIndex: 0,
   nextId: 1,
   dragging: null,
   lastTime: performance.now(),
@@ -1839,6 +1859,7 @@ function addUnit(typeId, team, x, y) {
     infectionTeam: null,
     stasisSourceId: null,
     stasisCooldown: 1 + Math.random() * 2,
+    fireBreathCooldown: type.skills?.fireBreath ? 0.8 + Math.random() * 1.1 : 0,
     fireballCooldown: 1.5 + Math.random() * 2,
     randomSpawnCooldown: type.skills?.randomSpawn ? type.skills.randomSpawnInterval || 5 : 0,
     whirlwindCooldown: type.skills?.whirlwindLeap ? 1.2 + Math.random() * 1.8 : 0,
@@ -1942,6 +1963,7 @@ function nearestUnit(point, team = "blue") {
 
 function removeUnit(unit) {
   state.units = state.units.filter((candidate) => candidate.id !== unit.id);
+  if (state.controlledId === unit.id) state.controlledId = null;
   if (unit.team === "blue") refund(unit.typeId);
 }
 
@@ -2014,6 +2036,7 @@ function itemCastOrigin(team) {
 
 function explodeItemFireball(projectile) {
   damageWallsAt(projectile.x, projectile.y, projectile.splash, 25);
+  const owner = projectile.ownerId ? state.units.find((unit) => unit.id === projectile.ownerId) : null;
   for (const unit of state.units) {
     if (unit.dead || unit.team === projectile.team) continue;
     const distance = Math.hypot(unit.x - projectile.x, unit.y - projectile.y);
@@ -2026,8 +2049,11 @@ function explodeItemFireball(projectile) {
       ignoreDodge: true,
       isRanged: true,
       applyBurn: true,
+      fireDuration: projectile.fireDuration || 4,
+      damageType: projectile.damageType || "fireball",
+      owner,
     });
-    burnUnit(unit, 4);
+    burnUnit(unit, projectile.fireDuration || 4);
   }
   for (let i = 0; i < 42; i += 1) {
     const angle = Math.random() * Math.PI * 2;
@@ -2288,6 +2314,77 @@ function castFireball(unit, target) {
   unit.fireballCooldown = 5.2;
 }
 
+function castFireballAtPoint(unit, point) {
+  spawnFireBreathParticles(unit, point, 10);
+  const angle = Math.atan2(point.y - unit.y, point.x - unit.x);
+  const distance = Math.max(120, Math.hypot(point.x - unit.x, point.y - unit.y));
+  const targetX = clamp(unit.x + Math.cos(angle) * distance, 0, canvas.width);
+  const targetY = clamp(unit.y + Math.sin(angle) * distance, 0, canvas.height);
+  state.projectiles.push({
+    x: unit.x,
+    y: unit.y,
+    targetX,
+    targetY,
+    team: unit.team,
+    ownerId: unit.id,
+    damage: damageFor(unit, unit.skills.fireballDamage || 52),
+    speed: 520,
+    splash: 92,
+    radius: 11,
+    isRanged: true,
+    applyBurn: true,
+    fireDuration: unit.skills.fireDuration || 5,
+    damageType: "fireball",
+    itemFireball: true,
+    fireball: true,
+    life: 1.65,
+  });
+  unit.fireballCooldown = 5.2;
+}
+
+function castFireBreathAtPoint(unit, point) {
+  const angle = Math.atan2(point.y - unit.y, point.x - unit.x);
+  const baseScale = unit.typeId === "adultdragon" ? 2.15 : Math.max(1, unit.radius / 22);
+  const range = Math.max(35, (unit.skills.fireRange || 95) * baseScale);
+  const width = 0.72;
+  spawnFireBreathParticles(unit, {
+    x: unit.x + Math.cos(angle) * range,
+    y: unit.y + Math.sin(angle) * range,
+  }, unit.typeId === "adultdragon" ? 34 : 20);
+  for (const other of state.units) {
+    if (other.team === unit.team || other.dead) continue;
+    const dx = other.x - unit.x;
+    const dy = other.y - unit.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance > range + other.radius || distance < 1) continue;
+    const delta = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - angle), Math.cos(Math.atan2(dy, dx) - angle)));
+    if (delta > width) continue;
+    const falloff = Math.max(0.35, 1 - distance / range);
+    hurt(other, damageFor(unit, (unit.damage * 0.65 + 12) * falloff), {
+      x: unit.x,
+      y: unit.y,
+      owner: unit,
+      isRanged: true,
+      applyBurn: true,
+      fireDuration: unit.skills.fireDuration || 5,
+      damageType: "fire",
+      noKnockback: true,
+      knockback: 0,
+    });
+  }
+  for (const wall of state.walls) {
+    const closestX = clamp(unit.x + Math.cos(angle) * range * 0.65, wall.x - wall.w / 2, wall.x + wall.w / 2);
+    const closestY = clamp(unit.y + Math.sin(angle) * range * 0.65, wall.y - wall.h / 2, wall.y + wall.h / 2);
+    const dx = closestX - unit.x;
+    const dy = closestY - unit.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance > range || distance < 1) continue;
+    const delta = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - angle), Math.cos(Math.atan2(dy, dx) - angle)));
+    if (delta <= width) damageWall(wall, Math.max(8, unit.damage * 0.22), closestX, closestY);
+  }
+  unit.fireBreathCooldown = unit.typeId === "adultdragon" ? 2.6 : 3.4;
+}
+
 function holyShieldReduction(target) {
   let bestReduction = 0;
   for (const unit of state.units) {
@@ -2457,6 +2554,9 @@ function resetGame(keepEnemies = false) {
   state.commands = { blue: null, red: null };
   state.focusTargets = { blue: null, red: null };
   state.dragging = null;
+  state.controlledId = null;
+  state.controlKeys = {};
+  state.controlSpecialIndex = 0;
   state.wallStart = null;
   state.pointer = null;
   state.mapTool = null;
@@ -2586,6 +2686,150 @@ function findTarget(unit) {
     return { target: best, distance: bestDistance };
   }
   return wallTargetNear(unit);
+}
+
+function controlledUnit() {
+  const unit = state.units.find((candidate) => candidate.id === state.controlledId && !candidate.dead);
+  if (!unit) state.controlledId = null;
+  return unit || null;
+}
+
+function nearestEnemyFor(unit, maxDistance = Infinity) {
+  let best = null;
+  let bestDistance = Infinity;
+  for (const other of state.units) {
+    if (other.team === unit.team || other.dead || other.airborneTimer > 0) continue;
+    const distance = Math.hypot(other.x - unit.x, other.y - unit.y);
+    if (distance < bestDistance && distance <= maxDistance) {
+      best = other;
+      bestDistance = distance;
+    }
+  }
+  return best ? { target: best, distance: bestDistance } : null;
+}
+
+function controlAimPoint(unit, fallbackDistance = 360) {
+  if (state.pointer && Math.hypot(state.pointer.x - unit.x, state.pointer.y - unit.y) > 8) {
+    return state.pointer;
+  }
+  const info = nearestEnemyFor(unit, fallbackDistance);
+  if (info) return { x: info.target.x, y: info.target.y };
+  const facing = unit.lastControlAngle ?? 0;
+  return {
+    x: clamp(unit.x + Math.cos(facing) * fallbackDistance, 0, canvas.width),
+    y: clamp(unit.y + Math.sin(facing) * fallbackDistance, 0, canvas.height),
+  };
+}
+
+function selectControlledUnit(unit) {
+  state.controlledId = unit?.id || null;
+  state.controlSpecialIndex = 0;
+  const text = translations[state.language] || translations.en;
+  if (unit) setToast(`${text.controlSelected}: ${unit.name}`);
+  updateUi();
+}
+
+function controlledPrimaryAttack(unit) {
+  if (!unit || unit.cooldown > 0) return;
+  const info = nearestEnemyFor(unit, Math.max(unit.range, 16) + unit.radius + 80);
+  if (!info) return;
+  const distance = Math.max(0, info.distance - unit.radius - info.target.radius);
+  const attackDistance = unit.projectileSpeed ? unit.range * 0.88 : unit.range;
+  if (distance <= attackDistance || unit.projectileSpeed) attack(unit, info.target);
+}
+
+function controlledSecondAttack(unit) {
+  if (!unit || unit.cooldown > 0 || !unit.secondAttack) return;
+  const second = unit.secondAttack;
+  const info = nearestEnemyFor(unit, second.range + unit.radius + 80);
+  if (!info) return;
+  const edgeDistance = Math.max(0, info.distance - unit.radius - info.target.radius);
+  const engagementDistance = second.ranged ? info.distance : edgeDistance;
+  if (engagementDistance <= second.range) attack(unit, info.target, second);
+}
+
+function controlledSpecials(unit) {
+  if (!unit) return [];
+  const specials = [];
+  if (unit.skills.stasisGaze) specials.push({ name: "Stasis", cd: unit.stasisCooldown, ready: unit.stasisCooldown <= 0, cast: () => triggerStasisGaze(unit) });
+  if (unit.skills.fireBreath) {
+    specials.push({
+      name: "Fire Breath",
+      cd: unit.fireBreathCooldown || 0,
+      ready: (unit.fireBreathCooldown || 0) <= 0,
+      cast: () => castFireBreathAtPoint(unit, controlAimPoint(unit, unit.skills.fireRange || 120)),
+    });
+  }
+  if (unit.skills.fireball) {
+    specials.push({ name: "Fireball", cd: unit.fireballCooldown, ready: unit.fireballCooldown <= 0, cast: () => castFireballAtPoint(unit, controlAimPoint(unit, 520)) });
+  }
+  if (unit.skills.tornado) {
+    specials.push({
+      name: "Tornado",
+      cd: unit.tornadoCooldown,
+      ready: unit.tornadoCooldown <= 0,
+      cast: () => {
+        spawnTornado(unit, controlAimPoint(unit, 420));
+        unit.tornadoCooldown = unit.skills.poisonSlime ? 5.2 : 6.4;
+      },
+    });
+  }
+  if (unit.skills.whirlwindLeap) {
+    const info = nearestEnemyFor(unit, unit.skills.whirlwindTriggerRange || 92);
+    specials.push({ name: "Sky Slam", cd: unit.whirlwindCooldown, ready: unit.whirlwindCooldown <= 0 && Boolean(info), cast: () => triggerWhirlwindLeap(unit) });
+  }
+  if (unit.skills.randomSpawn) {
+    specials.push({
+      name: "Spawn",
+      cd: unit.randomSpawnCooldown,
+      ready: unit.randomSpawnCooldown <= 0,
+      cast: () => {
+        spawnRandomUnit(unit);
+        unit.randomSpawnCooldown = unit.skills.randomSpawnInterval || 5;
+      },
+    });
+  }
+  return specials;
+}
+
+function controlledSpecialAttack(unit) {
+  const specials = controlledSpecials(unit).filter((special) => special.ready);
+  const text = translations[state.language] || translations.en;
+  if (!specials.length) {
+    setToast(text.noSpecialReady);
+    return;
+  }
+  const special = specials[state.controlSpecialIndex % specials.length];
+  state.controlSpecialIndex += 1;
+  special.cast();
+  setToast(`${unit.name}: ${special.name}`);
+}
+
+function updateControlledUnit(unit, dt) {
+  const up = state.controlKeys.w;
+  const down = state.controlKeys.s;
+  const left = state.controlKeys.a;
+  const right = state.controlKeys.d;
+  const dx = (right ? 1 : 0) - (left ? 1 : 0);
+  const dy = (down ? 1 : 0) - (up ? 1 : 0);
+  if (state.pointer && Math.hypot(state.pointer.x - unit.x, state.pointer.y - unit.y) > 8) {
+    unit.lastControlAngle = Math.atan2(state.pointer.y - unit.y, state.pointer.x - unit.x);
+  } else if (dx || dy) {
+    unit.lastControlAngle = Math.atan2(dy, dx);
+  }
+  if (dx || dy) {
+    const length = Math.hypot(dx, dy) || 1;
+    const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1);
+    unit.vx += (dx / length) * unit.speed * speedFactor * dt * 4.2;
+    unit.vy += (dy / length) * unit.speed * speedFactor * dt * 4.2;
+  }
+  unit.vx *= 0.88;
+  unit.vy *= 0.88;
+  unit.x += unit.vx * dt;
+  unit.y += unit.vy * dt;
+  pushOutOfWalls(unit);
+  unit.x = Math.max(unit.radius, Math.min(canvas.width - unit.radius, unit.x));
+  unit.y = Math.max(unit.radius, Math.min(canvas.height - unit.radius, unit.y));
 }
 
 function damageFor(unit, amount) {
@@ -2951,6 +3195,7 @@ function updateUnit(unit, dt) {
   unit.slimeCooldown = Math.max(0, unit.slimeCooldown - dt);
   unit.tornadoCooldown = Math.max(0, unit.tornadoCooldown - dt);
   unit.stasisCooldown = Math.max(0, unit.stasisCooldown - dt);
+  unit.fireBreathCooldown = Math.max(0, (unit.fireBreathCooldown || 0) - dt);
   unit.fireballCooldown = Math.max(0, unit.fireballCooldown - dt);
   unit.randomSpawnCooldown = Math.max(0, unit.randomSpawnCooldown - dt);
   unit.whirlwindCooldown = Math.max(0, unit.whirlwindCooldown - dt);
@@ -2980,6 +3225,11 @@ function updateUnit(unit, dt) {
   unit.powerPotionTimer = Math.max(0, unit.powerPotionTimer - dt);
   unit.speedPotionTimer = Math.max(0, unit.speedPotionTimer - dt);
   if (!unit.dead && unit.infectionTimer > 0) {
+    unit.hp -= unit.maxHp * 0.05 * dt;
+    if (unit.hp <= 0) {
+      convertToZombie(unit);
+      return;
+    }
     unit.infectionTimer = Math.max(0, unit.infectionTimer - dt);
     if (unit.infectionTimer <= 0) {
       convertToZombie(unit);
@@ -3026,6 +3276,10 @@ function updateUnit(unit, dt) {
   if (unit.stasisTimer > 0) {
     unit.vx = 0;
     unit.vy = 0;
+    return;
+  }
+  if (state.phase === "battle" && state.controlledId === unit.id) {
+    updateControlledUnit(unit, dt);
     return;
   }
   if (unit.skills.rooted) {
@@ -3550,6 +3804,13 @@ function drawUnit(unit) {
       ctx.ellipse(0, i * 7 - 5, unit.radius * (1.25 + i * 0.22), unit.radius * 0.38, performance.now() / (220 - i * 35), 0, Math.PI * 2);
       ctx.stroke();
     }
+  }
+  if (!unit.dead && state.controlledId === unit.id) {
+    ctx.strokeStyle = "#fff36d";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(0, 0, unit.radius + 22, 0, Math.PI * 2);
+    ctx.stroke();
   }
   if (!unit.dead && unit.skills.holyShield) {
     const shieldRange = unit.skills.holyShieldRange ?? 160;
@@ -4411,6 +4672,27 @@ function updateUi() {
     cancelButton.classList.toggle("selected", !state.selectedItem);
     cancelButton.innerHTML = `<b>${text.itemCancel}</b><small>${text.itemCancelHint}</small>`;
   }
+  const unit = controlledUnit();
+  if (controlName && controlCooldowns) {
+    if (!unit) {
+      controlName.textContent = text.controlEmpty;
+      controlCooldowns.innerHTML = `<span>${text.controlKeys}</span>`;
+      controlPanel?.classList.remove("active");
+    } else {
+      const specials = controlledSpecials(unit);
+      const specialText = specials.length
+        ? specials.map((special) => `${special.name}: ${special.ready ? "OK" : Math.max(0, special.cd || 0).toFixed(1)}`).join(" / ")
+        : "B: -";
+      controlName.textContent = `${text.controlSelected}: ${unit.name}`;
+      controlCooldowns.innerHTML = `
+        <span>HP ${Math.max(0, Math.ceil(unit.hp))}/${unit.maxHp}</span>
+        <span>Space ${unit.cooldown <= 0 ? "OK" : unit.cooldown.toFixed(1)}</span>
+        <span>V ${unit.secondAttack ? (unit.cooldown <= 0 ? "OK" : unit.cooldown.toFixed(1)) : "-"}</span>
+        <span>B ${specialText}</span>
+      `;
+      controlPanel?.classList.add("active");
+    }
+  }
 }
 
 function renderUnitList() {
@@ -4455,6 +4737,7 @@ function renderUnitList() {
 
 canvas.addEventListener("pointerdown", (event) => {
   const point = worldPoint(event);
+  state.pointer = point;
   if (state.phase === "setup" && isWallBuildTool()) {
     if (!state.wallStart) {
       state.wallStart = point;
@@ -4488,6 +4771,16 @@ canvas.addEventListener("pointerdown", (event) => {
     castItemAt(state.selectedItem, point);
     return;
   }
+  if (state.phase === "battle" && !state.selectedItem && !state.mapTool) {
+    const unit = nearestUnit(point, state.sandbox ? null : "blue");
+    const text = translations[state.language] || translations.en;
+    if (unit && Math.hypot(unit.x - point.x, unit.y - point.y) <= unit.radius + 18) {
+      selectControlledUnit(unit);
+    } else {
+      setToast(text.noControlTarget);
+    }
+    return;
+  }
   if (state.phase !== "setup") return;
   const existing = nearestUnit(point, state.sandbox ? null : "blue");
   if (existing) {
@@ -4516,6 +4809,50 @@ canvas.addEventListener("pointermove", (event) => {
 
 canvas.addEventListener("pointerup", () => {
   state.dragging = null;
+});
+
+window.addEventListener("keydown", (event) => {
+  const tag = event.target?.tagName;
+  if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+  const key = event.key.toLowerCase();
+  if (["w", "a", "s", "d"].includes(key)) {
+    state.controlKeys[key] = true;
+    event.preventDefault();
+    return;
+  }
+  if (event.code === "Space") {
+    const unit = controlledUnit();
+    if (unit && state.phase === "battle") {
+      controlledPrimaryAttack(unit);
+      event.preventDefault();
+    }
+    return;
+  }
+  if (key === "v") {
+    const unit = controlledUnit();
+    if (unit && state.phase === "battle") {
+      controlledSecondAttack(unit);
+      event.preventDefault();
+    }
+    return;
+  }
+  if (key === "b") {
+    const unit = controlledUnit();
+    if (unit && state.phase === "battle") {
+      controlledSpecialAttack(unit);
+      event.preventDefault();
+    }
+  }
+});
+
+window.addEventListener("keyup", (event) => {
+  const tag = event.target?.tagName;
+  if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+  const key = event.key.toLowerCase();
+  if (["w", "a", "s", "d"].includes(key)) {
+    state.controlKeys[key] = false;
+    event.preventDefault();
+  }
 });
 
 startBtn.addEventListener("click", startBattle);

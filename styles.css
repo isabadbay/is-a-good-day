@@ -450,6 +450,45 @@ canvas {
   font-size: 28px;
 }
 
+.control-panel {
+  margin: 12px 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(21, 26, 33, 0.74);
+  padding: 10px;
+}
+
+.control-panel.active {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px rgba(232, 189, 87, 0.2) inset;
+}
+
+.control-panel h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.control-panel p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.control-cooldowns {
+  display: grid;
+  gap: 6px;
+}
+
+.control-cooldowns span {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .item-box {
   margin: 14px 0;
   border: 1px solid var(--line);
