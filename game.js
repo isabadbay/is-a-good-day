@@ -17,6 +17,8 @@ const speedSlider = document.querySelector("#speedSlider");
 const sandboxToggle = document.querySelector("#sandboxToggle");
 const blueTeamBtn = document.querySelector("#blueTeamBtn");
 const redTeamBtn = document.querySelector("#redTeamBtn");
+const batchPlaceLabel = document.querySelector("#batchPlaceLabel");
+const batchPlaceCount = document.querySelector("#batchPlaceCount");
 const wallToolBtn = document.querySelector("#wallToolBtn");
 const thickWallToolBtn = document.querySelector("#thickWallToolBtn");
 const arrowWallToolBtn = document.querySelector("#arrowWallToolBtn");
@@ -171,6 +173,7 @@ const translations = {
     sandbox: "沙盒模式",
     blue: "蓝队",
     red: "红队",
+    batchPlace: "一次放置数量",
     custom: "自定义兵种",
     create: "创建兵种",
     battle: "战况",
@@ -357,6 +360,7 @@ const translations = {
     sandbox: "Sandbox",
     blue: "Blue",
     red: "Red",
+    batchPlace: "Place Count",
     custom: "Custom Unit",
     create: "Create Unit",
     battle: "Battle",
@@ -554,6 +558,7 @@ function applyLanguage(lang) {
   }
   blueTeamBtn.textContent = text.blue;
   redTeamBtn.textContent = text.red;
+  if (batchPlaceLabel) batchPlaceLabel.textContent = text.batchPlace;
   wallToolBtn.textContent = text.mapWall;
   thickWallToolBtn.textContent = text.mapThickWall;
   arrowWallToolBtn.textContent = text.mapArrowWall;
@@ -1841,6 +1846,32 @@ function refund(typeId) {
   updateUi();
 }
 
+function batchOffsets(count, spacing) {
+  if (count <= 1) return [{ x: 0, y: 0 }];
+  const offsets = [];
+  const rings = Math.ceil((Math.sqrt(count) - 1) / 2);
+  offsets.push({ x: 0, y: 0 });
+  for (let ring = 1; ring <= rings && offsets.length < count; ring += 1) {
+    const perSide = ring * 2;
+    for (let side = 0; side < 4 && offsets.length < count; side += 1) {
+      for (let step = 0; step < perSide && offsets.length < count; step += 1) {
+        const a = -ring + step;
+        const b = ring;
+        const point =
+          side === 0
+            ? { x: a, y: -b }
+            : side === 1
+              ? { x: b, y: a }
+              : side === 2
+                ? { x: -a, y: b }
+                : { x: -b, y: -a };
+        offsets.push({ x: point.x * spacing, y: point.y * spacing });
+      }
+    }
+  }
+  return offsets.slice(0, count);
+}
+
 function placePlayerUnit(point) {
   if (state.phase !== "setup") return;
   const type = typeById(state.selected);
@@ -1854,9 +1885,22 @@ function placePlayerUnit(point) {
     return;
   }
   const team = state.sandbox ? state.placeTeam : "blue";
-  addUnit(type.id, team, point.x, point.y);
-  spendFor(type);
-  setToast(`${team === "blue" ? "Blue" : "Red"} ${type.name} deployed`);
+  const wanted = Math.max(1, Math.min(60, Math.floor(Number(batchPlaceCount?.value) || 1)));
+  const affordable = state.sandbox ? wanted : Math.max(1, Math.min(wanted, Math.floor(state.budget / type.price)));
+  const spacing = Math.max(type.radius * 2.35, 34);
+  const offsets = batchOffsets(affordable, spacing);
+  let placed = 0;
+  for (const offset of offsets) {
+    const maxX = state.sandbox ? canvas.width - type.radius : blueZone() - 18;
+    const x = clamp(point.x + offset.x, type.radius, maxX);
+    const y = clamp(point.y + offset.y, type.radius, canvas.height - type.radius);
+    addUnit(type.id, team, x, y);
+    spendFor(type);
+    placed += 1;
+    if (!state.sandbox && state.budget < type.price) break;
+  }
+  const suffix = placed > 1 ? ` x${placed}` : "";
+  setToast(`${team === "blue" ? "Blue" : "Red"} ${type.name}${suffix} deployed`);
 }
 
 function nearestUnit(point, team = "blue") {
