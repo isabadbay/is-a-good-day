@@ -2576,8 +2576,6 @@ function triggerWhirlwindLeap(unit) {
   unit.airborneTotal = duration;
   unit.whirlwindCooldown = duration + (unit.skills.whirlwindCooldown || 5);
   unit.cooldown = Math.max(unit.cooldown, duration + 0.2);
-  unit.vx *= 0.5;
-  unit.vy *= 0.5;
   for (let i = 0; i < 18; i += 1) {
     const angle = Math.random() * Math.PI * 2;
     const speed = 70 + Math.random() * 120;
@@ -2801,8 +2799,8 @@ function updateUnit(unit, dt) {
     unit.airborneTimer = Math.max(0, unit.airborneTimer - dt);
     unit.vx *= 0.965;
     unit.vy *= 0.965;
-    unit.x += unit.vx * dt * 0.5;
-    unit.y += unit.vy * dt * 0.5;
+    unit.x += unit.vx * dt;
+    unit.y += unit.vy * dt;
     unit.x = Math.max(unit.radius, Math.min(canvas.width - unit.radius, unit.x));
     unit.y = Math.max(unit.radius, Math.min(canvas.height - unit.radius, unit.y));
     if (unit.airborneTimer <= 0) {
