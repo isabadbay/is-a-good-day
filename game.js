@@ -141,6 +141,7 @@ const UNIT_PACK_2_IDS = new Set([
   "stormlancer",
   "whirlhammer",
   "zombie",
+  "peashooter",
 ]);
 
 const INFECTABLE_TYPE_IDS = new Set([
@@ -332,6 +333,7 @@ const translations = {
       stormlancer: ["风暴枪兵", "爆发远程"],
       whirlhammer: ["旋风重锤兵", "跃空重砸"],
       zombie: ["僵尸", "感染"],
+      peashooter: ["豌豆射手", "固定远程"],
     },
     tags: {
       ranged: "远程",
@@ -519,6 +521,7 @@ const translations = {
       stormlancer: ["Storm Lancer", "Burst Shot"],
       whirlhammer: ["Whirl Hammer", "Sky Slam"],
       zombie: ["Zombie", "Infection"],
+      peashooter: ["Peashooter", "Rooted Ranged"],
     },
     tags: {
       ranged: "Ranged",
@@ -1298,6 +1301,25 @@ const unitTypes = [
     skills: { infectTouch: true, infectSeconds: 10 },
     color: "#76b86d",
   },
+  {
+    id: "peashooter",
+    name: "Peashooter",
+    tag: "Rooted Ranged",
+    glyph: "PS",
+    price: 180,
+    hp: 70,
+    damage: 18,
+    range: 255,
+    stopDistance: 255,
+    speed: 0,
+    radius: 16,
+    cooldown: 0.95,
+    projectileSpeed: 440,
+    weapon: "bow",
+    canAttackWalls: false,
+    skills: { rooted: true },
+    color: "#68c96b",
+  },
 ];
 
 let customUnitCounter = 1;
@@ -1515,6 +1537,7 @@ function pushOutOfWalls(unit) {
 }
 
 function projectileHitsWall(projectile) {
+  if (projectile.passWalls) return false;
   return state.walls.some((wall) => {
     if (wall.type === "arrow") return false;
     return projectile.x >= wall.x - wall.w / 2 && projectile.x <= wall.x + wall.w / 2 && projectile.y >= wall.y - wall.h / 2 && projectile.y <= wall.y + wall.h / 2;
@@ -2411,6 +2434,7 @@ function spawnEnemyArmy() {
     "stormlancer",
     "whirlhammer",
     "zombie",
+    "peashooter",
   ];
   for (let i = 0; i < count; i += 1) {
     const typeId = ids[Math.floor(Math.random() * ids.length)];
@@ -2486,6 +2510,7 @@ function randomFormation() {
     "stormlancer",
     "whirlhammer",
     "zombie",
+    "peashooter",
   ];
   const team = state.sandbox ? state.placeTeam : "blue";
   let guard = 0;
@@ -2893,6 +2918,7 @@ function attack(unit, target, mode = null) {
         radius: active.weapon === "cannon" ? 7 : 4,
         isRanged: true,
         areaAttack: unit.areaAttack,
+        passWalls: unit.skills.rooted,
         applyBurn: unit.skills.fireBreath,
         fireDuration: unit.skills.fireDuration || 5,
         applyFreeze: unit.skills.freezeAttack,
@@ -3001,8 +3027,12 @@ function updateUnit(unit, dt) {
     unit.vy = 0;
     return;
   }
+  if (unit.skills.rooted) {
+    unit.vx = 0;
+    unit.vy = 0;
+  }
   const command = state.commands[unit.team];
-  if (command) {
+  if (command && !unit.skills.rooted) {
     const goal = wallAvoidancePoint(unit, command);
     const commandDistance = Math.hypot(goal.x - unit.x, goal.y - unit.y);
     const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1);
@@ -3052,7 +3082,7 @@ function updateUnit(unit, dt) {
   const attackDistance = Math.max(primaryAttackDistance, secondAttackDistance);
   const stopDistance = isRanged ? unit.stopDistance : Math.min(unit.stopDistance, attackDistance);
   const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1);
-  if (engagementDistance > stopDistance) {
+  if (!unit.skills.rooted && engagementDistance > stopDistance) {
     unit.vx += Math.cos(angle) * unit.speed * speedFactor * dt * 2.8;
     unit.vy += Math.sin(angle) * unit.speed * speedFactor * dt * 2.8;
   }
@@ -3065,13 +3095,18 @@ function updateUnit(unit, dt) {
       attack(unit, target, second);
     }
   }
-  unit.vx += Math.cos(unit.wobble) * 9 * dt;
-  unit.vy += Math.sin(unit.wobble * 1.7) * 8 * dt;
-  unit.vx *= 0.91;
-  unit.vy *= 0.91;
-  unit.x += unit.vx * dt;
-  unit.y += unit.vy * dt;
-  pushOutOfWalls(unit);
+  if (!unit.skills.rooted) {
+    unit.vx += Math.cos(unit.wobble) * 9 * dt;
+    unit.vy += Math.sin(unit.wobble * 1.7) * 8 * dt;
+    unit.vx *= 0.91;
+    unit.vy *= 0.91;
+    unit.x += unit.vx * dt;
+    unit.y += unit.vy * dt;
+    pushOutOfWalls(unit);
+  } else {
+    unit.vx = 0;
+    unit.vy = 0;
+  }
   unit.x = Math.max(unit.radius, Math.min(canvas.width - unit.radius, unit.x));
   unit.y = Math.max(unit.radius, Math.min(canvas.height - unit.radius, unit.y));
 }
@@ -3864,6 +3899,25 @@ function drawUnitSkin(unit) {
     ctx.fillStyle = "#83d96f";
     ctx.beginPath();
     ctx.arc(0, r * 0.34, r * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (unit.typeId === "peashooter") {
+    ctx.fillStyle = "#2f8f46";
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.7, r * 0.55, r * 0.24, -0.25, 0, Math.PI * 2);
+    ctx.ellipse(-r * 0.52, r * 0.5, r * 0.38, r * 0.18, -0.65, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#3fbf5e";
+    ctx.beginPath();
+    ctx.arc(-r * 0.12, -r * 0.22, r * 0.62, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#205c34";
+    ctx.beginPath();
+    ctx.ellipse(r * 0.72, -r * 0.2, r * 0.62, r * 0.34, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#80e88a";
+    ctx.beginPath();
+    ctx.ellipse(r * 0.9, -r * 0.2, r * 0.26, r * 0.15, 0, 0, Math.PI * 2);
     ctx.fill();
   }
   if (unit.typeId === "dragonling") {
