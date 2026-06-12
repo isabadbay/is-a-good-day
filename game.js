@@ -145,8 +145,12 @@ const UNIT_PACK_2_IDS = new Set([
   "stormlancer",
   "whirlhammer",
   "zombie",
+  "sunflower",
   "peashooter",
+  "repeater",
 ]);
+
+const PLANT_TYPE_IDS = new Set(["sunflower", "peashooter", "repeater"]);
 
 const INFECTABLE_TYPE_IDS = new Set([
   "clubber",
@@ -343,7 +347,9 @@ const translations = {
       stormlancer: ["风暴枪兵", "爆发远程"],
       whirlhammer: ["旋风重锤兵", "跃空重砸"],
       zombie: ["僵尸", "感染"],
+      sunflower: ["向日葵", "产金币"],
       peashooter: ["豌豆射手", "固定远程"],
+      repeater: ["双发射手", "双发豌豆"],
     },
     tags: {
       ranged: "远程",
@@ -537,7 +543,9 @@ const translations = {
       stormlancer: ["Storm Lancer", "Burst Shot"],
       whirlhammer: ["Whirl Hammer", "Sky Slam"],
       zombie: ["Zombie", "Infection"],
+      sunflower: ["Sunflower", "Gold Producer"],
       peashooter: ["Peashooter", "Rooted Ranged"],
+      repeater: ["Repeater", "Double Pea"],
     },
     tags: {
       ranged: "Ranged",
@@ -1319,6 +1327,25 @@ const unitTypes = [
     color: "#76b86d",
   },
   {
+    id: "sunflower",
+    name: "Sunflower",
+    tag: "Gold Producer",
+    glyph: "SF",
+    price: 50,
+    hp: 65,
+    damage: 0,
+    range: 0,
+    stopDistance: 0,
+    speed: 0,
+    radius: 17,
+    cooldown: 999,
+    projectileSpeed: 0,
+    weapon: "club",
+    canAttackWalls: false,
+    skills: { rooted: true, sunProducer: true, sunInterval: 5, sunGold: 50 },
+    color: "#f7ca42",
+  },
+  {
     id: "peashooter",
     name: "Peashooter",
     tag: "Rooted Ranged",
@@ -1337,6 +1364,27 @@ const unitTypes = [
     skills: { rooted: true },
     color: "#68c96b",
   },
+  {
+    id: "repeater",
+    name: "Repeater",
+    tag: "Double Pea",
+    glyph: "RP",
+    price: 300,
+    hp: 85,
+    damage: 18,
+    range: 500000000,
+    stopDistance: 500000000,
+    speed: 0,
+    radius: 17,
+    cooldown: 1.05,
+    projectileSpeed: 455,
+    weapon: "bow",
+    burstCount: 2,
+    burstCooldown: 1.05,
+    canAttackWalls: false,
+    skills: { rooted: true },
+    color: "#48b85f",
+  },
 ];
 
 let customUnitCounter = 1;
@@ -1350,6 +1398,7 @@ const state = {
   pointer: null,
   placeTeam: "blue",
   sandbox: false,
+  plantMode: false,
   language: "en",
   budget: 900,
   units: [],
@@ -1418,6 +1467,11 @@ function blueArmyCost() {
 
 function wallTotalCost() {
   return state.walls.reduce((sum, wall) => sum + wallCost(wall), 0);
+}
+
+function isPlantType(typeOrId) {
+  const id = typeof typeOrId === "string" ? typeOrId : typeOrId?.id;
+  return PLANT_TYPE_IDS.has(id);
 }
 
 function syncBudgetToEnemySize() {
@@ -1858,6 +1912,7 @@ function addUnit(typeId, team, x, y) {
     infectionDuration: 0,
     infectionTeam: null,
     stasisSourceId: null,
+    sunTimer: type.skills?.sunProducer ? type.skills.sunInterval || 5 : 0,
     stasisCooldown: 1 + Math.random() * 2,
     fireBreathCooldown: type.skills?.fireBreath ? 0.8 + Math.random() * 1.1 : 0,
     fireballCooldown: 1.5 + Math.random() * 2,
@@ -1917,9 +1972,10 @@ function batchOffsets(count, spacing) {
 }
 
 function placePlayerUnit(point) {
-  if (state.phase !== "setup") return;
   const type = typeById(state.selected);
   if (!type) return;
+  const battlePlantPlacement = state.phase === "battle" && state.plantMode && isPlantType(type);
+  if (state.phase !== "setup" && !battlePlantPlacement) return;
   if (!state.sandbox && point.x > blueZone() - 18) {
     setToast("Only place blue units on the left side");
     return;
@@ -2589,6 +2645,7 @@ function resetGame(keepEnemies = false) {
   state.walls = [];
   state.commands = { blue: null, red: null };
   state.focusTargets = { blue: null, red: null };
+  state.plantMode = false;
   state.dragging = null;
   state.controlledId = null;
   state.controlKeys = {};
@@ -2646,7 +2703,9 @@ function randomFormation() {
     "stormlancer",
     "whirlhammer",
     "zombie",
+    "sunflower",
     "peashooter",
+    "repeater",
   ];
   const team = state.sandbox ? state.placeTeam : "blue";
   let guard = 0;
@@ -2680,9 +2739,13 @@ function startBattle() {
   }
   state.commands = { blue: null, red: null };
   state.focusTargets = { blue: null, red: null };
+  state.plantMode = state.selected === "sunflower" || state.units.some((unit) => unit.team === "blue" && unit.typeId === "sunflower");
+  if (state.plantMode && !state.sandbox) {
+    state.budget = 0;
+  }
   state.winnerShown = false;
   setPhase("battle");
-  setToast("Battle started");
+  setToast(state.plantMode ? "Plant mode: gold starts at 0, sunflowers produce 50 gold every 5s" : "Battle started");
 }
 
 function pauseBattle() {
@@ -3349,6 +3412,15 @@ function updateUnit(unit, dt) {
     unit.y += unit.vy * dt;
     return;
   }
+  if (unit.skills.sunProducer) {
+    unit.sunTimer = Math.max(0, (unit.sunTimer || unit.skills.sunInterval || 5) - dt);
+    if (unit.sunTimer <= 0) {
+      unit.sunTimer += unit.skills.sunInterval || 5;
+      if (!state.sandbox) state.budget += unit.skills.sunGold || 50;
+      state.particles.push({ x: unit.x, y: unit.y - unit.radius * 1.2, life: 0.9, startLife: 0.9, color: "#ffd95a", size: 36 });
+      setToast(`+${unit.skills.sunGold || 50} gold`);
+    }
+  }
   if (unit.airborneTimer > 0) {
     unit.airborneTimer = Math.max(0, unit.airborneTimer - dt);
     unit.vx *= 0.965;
@@ -3378,6 +3450,11 @@ function updateUnit(unit, dt) {
   if (unit.skills.randomSpawn && unit.randomSpawnCooldown <= 0) {
     spawnRandomUnit(unit);
     unit.randomSpawnCooldown = unit.skills.randomSpawnInterval || 5;
+  }
+  if (unit.skills.sunProducer) {
+    unit.vx = 0;
+    unit.vy = 0;
+    return;
   }
   if (unit.stasisTimer > 0) {
     unit.vx = 0;
@@ -4371,7 +4448,37 @@ function drawUnitSkin(unit) {
     ctx.arc(0, r * 0.34, r * 0.18, 0, Math.PI * 2);
     ctx.fill();
   }
-  if (unit.typeId === "peashooter") {
+  if (unit.typeId === "sunflower") {
+    ctx.fillStyle = "#2f8f46";
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.78, r * 0.46, r * 0.22, 0, 0, Math.PI * 2);
+    ctx.ellipse(-r * 0.46, r * 0.56, r * 0.34, r * 0.16, -0.65, 0, Math.PI * 2);
+    ctx.ellipse(r * 0.44, r * 0.56, r * 0.34, r * 0.16, 0.65, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#24673b";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(0, r * 0.62);
+    ctx.lineTo(0, -r * 0.18);
+    ctx.stroke();
+    ctx.fillStyle = "#ffd95a";
+    for (let i = 0; i < 12; i += 1) {
+      const angle = (i / 12) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.ellipse(Math.cos(angle) * r * 0.54, -r * 0.34 + Math.sin(angle) * r * 0.54, r * 0.2, r * 0.34, angle, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#6b3f1d";
+    ctx.beginPath();
+    ctx.arc(0, -r * 0.34, r * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#2a160c";
+    ctx.beginPath();
+    ctx.arc(-r * 0.14, -r * 0.42, r * 0.06, 0, Math.PI * 2);
+    ctx.arc(r * 0.14, -r * 0.42, r * 0.06, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (unit.typeId === "peashooter" || unit.typeId === "repeater") {
     ctx.fillStyle = "#2f8f46";
     ctx.beginPath();
     ctx.ellipse(0, r * 0.7, r * 0.55, r * 0.24, -0.25, 0, Math.PI * 2);
@@ -4389,6 +4496,16 @@ function drawUnitSkin(unit) {
     ctx.beginPath();
     ctx.ellipse(r * 0.9, -r * 0.2, r * 0.26, r * 0.15, 0, 0, Math.PI * 2);
     ctx.fill();
+    if (unit.typeId === "repeater") {
+      ctx.fillStyle = "#205c34";
+      ctx.beginPath();
+      ctx.ellipse(r * 0.64, -r * 0.48, r * 0.52, r * 0.26, -0.05, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#80e88a";
+      ctx.beginPath();
+      ctx.ellipse(r * 0.82, -r * 0.48, r * 0.22, r * 0.12, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
   if (unit.typeId === "dragonling") {
     ctx.fillStyle = "#7b2432";
@@ -4953,6 +5070,8 @@ canvas.addEventListener("pointerdown", (event) => {
     const text = translations[state.language] || translations.en;
     if (unit && Math.hypot(unit.x - point.x, unit.y - point.y) <= unit.radius + 18) {
       selectControlledUnit(unit);
+    } else if (state.plantMode && isPlantType(state.selected)) {
+      placePlayerUnit(point);
     } else {
       setToast(text.noControlTarget);
     }
