@@ -148,9 +148,10 @@ const UNIT_PACK_2_IDS = new Set([
   "sunflower",
   "peashooter",
   "repeater",
+  "gatlingshooter",
 ]);
 
-const PLANT_TYPE_IDS = new Set(["sunflower", "peashooter", "repeater"]);
+const PLANT_TYPE_IDS = new Set(["sunflower", "peashooter", "repeater", "gatlingshooter"]);
 
 const INFECTABLE_TYPE_IDS = new Set([
   "clubber",
@@ -350,6 +351,7 @@ const translations = {
       sunflower: ["向日葵", "产金币"],
       peashooter: ["豌豆射手", "固定远程"],
       repeater: ["双发射手", "双发豌豆"],
+      gatlingshooter: ["机枪射手", "狂暴扫射"],
     },
     tags: {
       ranged: "远程",
@@ -546,6 +548,7 @@ const translations = {
       sunflower: ["Sunflower", "Gold Producer"],
       peashooter: ["Peashooter", "Rooted Ranged"],
       repeater: ["Repeater", "Double Pea"],
+      gatlingshooter: ["Gatling Shooter", "Fan Barrage"],
     },
     tags: {
       ranged: "Ranged",
@@ -1385,6 +1388,25 @@ const unitTypes = [
     skills: { rooted: true },
     color: "#48b85f",
   },
+  {
+    id: "gatlingshooter",
+    name: "Gatling Shooter",
+    tag: "Fan Barrage",
+    glyph: "GS",
+    price: 550,
+    hp: 115,
+    damage: 9,
+    range: 500000000,
+    stopDistance: 500000000,
+    speed: 0,
+    radius: 19,
+    cooldown: 0.2,
+    projectileSpeed: 520,
+    weapon: "bow",
+    canAttackWalls: false,
+    skills: { rooted: true, gatling: true, gatlingCheckInterval: 3 },
+    color: "#5bd071",
+  },
 ];
 
 let customUnitCounter = 1;
@@ -1913,6 +1935,8 @@ function addUnit(typeId, team, x, y) {
     infectionTeam: null,
     stasisSourceId: null,
     sunTimer: type.skills?.sunProducer ? type.skills.sunInterval || 5 : 0,
+    gatlingBoosted: false,
+    gatlingCheckTimer: type.skills?.gatling ? type.skills.gatlingCheckInterval || 3 : 0,
     stasisCooldown: 1 + Math.random() * 2,
     fireBreathCooldown: type.skills?.fireBreath ? 0.8 + Math.random() * 1.1 : 0,
     fireballCooldown: 1.5 + Math.random() * 2,
@@ -2706,6 +2730,7 @@ function randomFormation() {
     "sunflower",
     "peashooter",
     "repeater",
+    "gatlingshooter",
   ];
   const team = state.sandbox ? state.placeTeam : "blue";
   let guard = 0;
@@ -2765,7 +2790,7 @@ function findTarget(unit) {
     if (focused) {
       const distance = Math.hypot(focused.x - unit.x, focused.y - unit.y);
       const wallInfo = wallTargetNear(unit, focused);
-      if (wallInfo) return wallInfo;
+      if (wallInfo && unit.canAttackWalls !== false) return wallInfo;
       return { target: focused, distance };
     }
   }
@@ -2781,10 +2806,10 @@ function findTarget(unit) {
   }
   if (best) {
     const wallInfo = wallTargetNear(unit, best);
-    if (wallInfo) return wallInfo;
+    if (wallInfo && unit.canAttackWalls !== false) return wallInfo;
     return { target: best, distance: bestDistance };
   }
-  return wallTargetNear(unit);
+  return unit.canAttackWalls === false ? null : wallTargetNear(unit);
 }
 
 function controlledUnit() {
@@ -2842,8 +2867,9 @@ function controlledPrimaryAttack(unit) {
       projectileSpeed: unit.projectileSpeed,
       splash: unit.splash,
       cooldown: unit.cooldownTime,
-      burstCount: unit.burstCount || 1,
-      burstCooldown: unit.burstCooldown || 0,
+      burstCount: unit.skills.gatling && unit.gatlingBoosted ? 4 : unit.burstCount || 1,
+      burstCooldown: unit.skills.gatling ? unit.cooldownTime : unit.burstCooldown || 0,
+      fanSpread: unit.skills.gatling && unit.gatlingBoosted ? 0.55 : 0,
     });
     return;
   }
@@ -2880,7 +2906,7 @@ function controlledRangedAttack(unit, mode) {
     }, true);
   }
   for (let i = 0; i < burstCount; i += 1) {
-    const spread = burstCount > 1 ? (i - (burstCount - 1) / 2) * 0.055 : 0;
+    const spread = mode.fanSpread ? (i - (burstCount - 1) / 2) * (mode.fanSpread / Math.max(1, burstCount - 1)) : burstCount > 1 ? (i - (burstCount - 1) / 2) * 0.055 : 0;
     const angle = baseAngle + spread;
     state.projectiles.push({
       x: unit.x + Math.cos(angle) * unit.radius * 0.45,
@@ -3274,8 +3300,9 @@ function attack(unit, target, mode = null) {
     projectileSpeed: unit.projectileSpeed,
     splash: unit.splash,
     cooldown: unit.cooldownTime,
-    burstCount: unit.burstCount || 1,
-    burstCooldown: unit.burstCooldown || 0,
+    burstCount: unit.skills.gatling && unit.gatlingBoosted ? 4 : unit.burstCount || 1,
+    burstCooldown: unit.skills.gatling ? unit.cooldownTime : unit.burstCooldown || 0,
+    fanSpread: unit.skills.gatling && unit.gatlingBoosted ? 0.55 : 0,
   };
   const burstCount = Math.max(1, Math.floor(active.burstCount || 1));
   unit.cooldown = burstCount > 1 && active.burstCooldown > 0 ? active.burstCooldown : active.cooldown || unit.cooldownTime;
@@ -3318,6 +3345,31 @@ function attack(unit, target, mode = null) {
     spawnFireBreathParticles(unit, target, active.ranged ? 18 : 12);
   }
   if (active.ranged && active.projectileSpeed) {
+    if (active.fanSpread) {
+      const baseAngle = Math.atan2(target.y - unit.y, target.x - unit.x);
+      for (let i = 0; i < burstCount; i += 1) {
+        const spread = burstCount > 1 ? (i - (burstCount - 1) / 2) * (active.fanSpread / Math.max(1, burstCount - 1)) : 0;
+        const angle = baseAngle + spread;
+        state.projectiles.push({
+          x: unit.x + Math.cos(angle) * unit.radius * 0.5,
+          y: unit.y + Math.sin(angle) * unit.radius * 0.5,
+          vx: Math.cos(angle) * active.projectileSpeed,
+          vy: Math.sin(angle) * active.projectileSpeed,
+          team: unit.team,
+          ownerId: unit.id,
+          damage: damageFor(unit, active.damage),
+          speed: active.projectileSpeed,
+          splash: active.splash || 0,
+          radius: 4,
+          isRanged: true,
+          manualShot: true,
+          passWalls: unit.skills.rooted,
+          continueOnTargetDeath: true,
+          life: 1.8,
+        });
+      }
+      return;
+    }
     for (let i = 0; i < burstCount; i += 1) {
       state.projectiles.push({
         x: unit.x + (Math.random() - 0.5) * unit.radius * 0.35,
@@ -3411,6 +3463,24 @@ function updateUnit(unit, dt) {
     unit.x += unit.vx * dt;
     unit.y += unit.vy * dt;
     return;
+  }
+  if (unit.skills.gatling) {
+    unit.gatlingCheckTimer = Math.max(0, (unit.gatlingCheckTimer || unit.skills.gatlingCheckInterval || 3) - dt);
+    if (unit.gatlingCheckTimer <= 0) {
+      unit.gatlingCheckTimer += unit.skills.gatlingCheckInterval || 3;
+      if (Math.random() < 0.5) {
+        unit.gatlingBoosted = !unit.gatlingBoosted;
+        unit.cooldown = Math.min(unit.cooldown, 0.05);
+        state.particles.push({
+          x: unit.x,
+          y: unit.y,
+          life: 0.75,
+          startLife: 0.75,
+          color: unit.gatlingBoosted ? "#ffe05a" : "#7cff9c",
+          size: unit.gatlingBoosted ? 70 : 42,
+        });
+      }
+    }
   }
   if (unit.skills.sunProducer) {
     unit.sunTimer = Math.max(0, (unit.sunTimer || unit.skills.sunInterval || 5) - dt);
@@ -4478,7 +4548,7 @@ function drawUnitSkin(unit) {
     ctx.arc(r * 0.14, -r * 0.42, r * 0.06, 0, Math.PI * 2);
     ctx.fill();
   }
-  if (unit.typeId === "peashooter" || unit.typeId === "repeater") {
+  if (unit.typeId === "peashooter" || unit.typeId === "repeater" || unit.typeId === "gatlingshooter") {
     ctx.fillStyle = "#2f8f46";
     ctx.beginPath();
     ctx.ellipse(0, r * 0.7, r * 0.55, r * 0.24, -0.25, 0, Math.PI * 2);
@@ -4504,6 +4574,26 @@ function drawUnitSkin(unit) {
       ctx.fillStyle = "#80e88a";
       ctx.beginPath();
       ctx.ellipse(r * 0.82, -r * 0.48, r * 0.22, r * 0.12, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (unit.typeId === "gatlingshooter") {
+      if (unit.gatlingBoosted) {
+        ctx.strokeStyle = "#ffe05a";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, -r * 0.2, r * 1.05, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "#204f34";
+      for (let i = 0; i < 5; i += 1) {
+        const offset = (i - 2) * r * 0.16;
+        ctx.beginPath();
+        ctx.ellipse(r * 0.72, -r * 0.42 + offset, r * 0.48, r * 0.12, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#8ff29b";
+      ctx.beginPath();
+      ctx.arc(-r * 0.12, -r * 0.3, r * 0.16, 0, Math.PI * 2);
       ctx.fill();
     }
   }
