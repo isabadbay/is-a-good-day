@@ -36,11 +36,6 @@ const formationCode = document.querySelector("#formationCode");
 const wallToolBtn = document.querySelector("#wallToolBtn");
 const thickWallToolBtn = document.querySelector("#thickWallToolBtn");
 const arrowWallToolBtn = document.querySelector("#arrowWallToolBtn");
-const arrowTowerToolBtn = document.querySelector("#arrowTowerToolBtn");
-const cannonTowerToolBtn = document.querySelector("#cannonTowerToolBtn");
-const healTowerToolBtn = document.querySelector("#healTowerToolBtn");
-const frostTowerToolBtn = document.querySelector("#frostTowerToolBtn");
-const goldMineToolBtn = document.querySelector("#goldMineToolBtn");
 const waterToolBtn = document.querySelector("#waterToolBtn");
 const fireTerrainToolBtn = document.querySelector("#fireTerrainToolBtn");
 const grassToolBtn = document.querySelector("#grassToolBtn");
@@ -264,11 +259,6 @@ const translations = {
     mapWall: "墙",
     mapThickWall: "厚墙",
     mapArrowWall: "透射墙",
-    mapArrowTower: "箭塔",
-    mapCannonTower: "炮塔",
-    mapHealTower: "治疗塔",
-    mapFrostTower: "冰冻塔",
-    mapGoldMine: "金矿",
     mapWater: "水坑",
     mapFireGround: "火地",
     mapGrass: "草丛",
@@ -487,11 +477,6 @@ const translations = {
     mapWall: "Wall",
     mapThickWall: "Thick Wall",
     mapArrowWall: "Arrow Wall",
-    mapArrowTower: "Arrow Tower",
-    mapCannonTower: "Cannon Tower",
-    mapHealTower: "Healing Tower",
-    mapFrostTower: "Frost Tower",
-    mapGoldMine: "Gold Mine",
     mapWater: "Water",
     mapFireGround: "Fire Ground",
     mapGrass: "Grass",
@@ -685,11 +670,6 @@ function applyLanguage(lang) {
   wallToolBtn.textContent = text.mapWall;
   thickWallToolBtn.textContent = text.mapThickWall;
   arrowWallToolBtn.textContent = text.mapArrowWall;
-  arrowTowerToolBtn.textContent = text.mapArrowTower;
-  cannonTowerToolBtn.textContent = text.mapCannonTower;
-  healTowerToolBtn.textContent = text.mapHealTower;
-  frostTowerToolBtn.textContent = text.mapFrostTower;
-  goldMineToolBtn.textContent = text.mapGoldMine;
   waterToolBtn.textContent = text.mapWater;
   fireTerrainToolBtn.textContent = text.mapFireGround;
   grassToolBtn.textContent = text.mapGrass;
@@ -6053,11 +6033,6 @@ function updateUi() {
   wallToolBtn.classList.toggle("active", state.mapTool === "wall");
   thickWallToolBtn.classList.toggle("active", state.mapTool === "thickWall");
   arrowWallToolBtn.classList.toggle("active", state.mapTool === "arrowWall");
-  arrowTowerToolBtn.classList.toggle("active", false);
-  cannonTowerToolBtn.classList.toggle("active", false);
-  healTowerToolBtn.classList.toggle("active", false);
-  frostTowerToolBtn.classList.toggle("active", false);
-  goldMineToolBtn.classList.toggle("active", false);
   waterToolBtn.classList.toggle("active", state.mapTool === "water");
   fireTerrainToolBtn.classList.toggle("active", state.mapTool === "fire");
   grassToolBtn.classList.toggle("active", state.mapTool === "grass");
@@ -6069,11 +6044,6 @@ function updateUi() {
   wallToolBtn.disabled = state.phase !== "setup";
   thickWallToolBtn.disabled = state.phase !== "setup";
   arrowWallToolBtn.disabled = state.phase !== "setup";
-  arrowTowerToolBtn.disabled = true;
-  cannonTowerToolBtn.disabled = true;
-  healTowerToolBtn.disabled = true;
-  frostTowerToolBtn.disabled = true;
-  goldMineToolBtn.disabled = true;
   waterToolBtn.disabled = state.phase !== "setup";
   fireTerrainToolBtn.disabled = state.phase !== "setup";
   grassToolBtn.disabled = state.phase !== "setup";
@@ -6400,14 +6370,7 @@ arrowWallToolBtn.addEventListener("click", () => {
   updateUi();
   setToast(state.mapTool === "arrowWall" ? (state.language === "zh" ? "点一下起点，再点一下终点放透射墙" : "Click a start point, then an end point for an arrow wall") : (state.language === "zh" ? "透射墙工具关闭" : "Arrow wall tool off"));
 });
-arrowTowerToolBtn.addEventListener("click", () => {
-  setToast(state.language === "zh" ? "建筑需要开战后控制兵种：O选择，P建造" : "Buildings are built by controlled units: O pick, P build");
-});
 [
-  [cannonTowerToolBtn, "cannonTower"],
-  [healTowerToolBtn, "healTower"],
-  [frostTowerToolBtn, "frostTower"],
-  [goldMineToolBtn, "goldMine"],
   [waterToolBtn, "water"],
   [fireTerrainToolBtn, "fire"],
   [grassToolBtn, "grass"],
