@@ -25,6 +25,7 @@ const batchPlaceLabel = document.querySelector("#batchPlaceLabel");
 const batchPlaceCount = document.querySelector("#batchPlaceCount");
 const exportFormationBtn = document.querySelector("#exportFormationBtn");
 const importFormationBtn = document.querySelector("#importFormationBtn");
+const exitChallengeBtn = document.querySelector("#exitChallengeBtn");
 const formationCode = document.querySelector("#formationCode");
 const wallToolBtn = document.querySelector("#wallToolBtn");
 const thickWallToolBtn = document.querySelector("#thickWallToolBtn");
@@ -189,10 +190,12 @@ const translations = {
     batchPlace: "一次放置数量",
     exportFormation: "导出阵容",
     importFormation: "导入阵容",
+    exitChallenge: "退出挑战",
     formationPlaceholder: "阵容码",
     formationExported: "阵容码已生成，可以复制给别人",
     formationImported: "阵容已导入",
     formationInvalid: "阵容码无效",
+    challengeExited: "已退出挑战模式",
     custom: "自定义兵种",
     create: "创建兵种",
     battle: "战况",
@@ -392,10 +395,12 @@ const translations = {
     batchPlace: "Place Count",
     exportFormation: "Export Formation",
     importFormation: "Import Formation",
+    exitChallenge: "Exit Challenge",
     formationPlaceholder: "Formation code",
     formationExported: "Formation code created. Copy it to share",
     formationImported: "Formation imported",
     formationInvalid: "Invalid formation code",
+    challengeExited: "Challenge mode exited",
     custom: "Custom Unit",
     create: "Create Unit",
     battle: "Battle",
@@ -606,6 +611,7 @@ function applyLanguage(lang) {
   if (batchPlaceLabel) batchPlaceLabel.textContent = text.batchPlace;
   if (exportFormationBtn) exportFormationBtn.textContent = text.exportFormation;
   if (importFormationBtn) importFormationBtn.textContent = text.importFormation;
+  if (exitChallengeBtn) exitChallengeBtn.textContent = text.exitChallenge;
   if (formationCode) formationCode.placeholder = text.formationPlaceholder;
   wallToolBtn.textContent = text.mapWall;
   thickWallToolBtn.textContent = text.mapThickWall;
@@ -2068,42 +2074,164 @@ function removeUnit(unit) {
   if (unit.team === "blue") refund(unit.typeId);
 }
 
+function bytesToBase64(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function base64ToBytes(text) {
+  const binary = atob(text);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
 function encodeFormationPayload(payload) {
   const json = JSON.stringify(payload);
   const bytes = new TextEncoder().encode(json);
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return `TLF1-${btoa(binary)}`;
+  return `TLF1-${bytesToBase64(bytes)}`;
+}
+
+function compactNumber(value) {
+  return Math.max(0, Math.round(Number(value) || 0)).toString(36);
+}
+
+function expandNumber(value) {
+  return parseInt(String(value || "0"), 36) || 0;
+}
+
+function wallTypeCode(type) {
+  return type === "thick" ? "t" : type === "arrow" ? "a" : "n";
+}
+
+function wallTypeFromCode(code) {
+  return code === "t" ? "thick" : code === "a" ? "arrow" : "normal";
+}
+
+function compactCustomType(type) {
+  return {
+    id: type.id,
+    name: type.name,
+    tag: type.tag,
+    glyph: type.glyph,
+    price: type.price,
+    hp: type.hp,
+    damage: type.damage,
+    range: type.range,
+    stopDistance: type.stopDistance,
+    speed: type.speed,
+    radius: type.radius,
+    cooldown: type.cooldown,
+    projectileSpeed: type.projectileSpeed || 0,
+    splash: type.splash || 0,
+    knockback: type.knockback || 2.3,
+    dodgeChance: type.dodgeChance || 0,
+    weapon: type.weapon,
+    isRangedCustom: type.isRangedCustom,
+    canAttackWalls: type.canAttackWalls !== false,
+    areaAttack: type.areaAttack || null,
+    secondAttack: type.secondAttack || null,
+    skills: type.skills || {},
+    color: type.color,
+  };
+}
+
+function ensureImportedCustomTypes(customTypes = []) {
+  for (const raw of customTypes) {
+    if (!raw || !String(raw.id || "").startsWith("custom-") || typeById(raw.id)) continue;
+    unitTypes.push({
+      ...raw,
+      price: Number(raw.price) || 100,
+      hp: Number(raw.hp) || 100,
+      damage: Number(raw.damage) || 10,
+      range: Number(raw.range) || 40,
+      stopDistance: Number(raw.stopDistance) || Number(raw.range) || 40,
+      speed: Number(raw.speed) || 30,
+      radius: Number(raw.radius) || 16,
+      cooldown: Number(raw.cooldown) || 1,
+      projectileSpeed: Number(raw.projectileSpeed) || 0,
+      splash: Number(raw.splash) || 0,
+      knockback: Number(raw.knockback) || 2.3,
+      dodgeChance: Number(raw.dodgeChance) || 0,
+      weapon: raw.weapon || "club",
+      areaAttack: raw.areaAttack || null,
+      secondAttack: raw.secondAttack || null,
+      skills: raw.skills || {},
+      color: raw.color || "#b7c8ff",
+    });
+  }
+}
+
+function encodeShortFormation() {
+  const ids = unitTypes.map((type) => type.id);
+  const customIds = Array.from(new Set(state.units
+    .filter((unit) => !unit.dead && unit.typeId.startsWith("custom-") && typeById(unit.typeId))
+    .map((unit) => unit.typeId)));
+  const customTypes = customIds.map((id) => compactCustomType(typeById(id)));
+  const units = state.units
+    .filter((unit) => !unit.dead && ids.includes(unit.typeId))
+    .map((unit) => [
+      unit.typeId.startsWith("custom-") ? `c${customIds.indexOf(unit.typeId).toString(36)}` : compactNumber(ids.indexOf(unit.typeId)),
+      unit.team === "red" ? "r" : "b",
+      compactNumber(unit.x),
+      compactNumber(unit.y),
+    ].join("."));
+  const walls = state.walls.map((wall) => [
+    compactNumber(wall.x),
+    compactNumber(wall.y),
+    compactNumber(wall.w),
+    compactNumber(wall.h),
+    wallTypeCode(wall.type),
+  ].join("."));
+  const customPart = customTypes.length ? bytesToBase64(new TextEncoder().encode(JSON.stringify(customTypes))) : "";
+  const payload = `1|${units.join(",")}|${walls.join(",")}|${customPart}`;
+  return `TS1-${bytesToBase64(new TextEncoder().encode(payload))}`;
 }
 
 function decodeFormationPayload(code) {
   const trimmed = String(code || "").trim();
-  if (!trimmed.startsWith("TLF1-")) throw new Error("bad prefix");
-  const binary = atob(trimmed.slice(5));
-  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return JSON.parse(new TextDecoder().decode(bytes));
+  if (trimmed.startsWith("TLF1-")) {
+    const bytes = base64ToBytes(trimmed.slice(5));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  if (trimmed.startsWith("TS1-")) {
+    const raw = new TextDecoder().decode(base64ToBytes(trimmed.slice(4)));
+    const [version, unitPart = "", wallPart = "", customPart = ""] = raw.split("|");
+    if (version !== "1") throw new Error("bad short version");
+    const ids = unitTypes.map((type) => type.id);
+    const customTypes = customPart ? JSON.parse(new TextDecoder().decode(base64ToBytes(customPart))) : [];
+    return {
+      version: 2,
+      customTypes,
+      units: unitPart
+        ? unitPart.split(",").filter(Boolean).map((entry) => {
+            const [typeIndex, team, x, y] = entry.split(".");
+            return {
+              typeId: typeIndex?.startsWith("c") ? customTypes[parseInt(typeIndex.slice(1), 36) || 0]?.id : ids[expandNumber(typeIndex)],
+              team: team === "r" ? "red" : "blue",
+              x: expandNumber(x),
+              y: expandNumber(y),
+            };
+          })
+        : [],
+      walls: wallPart
+        ? wallPart.split(",").filter(Boolean).map((entry) => {
+            const [x, y, w, h, type] = entry.split(".");
+            return {
+              x: expandNumber(x),
+              y: expandNumber(y),
+              w: expandNumber(w),
+              h: expandNumber(h),
+              type: wallTypeFromCode(type),
+            };
+          })
+        : [],
+    };
+  }
+  throw new Error("bad prefix");
 }
 
 function exportFormation() {
-  const payload = {
-    version: 1,
-    units: state.units
-      .filter((unit) => !unit.dead && typeById(unit.typeId))
-      .map((unit) => ({
-        typeId: unit.typeId,
-        team: unit.team,
-        x: Math.round(unit.x),
-        y: Math.round(unit.y),
-      })),
-    walls: state.walls.map((wall) => ({
-      x: Math.round(wall.x),
-      y: Math.round(wall.y),
-      w: Math.round(wall.w),
-      h: Math.round(wall.h),
-      type: wall.type || "normal",
-    })),
-  };
-  const code = encodeFormationPayload(payload);
+  const code = encodeShortFormation();
   if (formationCode) {
     formationCode.value = code;
     formationCode.focus();
@@ -2138,7 +2266,8 @@ function importFormation() {
     state.plantMode = false;
     state.challengeMode = true;
     state.challengeBudget = 0;
-    const savedUnits = payload.units.filter((saved) => typeById(saved.typeId) && !String(saved.typeId).startsWith("custom-"));
+    ensureImportedCustomTypes(payload.customTypes || []);
+    const savedUnits = payload.units.filter((saved) => typeById(saved.typeId));
     const blueSaved = savedUnits.filter((saved) => saved.team !== "red");
     const challengeUnits = (blueSaved.length ? blueSaved : savedUnits).slice(0, 240);
     const mirrorFromBlue = blueSaved.length > 0;
@@ -2172,6 +2301,11 @@ function importFormation() {
   } catch {
     setToast(text.formationInvalid);
   }
+}
+
+function exitChallengeMode() {
+  resetGame(false);
+  setToast((translations[state.language] || translations.en).challengeExited);
 }
 
 function poisonUnit(unit, seconds = 5) {
@@ -5173,6 +5307,7 @@ function updateUi() {
   redTeamBtn.disabled = state.challengeMode || !canPickTeam;
   sandboxToggle.checked = state.sandbox;
   sandboxToggle.disabled = state.challengeMode;
+  if (exitChallengeBtn) exitChallengeBtn.disabled = !state.challengeMode;
   if (battlefieldWrap) battlefieldWrap.classList.toggle("item-aiming", state.phase === "battle" && Boolean(state.selectedItem));
   if (itemsTitle) itemsTitle.textContent = text.items;
   for (const button of itemButtons) {
@@ -5381,6 +5516,7 @@ resetBtn.addEventListener("click", () => resetGame(false));
 randomBtn.addEventListener("click", randomFormation);
 exportFormationBtn?.addEventListener("click", exportFormation);
 importFormationBtn?.addEventListener("click", importFormation);
+exitChallengeBtn?.addEventListener("click", exitChallengeMode);
 wallToolBtn.addEventListener("click", () => {
   if (state.phase !== "setup") return;
   state.mapTool = state.mapTool === "wall" ? null : "wall";
