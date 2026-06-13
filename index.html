@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>TABS Lite</title>
-    <link rel="stylesheet" href="./styles.css?v=20260612-gatling-force-2" />
+    <link rel="stylesheet" href="./styles.css?v=20260613-short-code" />
   </head>
   <body>
     <main class="app-shell">
@@ -48,6 +48,13 @@
             <span id="batchPlaceLabel">Place Count</span>
             <input id="batchPlaceCount" type="number" min="1" max="60" value="1" />
           </label>
+          <div class="share-tools">
+            <div class="share-actions">
+              <button id="exportFormationBtn">Export Formation</button>
+              <button id="importFormationBtn">Import Formation</button>
+            </div>
+            <textarea id="formationCode" rows="3" placeholder="Formation code"></textarea>
+          </div>
           <div class="map-tools">
             <button id="wallToolBtn">Wall</button>
             <button id="thickWallToolBtn">Thick Wall</button>
@@ -416,6 +423,6 @@
       </section>
     </main>
 
-    <script src="./game.js?v=20260612-gatling-force-2"></script>
+    <script src="./game.js?v=20260613-short-code"></script>
   </body>
 </html>

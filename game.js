@@ -23,6 +23,9 @@ const blueTeamBtn = document.querySelector("#blueTeamBtn");
 const redTeamBtn = document.querySelector("#redTeamBtn");
 const batchPlaceLabel = document.querySelector("#batchPlaceLabel");
 const batchPlaceCount = document.querySelector("#batchPlaceCount");
+const exportFormationBtn = document.querySelector("#exportFormationBtn");
+const importFormationBtn = document.querySelector("#importFormationBtn");
+const formationCode = document.querySelector("#formationCode");
 const wallToolBtn = document.querySelector("#wallToolBtn");
 const thickWallToolBtn = document.querySelector("#thickWallToolBtn");
 const arrowWallToolBtn = document.querySelector("#arrowWallToolBtn");
@@ -184,6 +187,12 @@ const translations = {
     blue: "蓝队",
     red: "红队",
     batchPlace: "一次放置数量",
+    exportFormation: "导出阵容",
+    importFormation: "导入阵容",
+    formationPlaceholder: "阵容码",
+    formationExported: "阵容码已生成，可以复制给别人",
+    formationImported: "阵容已导入",
+    formationInvalid: "阵容码无效",
     custom: "自定义兵种",
     create: "创建兵种",
     battle: "战况",
@@ -381,6 +390,12 @@ const translations = {
     blue: "Blue",
     red: "Red",
     batchPlace: "Place Count",
+    exportFormation: "Export Formation",
+    importFormation: "Import Formation",
+    formationPlaceholder: "Formation code",
+    formationExported: "Formation code created. Copy it to share",
+    formationImported: "Formation imported",
+    formationInvalid: "Invalid formation code",
     custom: "Custom Unit",
     create: "Create Unit",
     battle: "Battle",
@@ -589,6 +604,9 @@ function applyLanguage(lang) {
   blueTeamBtn.textContent = text.blue;
   redTeamBtn.textContent = text.red;
   if (batchPlaceLabel) batchPlaceLabel.textContent = text.batchPlace;
+  if (exportFormationBtn) exportFormationBtn.textContent = text.exportFormation;
+  if (importFormationBtn) importFormationBtn.textContent = text.importFormation;
+  if (formationCode) formationCode.placeholder = text.formationPlaceholder;
   wallToolBtn.textContent = text.mapWall;
   thickWallToolBtn.textContent = text.mapThickWall;
   arrowWallToolBtn.textContent = text.mapArrowWall;
@@ -1421,6 +1439,8 @@ const state = {
   placeTeam: "blue",
   sandbox: false,
   plantMode: false,
+  challengeMode: false,
+  challengeBudget: 0,
   language: "en",
   budget: 900,
   units: [],
@@ -1488,7 +1508,7 @@ function blueArmyCost() {
 }
 
 function wallTotalCost() {
-  return state.walls.reduce((sum, wall) => sum + wallCost(wall), 0);
+  return state.walls.reduce((sum, wall) => sum + (wall.challengeImported ? 0 : wallCost(wall)), 0);
 }
 
 function isPlantType(typeOrId) {
@@ -1498,7 +1518,8 @@ function isPlantType(typeOrId) {
 
 function syncBudgetToEnemySize() {
   if (state.sandbox) return;
-  state.budget = Math.max(0, totalBudgetForEnemySize() - blueArmyCost() - wallTotalCost());
+  const baseBudget = state.challengeMode ? state.challengeBudget : totalBudgetForEnemySize();
+  state.budget = Math.max(0, baseBudget - blueArmyCost() - wallTotalCost());
 }
 
 function worldPoint(event) {
@@ -2045,6 +2066,173 @@ function removeUnit(unit) {
   state.units = state.units.filter((candidate) => candidate.id !== unit.id);
   if (state.controlledId === unit.id) state.controlledId = null;
   if (unit.team === "blue") refund(unit.typeId);
+}
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function base64ToBytes(text) {
+  const binary = atob(text);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+function encodeFormationPayload(payload) {
+  const json = JSON.stringify(payload);
+  const bytes = new TextEncoder().encode(json);
+  return `TLF1-${bytesToBase64(bytes)}`;
+}
+
+function compactNumber(value) {
+  return Math.max(0, Math.round(Number(value) || 0)).toString(36);
+}
+
+function expandNumber(value) {
+  return parseInt(String(value || "0"), 36) || 0;
+}
+
+function wallTypeCode(type) {
+  return type === "thick" ? "t" : type === "arrow" ? "a" : "n";
+}
+
+function wallTypeFromCode(code) {
+  return code === "t" ? "thick" : code === "a" ? "arrow" : "normal";
+}
+
+function encodeShortFormation() {
+  const ids = unitTypes.map((type) => type.id);
+  const units = state.units
+    .filter((unit) => !unit.dead && ids.includes(unit.typeId) && !unit.typeId.startsWith("custom-"))
+    .map((unit) => [
+      compactNumber(ids.indexOf(unit.typeId)),
+      unit.team === "red" ? "r" : "b",
+      compactNumber(unit.x),
+      compactNumber(unit.y),
+    ].join("."));
+  const walls = state.walls.map((wall) => [
+    compactNumber(wall.x),
+    compactNumber(wall.y),
+    compactNumber(wall.w),
+    compactNumber(wall.h),
+    wallTypeCode(wall.type),
+  ].join("."));
+  const payload = `1|${units.join(",")}|${walls.join(",")}`;
+  return `TS1-${bytesToBase64(new TextEncoder().encode(payload))}`;
+}
+
+function decodeFormationPayload(code) {
+  const trimmed = String(code || "").trim();
+  if (trimmed.startsWith("TLF1-")) {
+    const bytes = base64ToBytes(trimmed.slice(5));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  if (trimmed.startsWith("TS1-")) {
+    const raw = new TextDecoder().decode(base64ToBytes(trimmed.slice(4)));
+    const [version, unitPart = "", wallPart = ""] = raw.split("|");
+    if (version !== "1") throw new Error("bad short version");
+    const ids = unitTypes.map((type) => type.id);
+    return {
+      version: 2,
+      units: unitPart
+        ? unitPart.split(",").filter(Boolean).map((entry) => {
+            const [typeIndex, team, x, y] = entry.split(".");
+            return {
+              typeId: ids[expandNumber(typeIndex)],
+              team: team === "r" ? "red" : "blue",
+              x: expandNumber(x),
+              y: expandNumber(y),
+            };
+          })
+        : [],
+      walls: wallPart
+        ? wallPart.split(",").filter(Boolean).map((entry) => {
+            const [x, y, w, h, type] = entry.split(".");
+            return {
+              x: expandNumber(x),
+              y: expandNumber(y),
+              w: expandNumber(w),
+              h: expandNumber(h),
+              type: wallTypeFromCode(type),
+            };
+          })
+        : [],
+    };
+  }
+  throw new Error("bad prefix");
+}
+
+function exportFormation() {
+  const code = encodeShortFormation();
+  if (formationCode) {
+    formationCode.value = code;
+    formationCode.focus();
+    formationCode.select();
+  }
+  setToast((translations[state.language] || translations.en).formationExported);
+}
+
+function importFormation() {
+  const text = translations[state.language] || translations.en;
+  try {
+    const payload = decodeFormationPayload(formationCode?.value || "");
+    if (!payload || !Array.isArray(payload.units) || !Array.isArray(payload.walls)) throw new Error("bad payload");
+    state.phase = "setup";
+    state.sandbox = false;
+    state.placeTeam = "blue";
+    state.units = [];
+    state.projectiles = [];
+    state.particles = [];
+    state.slimes = [];
+    state.tornadoes = [];
+    state.commands = { blue: null, red: null };
+    state.focusTargets = { blue: null, red: null };
+    state.controlledId = null;
+    state.controlKeys = {};
+    state.controlSpecialIndex = 0;
+    state.mapTool = null;
+    state.wallStart = null;
+    state.pointer = null;
+    state.selectedItem = null;
+    state.winnerShown = false;
+    state.plantMode = false;
+    state.challengeMode = true;
+    state.challengeBudget = 0;
+    const savedUnits = payload.units.filter((saved) => typeById(saved.typeId) && !String(saved.typeId).startsWith("custom-"));
+    const blueSaved = savedUnits.filter((saved) => saved.team !== "red");
+    const challengeUnits = (blueSaved.length ? blueSaved : savedUnits).slice(0, 240);
+    const mirrorFromBlue = blueSaved.length > 0;
+    for (const saved of challengeUnits) {
+      const type = typeById(saved.typeId);
+      if (!type) continue;
+      const rawX = Number(saved.x) || 80;
+      const x = mirrorFromBlue ? canvas.width - rawX : rawX;
+      addUnit(type.id, "red", clamp(x, canvas.width * 0.54 + type.radius, canvas.width - type.radius), clamp(Number(saved.y) || canvas.height / 2, type.radius, canvas.height - type.radius));
+      state.challengeBudget += type.price;
+    }
+    state.walls = payload.walls.slice(0, 120).map((saved) => {
+      const rawX = Number(saved.x) || canvas.width / 2;
+      const wall = {
+        x: clamp(mirrorFromBlue ? canvas.width - rawX : rawX, 20, canvas.width - 20),
+        y: clamp(Number(saved.y) || canvas.height / 2, 20, canvas.height - 20),
+        w: clamp(Number(saved.w) || 60, 12, canvas.width),
+        h: clamp(Number(saved.h) || 28, 12, canvas.height),
+        type: ["normal", "thick", "arrow"].includes(saved.type) ? saved.type : "normal",
+        challengeImported: true,
+      };
+      wall.maxHp = wallMaxHp(wall);
+      wall.hp = wall.maxHp;
+      return wall;
+    });
+    state.challengeBudget = Math.floor(state.challengeBudget * 0.9);
+    syncBudgetToEnemySize();
+    updateUi();
+    renderUnitList();
+    setToast(`${text.formationImported}: ${text.budget} ${state.challengeBudget}`);
+  } catch {
+    setToast(text.formationInvalid);
+  }
 }
 
 function poisonUnit(unit, seconds = 5) {
@@ -2670,6 +2858,8 @@ function resetGame(keepEnemies = false) {
   state.commands = { blue: null, red: null };
   state.focusTargets = { blue: null, red: null };
   state.plantMode = false;
+  state.challengeMode = false;
+  state.challengeBudget = 0;
   state.dragging = null;
   state.controlledId = null;
   state.controlKeys = {};
@@ -2759,8 +2949,12 @@ function startBattle() {
     setToast("Place some blue units first");
     return;
   }
-  if (!state.units.some((unit) => unit.team === "red")) {
+  if (!state.units.some((unit) => unit.team === "red") && !state.challengeMode) {
     spawnEnemyArmy();
+  }
+  if (!state.units.some((unit) => unit.team === "red")) {
+    setToast("No challenge enemy loaded");
+    return;
   }
   state.commands = { blue: null, red: null };
   state.focusTargets = { blue: null, red: null };
@@ -5035,10 +5229,11 @@ function updateUi() {
   clearWallsBtn.disabled = state.phase !== "setup" || state.walls.length === 0;
   blueTeamBtn.classList.toggle("active", state.placeTeam === "blue");
   redTeamBtn.classList.toggle("active", state.placeTeam === "red");
-  const canPickTeam = state.sandbox || Boolean(state.selectedItem) || state.mapTool === "command" || state.mapTool === "focus";
+  const canPickTeam = !state.challengeMode && (state.sandbox || Boolean(state.selectedItem) || state.mapTool === "command" || state.mapTool === "focus");
   blueTeamBtn.disabled = !canPickTeam;
-  redTeamBtn.disabled = !canPickTeam;
+  redTeamBtn.disabled = state.challengeMode || !canPickTeam;
   sandboxToggle.checked = state.sandbox;
+  sandboxToggle.disabled = state.challengeMode;
   if (battlefieldWrap) battlefieldWrap.classList.toggle("item-aiming", state.phase === "battle" && Boolean(state.selectedItem));
   if (itemsTitle) itemsTitle.textContent = text.items;
   for (const button of itemButtons) {
@@ -5245,6 +5440,8 @@ startBtn.addEventListener("click", startBattle);
 pauseBtn.addEventListener("click", pauseBattle);
 resetBtn.addEventListener("click", () => resetGame(false));
 randomBtn.addEventListener("click", randomFormation);
+exportFormationBtn?.addEventListener("click", exportFormation);
+importFormationBtn?.addEventListener("click", importFormation);
 wallToolBtn.addEventListener("click", () => {
   if (state.phase !== "setup") return;
   state.mapTool = state.mapTool === "wall" ? null : "wall";
@@ -5332,6 +5529,11 @@ eraseBtn.addEventListener("click", () => {
   setToast(state.selected === "erase" ? "Click a unit to remove it" : "Continue placing units");
 });
 enemySlider.addEventListener("input", () => {
+  if (state.challengeMode) {
+    syncBudgetToEnemySize();
+    updateUi();
+    return;
+  }
   if (state.phase === "setup") {
     spawnEnemyArmy();
     syncBudgetToEnemySize();
@@ -5339,6 +5541,13 @@ enemySlider.addEventListener("input", () => {
   }
 });
 sandboxToggle.addEventListener("change", () => {
+  if (state.challengeMode) {
+    state.sandbox = false;
+    sandboxToggle.checked = false;
+    setToast(state.language === "zh" ? "挑战模式不能开启沙盒" : "Sandbox is locked in challenge mode");
+    updateUi();
+    return;
+  }
   state.sandbox = sandboxToggle.checked;
   state.placeTeam = state.sandbox ? state.placeTeam : "blue";
   if (state.sandbox) {
