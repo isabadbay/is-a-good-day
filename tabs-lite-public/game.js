@@ -2049,6 +2049,10 @@ function batchOffsets(count, spacing) {
 function placePlayerUnit(point) {
   const type = typeById(state.selected);
   if (!type) return;
+  if (state.challengeMode && type.id === "sunflower") {
+    setToast(state.language === "zh" ? "挑战模式不能使用向日葵" : "Sunflowers are disabled in challenge mode");
+    return;
+  }
   const battlePlantPlacement = state.phase === "battle" && state.plantMode && isPlantType(type);
   if (state.phase !== "setup" && !battlePlantPlacement) return;
   if (!state.sandbox && point.x > blueZone() - 18) {
@@ -3056,7 +3060,8 @@ function startBattle() {
   }
   state.commands = { blue: null, red: null };
   state.focusTargets = { blue: null, red: null };
-  state.plantMode = state.selected === "sunflower" || state.units.some((unit) => unit.team === "blue" && unit.typeId === "sunflower");
+  state.plantMode =
+    !state.challengeMode && (state.selected === "sunflower" || state.units.some((unit) => unit.team === "blue" && unit.typeId === "sunflower"));
   if (state.plantMode && !state.sandbox) {
     state.budget = 0;
   }
