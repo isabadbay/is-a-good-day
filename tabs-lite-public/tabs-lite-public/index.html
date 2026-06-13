@@ -3,8 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>TABS Lite</title>
-    <link rel="stylesheet" href="./styles.css?v=20260609-holy-shield-config" />
+    <link rel="stylesheet" href="./styles.css?v=20260613-balance-1" />
   </head>
   <body>
     <main class="app-shell">
@@ -41,6 +44,39 @@
             <button id="blueTeamBtn" class="active" data-team="blue">Blue</button>
             <button id="redTeamBtn" data-team="red">Red</button>
           </div>
+          <label class="placement-batch">
+            <span id="batchPlaceLabel">Place Count</span>
+            <input id="batchPlaceCount" type="number" min="1" max="60" value="1" />
+          </label>
+          <div class="share-tools">
+            <div class="share-actions">
+              <button id="exportFormationBtn">Export Formation</button>
+              <button id="importFormationBtn">Import Formation</button>
+              <button id="exitChallengeBtn">Exit Challenge</button>
+              <button id="saveSlot1Btn">Save 1</button>
+              <button id="loadSlot1Btn">Load 1</button>
+              <button id="saveSlot2Btn">Save 2</button>
+              <button id="loadSlot2Btn">Load 2</button>
+              <button id="saveSlot3Btn">Save 3</button>
+              <button id="loadSlot3Btn">Load 3</button>
+              <button id="upgradeSelectedBtn">Upgrade</button>
+            </div>
+            <textarea id="formationCode" rows="3" placeholder="Formation code"></textarea>
+          </div>
+          <div class="map-tools">
+            <button id="wallToolBtn">Wall</button>
+            <button id="thickWallToolBtn">Thick Wall</button>
+            <button id="arrowWallToolBtn">Arrow Wall</button>
+            <button id="waterToolBtn">Water</button>
+            <button id="fireTerrainToolBtn">Fire Ground</button>
+            <button id="grassToolBtn">Grass</button>
+            <button id="highGroundToolBtn">High Ground</button>
+            <button id="eraseTerrainBtn">Erase Terrain</button>
+            <button id="commandToolBtn">Command</button>
+            <button id="focusToolBtn">Focus</button>
+            <button id="eraseWallBtn">Erase Wall</button>
+            <button id="clearWallsBtn">Clear Walls</button>
+          </div>
           <div id="unitList" class="unit-list"></div>
 
           <details class="custom-builder">
@@ -57,6 +93,10 @@
               <label>
                 Damage
                 <input id="customDamage" type="number" min="1" max="500000000" value="22" />
+              </label>
+              <label>
+                Knockback
+                <input id="customKnockback" type="number" min="0" max="500000000" step="0.1" value="2.3" />
               </label>
               <label>
                 Attack Speed
@@ -99,6 +139,10 @@
               <input id="customRanged" type="checkbox" />
               Ranged Attack
             </label>
+            <label class="toggle-row inline-toggle">
+              <input id="customAttackWalls" type="checkbox" checked />
+              Attack Walls
+            </label>
 
             <div class="skill-box">
               <h3>Area Attack</h3>
@@ -113,6 +157,14 @@
               <label>
                 Area Damage
                 <input id="customAreaDamage" type="number" min="0" max="500000000" value="0" />
+              </label>
+              <label>
+                Burst Cooldown
+                <input id="customBurstCooldown" type="number" min="0" max="500000000" step="0.1" value="0" />
+              </label>
+              <label>
+                Burst Count
+                <input id="customBurstCount" type="number" min="1" max="500000000" value="1" />
               </label>
             </div>
 
@@ -141,6 +193,14 @@
               <label>
                 Second Damage
                 <input id="customSecondDamage" type="number" min="0" max="500000000" value="0" />
+              </label>
+              <label>
+                Second Burst Cooldown
+                <input id="customSecondBurstCooldown" type="number" min="0" max="500000000" step="0.1" value="0" />
+              </label>
+              <label>
+                Second Burst Count
+                <input id="customSecondBurstCount" type="number" min="1" max="500000000" value="1" />
               </label>
             </div>
 
@@ -210,13 +270,41 @@
                 <input id="skillTornado" type="checkbox" />
                 Tornado
               </label>
+              <label>
+                Tornado Damage
+                <input id="skillTornadoDamage" type="number" min="0" max="500000000" value="6" />
+              </label>
+              <label>
+                Tornado Duration
+                <input id="skillTornadoDuration" type="number" min="0" max="500000000" step="0.1" value="4.2" />
+              </label>
+              <label>
+                Tornado Range
+                <input id="skillTornadoRange" type="number" min="0" max="500000000" value="82" />
+              </label>
               <label class="toggle-row inline-toggle">
                 <input id="skillFireBreath" type="checkbox" />
                 Fire Breath
               </label>
+              <label>
+                Fire Particle Size
+                <input id="skillFireParticleSize" type="number" min="0" max="500000000" step="0.1" value="1" />
+              </label>
+              <label>
+                Burn Duration
+                <input id="skillFireDuration" type="number" min="0" max="500000000" step="0.1" value="5" />
+              </label>
+              <label>
+                Fire Range
+                <input id="skillFireRange" type="number" min="0" max="500000000" value="95" />
+              </label>
               <label class="toggle-row inline-toggle">
                 <input id="skillFireball" type="checkbox" />
                 Fireball
+              </label>
+              <label>
+                Fireball Damage
+                <input id="skillFireballDamage" type="number" min="0" max="500000000" value="52" />
               </label>
               <label class="toggle-row inline-toggle">
                 <input id="skillHolyShield" type="checkbox" />
@@ -280,6 +368,62 @@
               <strong id="redCount">0</strong>
             </div>
           </div>
+          <div id="controlPanel" class="control-panel">
+            <h3 id="controlTitle">Control</h3>
+            <p id="controlName">Click a unit during battle</p>
+            <div id="controlCooldowns" class="control-cooldowns">
+              <span>WASD Move</span>
+              <span>Space Attack</span>
+              <span>V Second</span>
+              <span>B Skill</span>
+            </div>
+            <div class="control-buttons">
+              <button id="controlBuildNextBtn">Pick Building</button>
+              <button id="controlBuildPlaceBtn">Build</button>
+              <button id="controlDemolishBtn">Demolish</button>
+            </div>
+          </div>
+          <div class="item-box">
+            <h3 id="itemsTitle">Items</h3>
+            <div id="itemBar" class="item-bar">
+              <button data-item="fireball">
+                <b>Fireball</b>
+                <small>120 gold</small>
+              </button>
+              <button data-item="defense">
+                <b>Defense Potion</b>
+                <small>180 gold</small>
+              </button>
+              <button data-item="power">
+                <b>Power Potion</b>
+                <small>180 gold</small>
+              </button>
+              <button data-item="speed">
+                <b>Speed Potion</b>
+                <small>160 gold</small>
+              </button>
+              <button data-item="heal">
+                <b>Healing Potion</b>
+                <small>170 gold</small>
+              </button>
+              <button data-item="meteor">
+                <b>Meteor</b>
+                <small>260 gold</small>
+              </button>
+              <button data-item="wall">
+                <b>Summon Wall</b>
+                <small>220 gold</small>
+              </button>
+              <button data-item="lightning">
+                <b>Chain Lightning</b>
+                <small>240 gold</small>
+              </button>
+              <button data-item-cancel="true">
+                <b>Cancel Item</b>
+                <small>stop aiming</small>
+              </button>
+            </div>
+          </div>
           <label class="range-row">
             Enemy Size
             <input id="enemySlider" type="range" min="4" max="18" value="9" />
@@ -297,6 +441,6 @@
       </section>
     </main>
 
-    <script src="./game.js?v=20260609-holy-shield-config"></script>
+    <script src="./game.js?v=20260613-tiamat-stronger-1"></script>
   </body>
 </html>
