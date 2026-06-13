@@ -30,6 +30,7 @@ const formationCode = document.querySelector("#formationCode");
 const wallToolBtn = document.querySelector("#wallToolBtn");
 const thickWallToolBtn = document.querySelector("#thickWallToolBtn");
 const arrowWallToolBtn = document.querySelector("#arrowWallToolBtn");
+const arrowTowerToolBtn = document.querySelector("#arrowTowerToolBtn");
 const commandToolBtn = document.querySelector("#commandToolBtn");
 const focusToolBtn = document.querySelector("#focusToolBtn");
 const eraseWallBtn = document.querySelector("#eraseWallBtn");
@@ -229,6 +230,7 @@ const translations = {
     mapWall: "墙",
     mapThickWall: "厚墙",
     mapArrowWall: "透射墙",
+    mapArrowTower: "箭塔",
     mapCommand: "指挥",
     mapFocus: "集火",
     mapEraseWall: "删除墙",
@@ -366,6 +368,7 @@ const translations = {
       repeater: ["双发射手", "双发豌豆"],
       gatlingshooter: ["机枪射手", "狂暴扫射"],
       chomper: ["大嘴花", "吞咬爆发"],
+      arrowtower: ["旧箭塔", "固定五连射"],
     },
     tags: {
       ranged: "远程",
@@ -435,6 +438,7 @@ const translations = {
     mapWall: "Wall",
     mapThickWall: "Thick Wall",
     mapArrowWall: "Arrow Wall",
+    mapArrowTower: "Arrow Tower",
     mapCommand: "Command",
     mapFocus: "Focus",
     mapEraseWall: "Erase Wall",
@@ -572,6 +576,7 @@ const translations = {
       repeater: ["Repeater", "Double Pea"],
       gatlingshooter: ["Gatling Shooter", "Fan Barrage"],
       chomper: ["Chomper", "Bite Blast"],
+      arrowtower: ["Old Arrow Tower", "Fixed Barrage"],
     },
     tags: {
       ranged: "Ranged",
@@ -619,6 +624,7 @@ function applyLanguage(lang) {
   wallToolBtn.textContent = text.mapWall;
   thickWallToolBtn.textContent = text.mapThickWall;
   arrowWallToolBtn.textContent = text.mapArrowWall;
+  arrowTowerToolBtn.textContent = text.mapArrowTower;
   commandToolBtn.textContent = text.mapCommand;
   focusToolBtn.textContent = text.mapFocus;
   eraseWallBtn.textContent = text.mapEraseWall;
@@ -1454,6 +1460,24 @@ const unitTypes = [
     skills: { rooted: true, chompBlast: true, chompDamage: 450, chompRange: 120, chompCooldown: 30 },
     color: "#8b4bc1",
   },
+  {
+    id: "arrowtower",
+    name: "Arrow Tower",
+    tag: "Fixed Barrage",
+    glyph: "AT",
+    price: 360,
+    hp: 100,
+    damage: 10,
+    range: 180,
+    stopDistance: 180,
+    speed: 0,
+    radius: 18,
+    cooldown: 0.2,
+    projectileSpeed: 520,
+    weapon: "bow",
+    skills: { rooted: true },
+    color: "#b99768",
+  },
 ];
 
 let customUnitCounter = 1;
@@ -1564,15 +1588,51 @@ function setToast(message) {
 }
 
 function wallCost(wall) {
+  if (wall.type === "arrowTower") return 360;
   const thickMultiplier = wall.type === "thick" ? 2.35 : wall.type === "arrow" ? 1.35 : 1;
   return Math.ceil((40 + Math.max(wall.w, wall.h) * 0.4) * 2 * thickMultiplier);
 }
 
 function wallMaxHp(wall) {
   const length = Math.max(wall.w, wall.h);
+  if (wall.type === "arrowTower") return 100;
   if (wall.type === "thick") return Math.ceil(260 + length * 3.2);
   if (wall.type === "arrow") return Math.ceil(90 + length * 1.15);
   return Math.ceil(120 + length * 1.55);
+}
+
+function addArrowTower(point) {
+  if (state.phase !== "setup") {
+    setToast(state.language === "zh" ? "布阵阶段才能放箭塔" : "Arrow towers can be placed during setup");
+    return;
+  }
+  const text = translations[state.language] || translations.en;
+  const wall = {
+    x: clamp(point.x, 24, canvas.width - 24),
+    y: clamp(point.y, 24, canvas.height - 24),
+    w: 42,
+    h: 42,
+    type: "arrowTower",
+    team: state.sandbox ? state.placeTeam : "blue",
+    cooldown: 0,
+  };
+  wall.maxHp = wallMaxHp(wall);
+  wall.hp = wall.maxHp;
+  const cost = wallCost(wall);
+  if (!state.sandbox && state.budget < cost) {
+    setToast(text.wallNeedGold);
+    return;
+  }
+  const overlaps = state.walls.some((other) => {
+    return Math.abs(wall.x - other.x) < (wall.w + other.w) / 2 + 6 && Math.abs(wall.y - other.y) < (wall.h + other.h) / 2 + 6;
+  });
+  if (overlaps) {
+    setToast(text.wallOverlap);
+    return;
+  }
+  state.walls.push(wall);
+  if (!state.sandbox) state.budget -= cost;
+  setToast(state.language === "zh" ? `已放置箭塔 -${cost}` : `Arrow tower placed -${cost}`);
 }
 
 function addWall(start, end) {
@@ -2049,6 +2109,10 @@ function batchOffsets(count, spacing) {
 function placePlayerUnit(point) {
   const type = typeById(state.selected);
   if (!type) return;
+  if (state.challengeMode && type.id === "sunflower") {
+    setToast(state.language === "zh" ? "挑战模式不能使用向日葵" : "Sunflowers are disabled in challenge mode");
+    return;
+  }
   const battlePlantPlacement = state.phase === "battle" && state.plantMode && isPlantType(type);
   if (state.phase !== "setup" && !battlePlantPlacement) return;
   if (!state.sandbox && point.x > blueZone() - 18) {
@@ -2124,11 +2188,11 @@ function expandNumber(value) {
 }
 
 function wallTypeCode(type) {
-  return type === "thick" ? "t" : type === "arrow" ? "a" : "n";
+  return type === "thick" ? "t" : type === "arrow" ? "a" : type === "arrowTower" ? "o" : "n";
 }
 
 function wallTypeFromCode(code) {
-  return code === "t" ? "thick" : code === "a" ? "arrow" : "normal";
+  return code === "t" ? "thick" : code === "a" ? "arrow" : code === "o" ? "arrowTower" : "normal";
 }
 
 function compactCustomType(type) {
@@ -2205,6 +2269,7 @@ function encodeShortFormation() {
     compactNumber(wall.w),
     compactNumber(wall.h),
     wallTypeCode(wall.type),
+    wall.team === "red" ? "r" : "b",
   ].join("."));
   const customPart = customTypes.length ? bytesToBase64(new TextEncoder().encode(JSON.stringify(customTypes))) : "";
   const payload = `1|${units.join(",")}|${walls.join(",")}|${customPart}`;
@@ -2239,13 +2304,14 @@ function decodeFormationPayload(code) {
         : [],
       walls: wallPart
         ? wallPart.split(",").filter(Boolean).map((entry) => {
-            const [x, y, w, h, type] = entry.split(".");
+            const [x, y, w, h, type, team] = entry.split(".");
             return {
               x: expandNumber(x),
               y: expandNumber(y),
               w: expandNumber(w),
               h: expandNumber(h),
               type: wallTypeFromCode(type),
+              team: team === "r" ? "red" : "blue",
             };
           })
         : [],
@@ -2310,9 +2376,16 @@ function importFormation() {
         y: clamp(Number(saved.y) || canvas.height / 2, 20, canvas.height - 20),
         w: clamp(Number(saved.w) || 60, 12, canvas.width),
         h: clamp(Number(saved.h) || 28, 12, canvas.height),
-        type: ["normal", "thick", "arrow"].includes(saved.type) ? saved.type : "normal",
+        type: ["normal", "thick", "arrow", "arrowTower"].includes(saved.type) ? saved.type : "normal",
+        team: saved.type === "arrowTower" ? "red" : saved.team,
         challengeImported: true,
       };
+      if (wall.type === "arrowTower") {
+        wall.w = 42;
+        wall.h = 42;
+        wall.cooldown = 0;
+        state.challengeBudget += wallCost(wall);
+      }
       wall.maxHp = wallMaxHp(wall);
       wall.hp = wall.maxHp;
       return wall;
@@ -3056,7 +3129,8 @@ function startBattle() {
   }
   state.commands = { blue: null, red: null };
   state.focusTargets = { blue: null, red: null };
-  state.plantMode = state.selected === "sunflower" || state.units.some((unit) => unit.team === "blue" && unit.typeId === "sunflower");
+  state.plantMode =
+    !state.challengeMode && (state.selected === "sunflower" || state.units.some((unit) => unit.team === "blue" && unit.typeId === "sunflower"));
   if (state.plantMode && !state.sandbox) {
     state.budget = 0;
   }
@@ -4211,6 +4285,40 @@ function updateProjectiles(dt) {
   state.projectiles = state.projectiles.filter((projectile) => projectile.life > 0);
 }
 
+function updateArrowTowers(dt) {
+  for (const wall of state.walls) {
+    if (wall.type !== "arrowTower") continue;
+    wall.cooldown = Math.max(0, (wall.cooldown || 0) - dt);
+    if (wall.cooldown > 0) continue;
+    const team = wall.team || "blue";
+    let target = null;
+    let bestDistance = Infinity;
+    for (const unit of state.units) {
+      if (unit.team === team || unit.dead || unit.airborneTimer > 0) continue;
+      const distance = Math.hypot(unit.x - wall.x, unit.y - wall.y);
+      if (distance < bestDistance && distance <= 180 + unit.radius) {
+        target = unit;
+        bestDistance = distance;
+      }
+    }
+    if (!target) continue;
+    state.projectiles.push({
+      x: wall.x,
+      y: wall.y - 10,
+      tx: target.id,
+      team,
+      damage: 10,
+      speed: 520,
+      radius: 3,
+      life: 1.4,
+      color: team === "blue" ? "#f0d19a" : "#ffb1a8",
+      passWalls: true,
+    });
+    wall.cooldown = 0.2;
+    state.particles.push({ x: wall.x, y: wall.y - 14, life: 0.16, startLife: 0.2, color: "#f7df9b", size: 12 });
+  }
+}
+
 function updateParticles(dt) {
   for (const particle of state.particles) {
     particle.life -= dt;
@@ -4310,6 +4418,7 @@ function update(dt) {
     updateFocusTargets(scaledDt);
     for (const unit of state.units) updateUnit(unit, scaledDt);
     resolveCrowding();
+    updateArrowTowers(scaledDt);
     updateProjectiles(scaledDt);
     updateSlimes(scaledDt);
     updateTornadoes(scaledDt);
@@ -4356,6 +4465,42 @@ function drawWalls() {
   for (const wall of state.walls) {
     ctx.save();
     ctx.translate(wall.x, wall.y);
+    if (wall.type === "arrowTower") {
+      const r = 22;
+      ctx.fillStyle = wall.team === "red" ? "#5d352b" : "#4d3a24";
+      ctx.fillRect(-r * 0.58, -r * 0.15, r * 1.16, r * 1.18);
+      ctx.fillStyle = wall.team === "red" ? "#a96352" : "#9f7245";
+      ctx.fillRect(-r * 0.78, -r * 0.66, r * 1.56, r * 0.5);
+      ctx.fillStyle = "#2d2118";
+      for (let i = -1; i <= 1; i += 1) {
+        ctx.fillRect(i * r * 0.44 - r * 0.08, -r * 0.92, r * 0.16, r * 0.36);
+      }
+      ctx.strokeStyle = "#f0d19a";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.58, -r * 0.34);
+      ctx.lineTo(r * 0.58, -r * 0.34);
+      ctx.moveTo(0, -r * 0.54);
+      ctx.lineTo(r * 0.86, -r * 0.54);
+      ctx.moveTo(0, -r * 0.38);
+      ctx.lineTo(r * 0.84, -r * 0.18);
+      ctx.stroke();
+      ctx.fillStyle = wall.team === "red" ? "#ffb1a8" : "#f7df9b";
+      ctx.beginPath();
+      ctx.moveTo(r * 1.05, -r * 0.54);
+      ctx.lineTo(r * 0.68, -r * 0.7);
+      ctx.lineTo(r * 0.74, -r * 0.38);
+      ctx.closePath();
+      ctx.fill();
+      const health = Math.max(0, (wall.hp ?? wallMaxHp(wall)) / (wall.maxHp ?? wallMaxHp(wall)));
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+      ctx.fillRect(-r, -r - 12, r * 2, 4);
+      ctx.fillStyle = health > 0.45 ? "#63d28a" : "#e8bd57";
+      ctx.fillRect(-r, -r - 12, r * 2 * health, 4);
+      ctx.restore();
+      continue;
+    }
     ctx.fillStyle = wall.type === "thick" ? "#4b4940" : wall.type === "arrow" ? "rgba(73, 96, 104, 0.62)" : "#5a564b";
     ctx.fillRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h);
     ctx.strokeStyle = wall.type === "thick" ? "#f0dfae" : wall.type === "arrow" ? "#9bdcff" : "#d8d0a8";
@@ -4980,6 +5125,33 @@ function drawUnitSkin(unit) {
       ctx.fill();
     }
   }
+  if (unit.typeId === "arrowtower") {
+    ctx.fillStyle = "#6c4a2b";
+    ctx.fillRect(-r * 0.56, -r * 0.18, r * 1.12, r * 1.2);
+    ctx.fillStyle = "#9f7245";
+    ctx.fillRect(-r * 0.72, -r * 0.62, r * 1.44, r * 0.5);
+    ctx.fillStyle = "#3e2b1a";
+    for (let i = -1; i <= 1; i += 1) {
+      ctx.fillRect(i * r * 0.42 - r * 0.08, -r * 0.86, r * 0.16, r * 0.34);
+    }
+    ctx.strokeStyle = "#f0d19a";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.5, -r * 0.28);
+    ctx.lineTo(r * 0.5, -r * 0.28);
+    ctx.moveTo(0, -r * 0.5);
+    ctx.lineTo(r * 0.78, -r * 0.5);
+    ctx.moveTo(0, -r * 0.34);
+    ctx.lineTo(r * 0.76, -r * 0.18);
+    ctx.stroke();
+    ctx.fillStyle = "#f7df9b";
+    ctx.beginPath();
+    ctx.moveTo(r * 0.98, -r * 0.5);
+    ctx.lineTo(r * 0.62, -r * 0.66);
+    ctx.lineTo(r * 0.68, -r * 0.34);
+    ctx.closePath();
+    ctx.fill();
+  }
   if (unit.typeId === "dragonling") {
     ctx.fillStyle = "#7b2432";
     ctx.beginPath();
@@ -5406,19 +5578,21 @@ function updateUi() {
   wallToolBtn.classList.toggle("active", state.mapTool === "wall");
   thickWallToolBtn.classList.toggle("active", state.mapTool === "thickWall");
   arrowWallToolBtn.classList.toggle("active", state.mapTool === "arrowWall");
+  arrowTowerToolBtn.classList.toggle("active", state.mapTool === "arrowTower");
   commandToolBtn.classList.toggle("active", state.mapTool === "command");
   focusToolBtn.classList.toggle("active", state.mapTool === "focus");
   eraseWallBtn.classList.toggle("active", state.mapTool === "eraseWall");
   wallToolBtn.disabled = state.phase !== "setup";
   thickWallToolBtn.disabled = state.phase !== "setup";
   arrowWallToolBtn.disabled = state.phase !== "setup";
+  arrowTowerToolBtn.disabled = state.phase !== "setup";
   commandToolBtn.disabled = state.phase !== "battle";
   focusToolBtn.disabled = state.phase !== "battle";
   eraseWallBtn.disabled = state.phase !== "setup";
   clearWallsBtn.disabled = state.phase !== "setup" || state.walls.length === 0;
   blueTeamBtn.classList.toggle("active", state.placeTeam === "blue");
   redTeamBtn.classList.toggle("active", state.placeTeam === "red");
-  const canPickTeam = !state.challengeMode && (state.sandbox || Boolean(state.selectedItem) || state.mapTool === "command" || state.mapTool === "focus");
+  const canPickTeam = !state.challengeMode && (state.sandbox || Boolean(state.selectedItem) || state.mapTool === "command" || state.mapTool === "focus" || state.mapTool === "arrowTower");
   blueTeamBtn.disabled = !canPickTeam;
   redTeamBtn.disabled = state.challengeMode || !canPickTeam;
   sandboxToggle.checked = state.sandbox;
@@ -5470,11 +5644,11 @@ function renderUnitList() {
   const packs = [
     {
       title: state.language === "zh" ? "兵种包 1" : "Unit Pack 1",
-      types: unitTypes.filter((type) => !UNIT_PACK_2_IDS.has(type.id) && !type.id.startsWith("custom-")),
+      types: unitTypes.filter((type) => type.id !== "arrowtower" && !UNIT_PACK_2_IDS.has(type.id) && !type.id.startsWith("custom-")),
     },
     {
       title: state.language === "zh" ? "兵种包 2" : "Unit Pack 2",
-      types: unitTypes.filter((type) => UNIT_PACK_2_IDS.has(type.id) || type.id.startsWith("custom-")),
+      types: unitTypes.filter((type) => type.id !== "arrowtower" && (UNIT_PACK_2_IDS.has(type.id) || type.id.startsWith("custom-"))),
     },
   ];
   for (const pack of packs) {
@@ -5518,6 +5692,11 @@ canvas.addEventListener("pointerdown", (event) => {
       state.pointer = null;
       updateUi();
     }
+    updateUi();
+    return;
+  }
+  if (state.phase === "setup" && state.mapTool === "arrowTower") {
+    addArrowTower(point);
     updateUi();
     return;
   }
@@ -5660,6 +5839,15 @@ arrowWallToolBtn.addEventListener("click", () => {
   updateUi();
   setToast(state.mapTool === "arrowWall" ? (state.language === "zh" ? "点一下起点，再点一下终点放透射墙" : "Click a start point, then an end point for an arrow wall") : (state.language === "zh" ? "透射墙工具关闭" : "Arrow wall tool off"));
 });
+arrowTowerToolBtn.addEventListener("click", () => {
+  if (state.phase !== "setup") return;
+  state.mapTool = state.mapTool === "arrowTower" ? null : "arrowTower";
+  state.wallStart = null;
+  state.pointer = null;
+  state.selectedItem = null;
+  updateUi();
+  setToast(state.mapTool === "arrowTower" ? (state.language === "zh" ? "点击地图放置箭塔" : "Click the map to place an arrow tower") : (state.language === "zh" ? "箭塔工具关闭" : "Arrow tower tool off"));
+});
 commandToolBtn.addEventListener("click", () => {
   if (state.phase !== "battle") return;
   state.mapTool = state.mapTool === "command" ? null : "command";
@@ -5750,16 +5938,16 @@ sandboxToggle.addEventListener("change", () => {
 });
 blueTeamBtn.addEventListener("pointerdown", (event) => {
   event.preventDefault();
-  if (!state.sandbox && !state.selectedItem && state.mapTool !== "command" && state.mapTool !== "focus") return;
+  if (!state.sandbox && !state.selectedItem && state.mapTool !== "command" && state.mapTool !== "focus" && state.mapTool !== "arrowTower") return;
   state.placeTeam = "blue";
-  setToast(state.mapTool === "focus" ? "Focus team: Blue" : state.mapTool === "command" ? "Command team: Blue" : state.selectedItem ? "Item team: Blue" : "Placing team: Blue");
+  setToast(state.mapTool === "focus" ? "Focus team: Blue" : state.mapTool === "command" ? "Command team: Blue" : state.mapTool === "arrowTower" ? "Arrow tower team: Blue" : state.selectedItem ? "Item team: Blue" : "Placing team: Blue");
   updateUi();
 });
 redTeamBtn.addEventListener("pointerdown", (event) => {
   event.preventDefault();
-  if (!state.sandbox && !state.selectedItem && state.mapTool !== "command" && state.mapTool !== "focus") return;
+  if (!state.sandbox && !state.selectedItem && state.mapTool !== "command" && state.mapTool !== "focus" && state.mapTool !== "arrowTower") return;
   state.placeTeam = "red";
-  setToast(state.mapTool === "focus" ? "Focus team: Red" : state.mapTool === "command" ? "Command team: Red" : state.selectedItem ? "Item team: Red" : "Placing team: Red");
+  setToast(state.mapTool === "focus" ? "Focus team: Red" : state.mapTool === "command" ? "Command team: Red" : state.mapTool === "arrowTower" ? "Arrow tower team: Red" : state.selectedItem ? "Item team: Red" : "Placing team: Red");
   updateUi();
 });
 customWeapon.addEventListener("change", () => {
