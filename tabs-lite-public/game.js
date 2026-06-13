@@ -1704,11 +1704,17 @@ function damageWall(wall, damage, x = wall.x, y = wall.y) {
   state.walls = state.walls.filter((candidate) => (candidate.hp ?? wallMaxHp(candidate)) > 0);
 }
 
+function canUnitDamageWall(unit, wall) {
+  if (!unit || unit.canAttackWalls === false) return false;
+  return !(wall.type === "arrowTower" && wall.team === unit.team);
+}
+
 function wallTargetNear(unit, target = null) {
   if (unit.canAttackWalls === false) return null;
   let best = null;
   let bestDistance = Infinity;
   for (const wall of state.walls) {
+    if (!canUnitDamageWall(unit, wall)) continue;
     const closestX = clamp(unit.x, wall.x - wall.w / 2, wall.x + wall.w / 2);
     const closestY = clamp(unit.y, wall.y - wall.h / 2, wall.y + wall.h / 2);
     const distance = Math.hypot(unit.x - closestX, unit.y - closestY);
@@ -2811,6 +2817,7 @@ function castFireBreathAtPoint(unit, point, freeCast = false) {
     });
   }
   for (const wall of state.walls) {
+    if (!canUnitDamageWall(unit, wall)) continue;
     const closestX = clamp(unit.x + Math.cos(angle) * range * 0.65, wall.x - wall.w / 2, wall.x + wall.w / 2);
     const closestY = clamp(unit.y + Math.sin(angle) * range * 0.65, wall.y - wall.h / 2, wall.y + wall.h / 2);
     const dx = closestX - unit.x;
@@ -3414,6 +3421,14 @@ function applyAreaAttack(attacker, x, y, area = attacker.areaAttack, isRanged = 
       owner: attacker,
     });
   }
+  for (const wall of state.walls) {
+    if (!canUnitDamageWall(attacker, wall)) continue;
+    const closestX = clamp(x, wall.x - wall.w / 2, wall.x + wall.w / 2);
+    const closestY = clamp(y, wall.y - wall.h / 2, wall.y + wall.h / 2);
+    const distance = Math.hypot(x - closestX, y - closestY);
+    if (distance > area.range) continue;
+    damageWall(wall, damageFor(attacker, area.damage * 0.28), closestX, closestY);
+  }
   state.particles.push({ x, y, life: 0.55, color: "#f8d36c", size: area.range });
 }
 
@@ -3710,7 +3725,7 @@ function attack(unit, target, mode = null) {
   const burstCount = Math.max(1, Math.floor(active.burstCount || 1));
   unit.cooldown = burstCount > 1 && active.burstCooldown > 0 ? active.burstCooldown : active.cooldown || unit.cooldownTime;
   if (target.kind === "wall") {
-    if (unit.canAttackWalls === false) return;
+    if (!canUnitDamageWall(unit, target.wall)) return;
     if (active.ranged && active.projectileSpeed) {
       for (let i = 0; i < burstCount; i += 1) {
         state.projectiles.push({
