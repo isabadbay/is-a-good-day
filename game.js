@@ -3655,7 +3655,6 @@ function controlledBuildName() {
 }
 
 function cycleControlledBuild() {
-  state.controlBuildMode = true;
   state.controlBuildIndex = (state.controlBuildIndex + 1) % controlledBuildTypes.length;
   const build = controlledBuildName();
   setToast(state.language === "zh" ? `选择建造：${build.name} ${build.cost}金币` : `Build selected: ${build.name} ${build.cost} gold`);
@@ -6315,9 +6314,7 @@ saveSlotBtns.forEach((button, index) => button?.addEventListener("click", () => 
 loadSlotBtns.forEach((button, index) => button?.addEventListener("click", () => loadFormationSlot(index + 1)));
 upgradeSelectedBtn?.addEventListener("click", upgradeSelectedUnitType);
 controlBuildNextBtn?.addEventListener("click", () => {
-  const unit = controlledUnit();
-  if (unit && state.phase === "battle") cycleControlledBuild();
-  else setToast((translations[state.language] || translations.en).controlEmpty);
+  cycleControlledBuild();
 });
 controlBuildPlaceBtn?.addEventListener("click", () => {
   const unit = controlledUnit();
