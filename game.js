@@ -233,7 +233,7 @@ const translations = {
     battle: "战况",
     control: "操控",
     controlEmpty: "战斗中点击兵种操控",
-    controlKeys: "WASD移动 / 空格攻击 / V第二攻击 / B特殊 / 字母O选建筑 / P建造",
+    controlKeys: "WASD移动 / 空格攻击 / V第二攻击 / B特殊 / 字母O建造模式 / 右键放置",
     controlPickBuild: "切换建筑",
     controlBuild: "建造",
     controlSelected: "正在操控",
@@ -455,7 +455,7 @@ const translations = {
     battle: "Battle",
     control: "Control",
     controlEmpty: "Click a unit during battle",
-    controlKeys: "WASD Move / Space Attack / V Second / B Skill / Letter O Pick Build / P Build",
+    controlKeys: "WASD Move / Space Attack / V Second / B Skill / Letter O Build Mode / Right Click Place",
     controlPickBuild: "Pick Building",
     controlBuild: "Build",
     controlSelected: "Controlling",
@@ -1587,6 +1587,7 @@ const state = {
   controlKeys: {},
   controlSpecialIndex: 0,
   controlBuildIndex: 0,
+  controlBuildMode: false,
   nextId: 1,
   dragging: null,
   lastTime: performance.now(),
@@ -3313,6 +3314,7 @@ function resetGame(keepEnemies = false) {
   state.controlledId = null;
   state.controlKeys = {};
   state.controlSpecialIndex = 0;
+  state.controlBuildMode = false;
   state.wallStart = null;
   state.pointer = null;
   state.mapTool = null;
@@ -3503,6 +3505,7 @@ function controlAimAngle(unit, fallbackDistance = 360) {
 function selectControlledUnit(unit) {
   state.controlledId = unit?.id || null;
   state.controlSpecialIndex = 0;
+  state.controlBuildMode = false;
   const text = translations[state.language] || translations.en;
   if (unit) setToast(`${text.controlSelected}: ${unit.name}`);
   updateUi();
@@ -3652,14 +3655,34 @@ function controlledBuildName() {
 }
 
 function cycleControlledBuild() {
+  state.controlBuildMode = true;
   state.controlBuildIndex = (state.controlBuildIndex + 1) % controlledBuildTypes.length;
   const build = controlledBuildName();
   setToast(state.language === "zh" ? `选择建造：${build.name} ${build.cost}金币` : `Build selected: ${build.name} ${build.cost} gold`);
   updateUi();
 }
 
-function buildControlledBuilding(unit) {
+function toggleControlledBuildMode() {
+  state.controlBuildMode = !state.controlBuildMode;
+  const build = controlledBuildName();
+  setToast(
+    state.controlBuildMode
+      ? state.language === "zh"
+        ? `建造模式开启：${build.name}，右键放置`
+        : `Build mode on: ${build.name}, right click to place`
+      : state.language === "zh"
+        ? "建造模式关闭"
+        : "Build mode off",
+  );
+  updateUi();
+}
+
+function buildControlledBuilding(unit, force = false) {
   if (!unit || unit.dead || state.phase !== "battle") return;
+  if (!force && !state.controlBuildMode) {
+    setToast(state.language === "zh" ? "先按字母O开启建造模式" : "Press letter O to enter build mode first");
+    return;
+  }
   const build = controlledBuildName();
   if (state.challengeMode && build.id === "goldMine") {
     setToast(state.language === "zh" ? "挑战模式不能建金矿" : "Gold mines are disabled in challenge mode");
@@ -6072,7 +6095,7 @@ function updateUi() {
         <span>Space ${unit.cooldown <= 0 ? "OK" : unit.cooldown.toFixed(1)}</span>
         <span>V ${unit.secondAttack ? (unit.cooldown <= 0 ? "OK" : unit.cooldown.toFixed(1)) : "-"}</span>
         <span>B ${specialText}</span>
-        <span>字母O/P ${build.name} ${build.cost}</span>
+        <span>${state.language === "zh" ? "建造模式" : "Build mode"} ${state.controlBuildMode ? "ON" : "OFF"}: ${build.name} ${build.cost}</span>
       `;
       controlPanel?.classList.add("active");
     }
@@ -6123,6 +6146,15 @@ function renderUnitList() {
 canvas.addEventListener("pointerdown", (event) => {
   const point = worldPoint(event);
   state.pointer = point;
+  if (event.button === 2) {
+    event.preventDefault();
+    const unit = controlledUnit();
+    if (unit && state.phase === "battle") {
+      buildControlledBuilding(unit);
+      updateUi();
+    }
+    return;
+  }
   if (state.phase === "setup" && isWallBuildTool()) {
     if (!state.wallStart) {
       state.wallStart = point;
@@ -6208,6 +6240,10 @@ canvas.addEventListener("pointerup", () => {
   state.dragging = null;
 });
 
+canvas.addEventListener("contextmenu", (event) => {
+  event.preventDefault();
+});
+
 window.addEventListener("keydown", (event) => {
   const tag = event.target?.tagName;
   if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
@@ -6244,7 +6280,7 @@ window.addEventListener("keydown", (event) => {
   if (key === "o") {
     const unit = controlledUnit();
     if (unit && state.phase === "battle") {
-      cycleControlledBuild();
+      toggleControlledBuildMode();
       event.preventDefault();
     }
     return;
@@ -6285,7 +6321,7 @@ controlBuildNextBtn?.addEventListener("click", () => {
 });
 controlBuildPlaceBtn?.addEventListener("click", () => {
   const unit = controlledUnit();
-  if (unit && state.phase === "battle") buildControlledBuilding(unit);
+  if (unit && state.phase === "battle") buildControlledBuilding(unit, true);
   else setToast((translations[state.language] || translations.en).controlEmpty);
 });
 wallToolBtn.addEventListener("click", () => {
