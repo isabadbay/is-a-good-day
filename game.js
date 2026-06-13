@@ -26,11 +26,23 @@ const batchPlaceCount = document.querySelector("#batchPlaceCount");
 const exportFormationBtn = document.querySelector("#exportFormationBtn");
 const importFormationBtn = document.querySelector("#importFormationBtn");
 const exitChallengeBtn = document.querySelector("#exitChallengeBtn");
+const saveSlotBtns = [1, 2, 3].map((slot) => document.querySelector(`#saveSlot${slot}Btn`));
+const loadSlotBtns = [1, 2, 3].map((slot) => document.querySelector(`#loadSlot${slot}Btn`));
+const upgradeSelectedBtn = document.querySelector("#upgradeSelectedBtn");
 const formationCode = document.querySelector("#formationCode");
 const wallToolBtn = document.querySelector("#wallToolBtn");
 const thickWallToolBtn = document.querySelector("#thickWallToolBtn");
 const arrowWallToolBtn = document.querySelector("#arrowWallToolBtn");
 const arrowTowerToolBtn = document.querySelector("#arrowTowerToolBtn");
+const cannonTowerToolBtn = document.querySelector("#cannonTowerToolBtn");
+const healTowerToolBtn = document.querySelector("#healTowerToolBtn");
+const frostTowerToolBtn = document.querySelector("#frostTowerToolBtn");
+const goldMineToolBtn = document.querySelector("#goldMineToolBtn");
+const waterToolBtn = document.querySelector("#waterToolBtn");
+const fireTerrainToolBtn = document.querySelector("#fireTerrainToolBtn");
+const grassToolBtn = document.querySelector("#grassToolBtn");
+const highGroundToolBtn = document.querySelector("#highGroundToolBtn");
+const eraseTerrainBtn = document.querySelector("#eraseTerrainBtn");
 const commandToolBtn = document.querySelector("#commandToolBtn");
 const focusToolBtn = document.querySelector("#focusToolBtn");
 const eraseWallBtn = document.querySelector("#eraseWallBtn");
@@ -159,6 +171,22 @@ const UNIT_PACK_2_IDS = new Set([
 
 const PLANT_TYPE_IDS = new Set(["sunflower", "peashooter", "repeater", "gatlingshooter", "chomper"]);
 
+const buildingTypes = {
+  arrowTower: { name: "Arrow Tower", zh: "箭塔", cost: 360, hp: 100, w: 42, h: 42, range: 180, cooldown: 0.2, damage: 10 },
+  cannonTower: { name: "Cannon Tower", zh: "炮塔", cost: 620, hp: 160, w: 52, h: 52, range: 240, cooldown: 2.2, damage: 55, splash: 70 },
+  healTower: { name: "Healing Tower", zh: "治疗塔", cost: 450, hp: 130, w: 48, h: 48, range: 145, cooldown: 0.5, heal: 12 },
+  frostTower: { name: "Frost Tower", zh: "冰冻塔", cost: 520, hp: 120, w: 48, h: 48, range: 170, cooldown: 1.3, damage: 8 },
+  goldMine: { name: "Gold Mine", zh: "金矿", cost: 300, hp: 140, w: 56, h: 46, range: 0, cooldown: 5, gold: 70 },
+};
+const controlledBuildTypes = ["arrowTower", "cannonTower", "healTower", "frostTower", "goldMine"];
+
+const terrainTypes = {
+  water: { name: "Water", zh: "水坑", cost: 90, radius: 70 },
+  fire: { name: "Fire Ground", zh: "火地", cost: 130, radius: 62 },
+  grass: { name: "Grass", zh: "草丛", cost: 80, radius: 76 },
+  high: { name: "High Ground", zh: "高地", cost: 120, radius: 72 },
+};
+
 const INFECTABLE_TYPE_IDS = new Set([
   "clubber",
   "shield",
@@ -203,7 +231,7 @@ const translations = {
     battle: "战况",
     control: "操控",
     controlEmpty: "战斗中点击兵种操控",
-    controlKeys: "WASD移动 / 空格攻击 / V第二攻击 / B特殊",
+    controlKeys: "WASD移动 / 空格攻击 / V第二攻击 / B特殊 / O选建筑 / P建造",
     controlSelected: "正在操控",
     noControlTarget: "没有可操控兵种",
     noSpecialReady: "没有可用特殊技能",
@@ -231,6 +259,18 @@ const translations = {
     mapThickWall: "厚墙",
     mapArrowWall: "透射墙",
     mapArrowTower: "箭塔",
+    mapCannonTower: "炮塔",
+    mapHealTower: "治疗塔",
+    mapFrostTower: "冰冻塔",
+    mapGoldMine: "金矿",
+    mapWater: "水坑",
+    mapFireGround: "火地",
+    mapGrass: "草丛",
+    mapHighGround: "高地",
+    mapEraseTerrain: "删地形",
+    upgrade: "升级兵种",
+    saveSlot: "保存",
+    loadSlot: "读取",
     mapCommand: "指挥",
     mapFocus: "集火",
     mapEraseWall: "删除墙",
@@ -411,7 +451,7 @@ const translations = {
     battle: "Battle",
     control: "Control",
     controlEmpty: "Click a unit during battle",
-    controlKeys: "WASD Move / Space Attack / V Second / B Skill",
+    controlKeys: "WASD Move / Space Attack / V Second / B Skill / O Pick Build / P Build",
     controlSelected: "Controlling",
     noControlTarget: "No controllable unit",
     noSpecialReady: "No special skill ready",
@@ -439,6 +479,18 @@ const translations = {
     mapThickWall: "Thick Wall",
     mapArrowWall: "Arrow Wall",
     mapArrowTower: "Arrow Tower",
+    mapCannonTower: "Cannon Tower",
+    mapHealTower: "Healing Tower",
+    mapFrostTower: "Frost Tower",
+    mapGoldMine: "Gold Mine",
+    mapWater: "Water",
+    mapFireGround: "Fire Ground",
+    mapGrass: "Grass",
+    mapHighGround: "High Ground",
+    mapEraseTerrain: "Erase Terrain",
+    upgrade: "Upgrade Unit",
+    saveSlot: "Save",
+    loadSlot: "Load",
     mapCommand: "Command",
     mapFocus: "Focus",
     mapEraseWall: "Erase Wall",
@@ -625,6 +677,22 @@ function applyLanguage(lang) {
   thickWallToolBtn.textContent = text.mapThickWall;
   arrowWallToolBtn.textContent = text.mapArrowWall;
   arrowTowerToolBtn.textContent = text.mapArrowTower;
+  cannonTowerToolBtn.textContent = text.mapCannonTower;
+  healTowerToolBtn.textContent = text.mapHealTower;
+  frostTowerToolBtn.textContent = text.mapFrostTower;
+  goldMineToolBtn.textContent = text.mapGoldMine;
+  waterToolBtn.textContent = text.mapWater;
+  fireTerrainToolBtn.textContent = text.mapFireGround;
+  grassToolBtn.textContent = text.mapGrass;
+  highGroundToolBtn.textContent = text.mapHighGround;
+  eraseTerrainBtn.textContent = text.mapEraseTerrain;
+  upgradeSelectedBtn.textContent = text.upgrade;
+  saveSlotBtns.forEach((button, index) => {
+    if (button) button.textContent = `${text.saveSlot} ${index + 1}`;
+  });
+  loadSlotBtns.forEach((button, index) => {
+    if (button) button.textContent = `${text.loadSlot} ${index + 1}`;
+  });
   commandToolBtn.textContent = text.mapCommand;
   focusToolBtn.textContent = text.mapFocus;
   eraseWallBtn.textContent = text.mapEraseWall;
@@ -1502,11 +1570,15 @@ const state = {
   slimes: [],
   tornadoes: [],
   walls: [],
+  terrains: [],
+  upgrades: {},
+  battleStats: null,
   commands: { blue: null, red: null },
   focusTargets: { blue: null, red: null },
   controlledId: null,
   controlKeys: {},
   controlSpecialIndex: 0,
+  controlBuildIndex: 0,
   nextId: 1,
   dragging: null,
   lastTime: performance.now(),
@@ -1564,6 +1636,10 @@ function wallTotalCost() {
   return state.walls.reduce((sum, wall) => sum + (wall.challengeImported ? 0 : wallCost(wall)), 0);
 }
 
+function terrainTotalCost() {
+  return state.terrains.reduce((sum, terrain) => sum + (terrainTypes[terrain.type]?.cost || 0), 0);
+}
+
 function isPlantType(typeOrId) {
   const id = typeof typeOrId === "string" ? typeOrId : typeOrId?.id;
   return PLANT_TYPE_IDS.has(id);
@@ -1572,7 +1648,7 @@ function isPlantType(typeOrId) {
 function syncBudgetToEnemySize() {
   if (state.sandbox) return;
   const baseBudget = state.challengeMode ? state.challengeBudget : totalBudgetForEnemySize();
-  state.budget = Math.max(0, baseBudget - blueArmyCost() - wallTotalCost());
+  state.budget = Math.max(0, baseBudget - blueArmyCost() - wallTotalCost() - terrainTotalCost());
 }
 
 function worldPoint(event) {
@@ -1588,32 +1664,38 @@ function setToast(message) {
 }
 
 function wallCost(wall) {
-  if (wall.type === "arrowTower") return 360;
+  if (buildingTypes[wall.type]) return buildingTypes[wall.type].cost;
   const thickMultiplier = wall.type === "thick" ? 2.35 : wall.type === "arrow" ? 1.35 : 1;
   return Math.ceil((40 + Math.max(wall.w, wall.h) * 0.4) * 2 * thickMultiplier);
 }
 
 function wallMaxHp(wall) {
   const length = Math.max(wall.w, wall.h);
-  if (wall.type === "arrowTower") return 100;
+  if (buildingTypes[wall.type]) return buildingTypes[wall.type].hp;
   if (wall.type === "thick") return Math.ceil(260 + length * 3.2);
   if (wall.type === "arrow") return Math.ceil(90 + length * 1.15);
   return Math.ceil(120 + length * 1.55);
 }
 
-function addArrowTower(point) {
-  if (state.phase !== "setup") {
-    setToast(state.language === "zh" ? "布阵阶段才能放箭塔" : "Arrow towers can be placed during setup");
+function addBuilding(point, typeId, options = {}) {
+  if (state.phase !== "setup" && !options.allowBattle) {
+    setToast(state.language === "zh" ? "布阵阶段才能放建筑" : "Buildings can be placed during setup");
     return;
   }
+  if (state.challengeMode && typeId === "goldMine") {
+    setToast(state.language === "zh" ? "挑战模式不能使用金矿" : "Gold mines are disabled in challenge mode");
+    return;
+  }
+  const config = buildingTypes[typeId];
+  if (!config) return;
   const text = translations[state.language] || translations.en;
   const wall = {
-    x: clamp(point.x, 24, canvas.width - 24),
-    y: clamp(point.y, 24, canvas.height - 24),
-    w: 42,
-    h: 42,
-    type: "arrowTower",
-    team: state.sandbox ? state.placeTeam : "blue",
+    x: clamp(point.x, config.w / 2, canvas.width - config.w / 2),
+    y: clamp(point.y, config.h / 2, canvas.height - config.h / 2),
+    w: config.w,
+    h: config.h,
+    type: typeId,
+    team: options.team || (state.sandbox ? state.placeTeam : "blue"),
     cooldown: 0,
   };
   wall.maxHp = wallMaxHp(wall);
@@ -1632,7 +1714,38 @@ function addArrowTower(point) {
   }
   state.walls.push(wall);
   if (!state.sandbox) state.budget -= cost;
-  setToast(state.language === "zh" ? `已放置箭塔 -${cost}` : `Arrow tower placed -${cost}`);
+  const name = state.language === "zh" ? config.zh : config.name;
+  setToast(state.language === "zh" ? `已放置${name} -${cost}` : `${name} placed -${cost}`);
+  return wall;
+}
+
+function addArrowTower(point) {
+  addBuilding(point, "arrowTower");
+}
+
+function addTerrain(point, typeId) {
+  if (state.phase !== "setup") return;
+  const config = terrainTypes[typeId];
+  if (!config) return;
+  if (!state.sandbox && state.budget < config.cost) {
+    setToast((translations[state.language] || translations.en).wallNeedGold);
+    return;
+  }
+  state.terrains.push({
+    x: clamp(point.x, config.radius, canvas.width - config.radius),
+    y: clamp(point.y, config.radius, canvas.height - config.radius),
+    type: typeId,
+    radius: config.radius,
+  });
+  if (!state.sandbox) state.budget -= config.cost;
+  const name = state.language === "zh" ? config.zh : config.name;
+  setToast(state.language === "zh" ? `已放置${name} -${config.cost}` : `${name} placed -${config.cost}`);
+}
+
+function eraseTerrain(point) {
+  const before = state.terrains.length;
+  state.terrains = state.terrains.filter((terrain) => Math.hypot(point.x - terrain.x, point.y - terrain.y) > terrain.radius);
+  if (before !== state.terrains.length) setToast(state.language === "zh" ? "地形已删除" : "Terrain removed");
 }
 
 function addWall(start, end) {
@@ -1704,11 +1817,29 @@ function damageWall(wall, damage, x = wall.x, y = wall.y) {
   state.walls = state.walls.filter((candidate) => (candidate.hp ?? wallMaxHp(candidate)) > 0);
 }
 
+function canUnitDamageWall(unit, wall) {
+  if (!unit || unit.canAttackWalls === false) return false;
+  return !(buildingTypes[wall.type] && wall.team === unit.team);
+}
+
+function terrainAt(x, y, type = null) {
+  return state.terrains.find((terrain) => (!type || terrain.type === type) && Math.hypot(x - terrain.x, y - terrain.y) <= terrain.radius);
+}
+
+function terrainSpeedFactor(unit) {
+  return terrainAt(unit.x, unit.y, "water") ? 0.55 : 1;
+}
+
+function terrainRangeFactor(unit) {
+  return terrainAt(unit.x, unit.y, "high") ? 1.25 : 1;
+}
+
 function wallTargetNear(unit, target = null) {
   if (unit.canAttackWalls === false) return null;
   let best = null;
   let bestDistance = Infinity;
   for (const wall of state.walls) {
+    if (!canUnitDamageWall(unit, wall)) continue;
     const closestX = clamp(unit.x, wall.x - wall.w / 2, wall.x + wall.w / 2);
     const closestY = clamp(unit.y, wall.y - wall.h / 2, wall.y + wall.h / 2);
     const distance = Math.hypot(unit.x - closestX, unit.y - closestY);
@@ -2002,6 +2133,11 @@ function createCustomUnitType() {
 function addUnit(typeId, team, x, y) {
   const type = typeById(typeId);
   const tint = team === "blue" ? type.color : "#ff706c";
+  const level = state.upgrades[typeId] || 0;
+  const statBoost = 1 + level * 0.18;
+  const rangeBoost = 1 + level * 0.08;
+  const speedBoost = 1 + level * 0.08;
+  const cooldownBoost = Math.max(0.55, 1 - level * 0.08);
   const unit = {
     id: state.nextId++,
     team,
@@ -2015,16 +2151,16 @@ function addUnit(typeId, team, x, y) {
     y,
     vx: (Math.random() - 0.5) * 10,
     vy: (Math.random() - 0.5) * 10,
-    hp: type.hp,
-    maxHp: type.hp,
-    damage: type.damage,
-    range: type.range,
+    hp: Math.round(type.hp * statBoost),
+    maxHp: Math.round(type.hp * statBoost),
+    damage: type.damage * statBoost,
+    range: type.range * rangeBoost,
     burstCount: type.burstCount || 1,
     burstCooldown: type.burstCooldown || 0,
-    stopDistance: type.stopDistance ?? type.range,
-    speed: type.speed,
+    stopDistance: (type.stopDistance ?? type.range) * rangeBoost,
+    speed: type.speed * speedBoost,
     radius: type.radius,
-    cooldownTime: type.cooldown,
+    cooldownTime: type.cooldown * cooldownBoost,
     projectileSpeed: type.projectileSpeed || 0,
     splash: type.splash || 0,
     knockback: type.knockback || 2.3,
@@ -2059,6 +2195,8 @@ function addUnit(typeId, team, x, y) {
     slimeCooldown: 0,
     tornadoCooldown: 1 + Math.random() * 1.5,
     berserked: false,
+    statsDamage: 0,
+    statsKills: 0,
     color: tint,
     cooldown: Math.random() * 0.4,
     wobble: Math.random() * Math.PI * 2,
@@ -2072,6 +2210,30 @@ function spendFor(type) {
   if (state.sandbox) return;
   state.budget -= type.price;
   updateUi();
+}
+
+function upgradeSelectedUnitType() {
+  if (state.phase !== "setup") {
+    setToast(state.language === "zh" ? "布阵阶段才能升级" : "Upgrade during setup");
+    return;
+  }
+  const type = typeById(state.selected);
+  if (!type || type.id === "arrowtower") return;
+  const current = state.upgrades[type.id] || 0;
+  if (current >= 3) {
+    setToast(state.language === "zh" ? "已经满级" : "Max level reached");
+    return;
+  }
+  const cost = Math.ceil(type.price * (0.75 + current * 0.45));
+  if (!state.sandbox && state.budget < cost) {
+    setToast(state.language === "zh" ? "金币不够升级" : "Not enough gold to upgrade");
+    return;
+  }
+  if (!state.sandbox) state.budget -= cost;
+  state.upgrades[type.id] = current + 1;
+  renderUnitList();
+  updateUi();
+  setToast(state.language === "zh" ? `${type.name} 升到 ${current + 1} 级` : `${type.name} upgraded to level ${current + 1}`);
 }
 
 function refund(typeId) {
@@ -2188,17 +2350,25 @@ function expandNumber(value) {
 }
 
 function wallTypeCode(type) {
-  return type === "thick" ? "t" : type === "arrow" ? "a" : type === "arrowTower" ? "o" : "n";
+  return type === "thick" ? "t" : type === "arrow" ? "a" : type === "arrowTower" ? "o" : type === "cannonTower" ? "c" : type === "healTower" ? "h" : type === "frostTower" ? "f" : type === "goldMine" ? "g" : "n";
 }
 
 function wallTypeFromCode(code) {
-  return code === "t" ? "thick" : code === "a" ? "arrow" : code === "o" ? "arrowTower" : "normal";
+  return code === "t" ? "thick" : code === "a" ? "arrow" : code === "o" ? "arrowTower" : code === "c" ? "cannonTower" : code === "h" ? "healTower" : code === "f" ? "frostTower" : code === "g" ? "goldMine" : "normal";
+}
+
+function terrainTypeCode(type) {
+  return type === "water" ? "w" : type === "fire" ? "f" : type === "grass" ? "r" : type === "high" ? "h" : "w";
+}
+
+function terrainTypeFromCode(code) {
+  return code === "f" ? "fire" : code === "r" ? "grass" : code === "h" ? "high" : "water";
 }
 
 function compactCustomType(type) {
   return {
     id: type.id,
-    name: type.name,
+    name: level > 0 ? `${type.name}+${level}` : type.name,
     tag: type.tag,
     glyph: type.glyph,
     price: type.price,
@@ -2271,8 +2441,14 @@ function encodeShortFormation() {
     wallTypeCode(wall.type),
     wall.team === "red" ? "r" : "b",
   ].join("."));
+  const terrains = state.terrains.map((terrain) => [
+    compactNumber(terrain.x),
+    compactNumber(terrain.y),
+    compactNumber(terrain.radius),
+    terrainTypeCode(terrain.type),
+  ].join("."));
   const customPart = customTypes.length ? bytesToBase64(new TextEncoder().encode(JSON.stringify(customTypes))) : "";
-  const payload = `1|${units.join(",")}|${walls.join(",")}|${customPart}`;
+  const payload = `2|${units.join(",")}|${walls.join(",")}|${customPart}|${terrains.join(",")}`;
   return `TS1-${bytesToBase64(new TextEncoder().encode(payload))}`;
 }
 
@@ -2284,8 +2460,8 @@ function decodeFormationPayload(code) {
   }
   if (trimmed.startsWith("TS1-")) {
     const raw = new TextDecoder().decode(base64ToBytes(trimmed.slice(4)));
-    const [version, unitPart = "", wallPart = "", customPart = ""] = raw.split("|");
-    if (version !== "1") throw new Error("bad short version");
+    const [version, unitPart = "", wallPart = "", customPart = "", terrainPart = ""] = raw.split("|");
+    if (version !== "1" && version !== "2") throw new Error("bad short version");
     const ids = unitTypes.map((type) => type.id);
     const customTypes = customPart ? JSON.parse(new TextDecoder().decode(base64ToBytes(customPart))) : [];
     return {
@@ -2315,6 +2491,17 @@ function decodeFormationPayload(code) {
             };
           })
         : [],
+      terrains: version === "2" && terrainPart
+        ? terrainPart.split(",").filter(Boolean).map((entry) => {
+            const [x, y, radius, type] = entry.split(".");
+            return {
+              x: expandNumber(x),
+              y: expandNumber(y),
+              radius: expandNumber(radius),
+              type: terrainTypeFromCode(type),
+            };
+          })
+        : [],
     };
   }
   throw new Error("bad prefix");
@@ -2328,6 +2515,81 @@ function exportFormation() {
     formationCode.select();
   }
   setToast((translations[state.language] || translations.en).formationExported);
+}
+
+function saveFormationSlot(slot) {
+  try {
+    localStorage.setItem(`tabsLiteFormation${slot}`, encodeShortFormation());
+    setToast(state.language === "zh" ? `阵容 ${slot} 已保存` : `Formation ${slot} saved`);
+  } catch {
+    setToast(state.language === "zh" ? "保存失败" : "Save failed");
+  }
+}
+
+function loadFormationSlot(slot) {
+  const code = localStorage.getItem(`tabsLiteFormation${slot}`);
+  if (!code) {
+    setToast(state.language === "zh" ? `阵容 ${slot} 是空的` : `Formation ${slot} is empty`);
+    return;
+  }
+  try {
+    const payload = decodeFormationPayload(code);
+    restoreLocalFormation(payload);
+    if (formationCode) formationCode.value = code;
+    setToast(state.language === "zh" ? `阵容 ${slot} 已读取` : `Formation ${slot} loaded`);
+  } catch {
+    setToast((translations[state.language] || translations.en).formationInvalid);
+  }
+}
+
+function restoreLocalFormation(payload) {
+  if (!payload || !Array.isArray(payload.units) || !Array.isArray(payload.walls)) throw new Error("bad payload");
+  ensureImportedCustomTypes(payload.customTypes || []);
+  state.phase = "setup";
+  state.sandbox = false;
+  state.placeTeam = "blue";
+  state.units = [];
+  state.projectiles = [];
+  state.particles = [];
+  state.slimes = [];
+  state.tornadoes = [];
+  state.commands = { blue: null, red: null };
+  state.focusTargets = { blue: null, red: null };
+  state.controlledId = null;
+  state.challengeMode = false;
+  state.challengeBudget = 0;
+  for (const saved of payload.units.slice(0, 260)) {
+    const type = typeById(saved.typeId);
+    if (!type) continue;
+    addUnit(type.id, saved.team === "red" ? "red" : "blue", clamp(Number(saved.x) || 80, type.radius, canvas.width - type.radius), clamp(Number(saved.y) || canvas.height / 2, type.radius, canvas.height - type.radius));
+  }
+  state.walls = payload.walls.slice(0, 160).map((saved) => {
+    const wall = {
+      x: clamp(Number(saved.x) || canvas.width / 2, 20, canvas.width - 20),
+      y: clamp(Number(saved.y) || canvas.height / 2, 20, canvas.height - 20),
+      w: clamp(Number(saved.w) || 60, 12, canvas.width),
+      h: clamp(Number(saved.h) || 28, 12, canvas.height),
+      type: ["normal", "thick", "arrow", ...Object.keys(buildingTypes)].includes(saved.type) ? saved.type : "normal",
+      team: saved.team === "red" ? "red" : "blue",
+      cooldown: 0,
+    };
+    if (buildingTypes[wall.type]) {
+      wall.w = buildingTypes[wall.type].w;
+      wall.h = buildingTypes[wall.type].h;
+    }
+    wall.maxHp = wallMaxHp(wall);
+    wall.hp = wall.maxHp;
+    return wall;
+  });
+  state.terrains = (payload.terrains || []).slice(0, 80).map((saved) => ({
+    x: clamp(Number(saved.x) || canvas.width / 2, 20, canvas.width - 20),
+    y: clamp(Number(saved.y) || canvas.height / 2, 20, canvas.height - 20),
+    radius: clamp(Number(saved.radius) || 70, 24, 160),
+    type: terrainTypes[saved.type] ? saved.type : "water",
+  }));
+  syncBudgetToEnemySize();
+  renderUnitList();
+  updateUi();
 }
 
 function importFormation() {
@@ -2376,13 +2638,13 @@ function importFormation() {
         y: clamp(Number(saved.y) || canvas.height / 2, 20, canvas.height - 20),
         w: clamp(Number(saved.w) || 60, 12, canvas.width),
         h: clamp(Number(saved.h) || 28, 12, canvas.height),
-        type: ["normal", "thick", "arrow", "arrowTower"].includes(saved.type) ? saved.type : "normal",
-        team: saved.type === "arrowTower" ? "red" : saved.team,
+        type: ["normal", "thick", "arrow", ...Object.keys(buildingTypes)].includes(saved.type) ? saved.type : "normal",
+        team: buildingTypes[saved.type] ? "red" : saved.team,
         challengeImported: true,
       };
-      if (wall.type === "arrowTower") {
-        wall.w = 42;
-        wall.h = 42;
+      if (buildingTypes[wall.type]) {
+        wall.w = buildingTypes[wall.type].w;
+        wall.h = buildingTypes[wall.type].h;
         wall.cooldown = 0;
         state.challengeBudget += wallCost(wall);
       }
@@ -2390,6 +2652,12 @@ function importFormation() {
       wall.hp = wall.maxHp;
       return wall;
     });
+    state.terrains = (payload.terrains || []).slice(0, 80).map((saved) => ({
+      x: clamp(mirrorFromBlue ? canvas.width - (Number(saved.x) || canvas.width / 2) : Number(saved.x) || canvas.width / 2, 20, canvas.width - 20),
+      y: clamp(Number(saved.y) || canvas.height / 2, 20, canvas.height - 20),
+      radius: clamp(Number(saved.radius) || 70, 24, 160),
+      type: terrainTypes[saved.type] ? saved.type : "water",
+    }));
     state.challengeBudget = Math.floor(state.challengeBudget * 0.9);
     syncBudgetToEnemySize();
     updateUi();
@@ -2811,6 +3079,7 @@ function castFireBreathAtPoint(unit, point, freeCast = false) {
     });
   }
   for (const wall of state.walls) {
+    if (!canUnitDamageWall(unit, wall)) continue;
     const closestX = clamp(unit.x + Math.cos(angle) * range * 0.65, wall.x - wall.w / 2, wall.x + wall.w / 2);
     const closestY = clamp(unit.y + Math.sin(angle) * range * 0.65, wall.y - wall.h / 2, wall.y + wall.h / 2);
     const dx = closestX - unit.x;
@@ -3025,6 +3294,8 @@ function resetGame(keepEnemies = false) {
   state.slimes = [];
   state.tornadoes = [];
   state.walls = [];
+  state.terrains = [];
+  state.battleStats = null;
   state.commands = { blue: null, red: null };
   state.focusTargets = { blue: null, red: null };
   state.plantMode = false;
@@ -3129,6 +3400,11 @@ function startBattle() {
   }
   state.commands = { blue: null, red: null };
   state.focusTargets = { blue: null, red: null };
+  for (const unit of state.units) {
+    unit.statsDamage = 0;
+    unit.statsKills = 0;
+  }
+  state.battleStats = null;
   state.plantMode =
     !state.challengeMode && (state.selected === "sunflower" || state.units.some((unit) => unit.team === "blue" && unit.typeId === "sunflower"));
   if (state.plantMode && !state.sandbox) {
@@ -3357,6 +3633,39 @@ function controlledSpecialAttack(unit) {
   setToast(`${unit.name}: ${special.name}`);
 }
 
+function controlledBuildName() {
+  const typeId = controlledBuildTypes[state.controlBuildIndex % controlledBuildTypes.length];
+  const config = buildingTypes[typeId];
+  return {
+    id: typeId,
+    name: state.language === "zh" ? config.zh : config.name,
+    cost: config.cost,
+  };
+}
+
+function cycleControlledBuild() {
+  state.controlBuildIndex = (state.controlBuildIndex + 1) % controlledBuildTypes.length;
+  const build = controlledBuildName();
+  setToast(state.language === "zh" ? `选择建造：${build.name} ${build.cost}金币` : `Build selected: ${build.name} ${build.cost} gold`);
+  updateUi();
+}
+
+function buildControlledBuilding(unit) {
+  if (!unit || unit.dead || state.phase !== "battle") return;
+  const build = controlledBuildName();
+  if (state.challengeMode && build.id === "goldMine") {
+    setToast(state.language === "zh" ? "挑战模式不能建金矿" : "Gold mines are disabled in challenge mode");
+    return;
+  }
+  const target = state.pointer || { x: unit.x + Math.cos(unit.lastControlAngle || 0) * 54, y: unit.y + Math.sin(unit.lastControlAngle || 0) * 54 };
+  const angle = Math.atan2(target.y - unit.y, target.x - unit.x);
+  const point = {
+    x: unit.x + Math.cos(angle) * (unit.radius + 44),
+    y: unit.y + Math.sin(angle) * (unit.radius + 44),
+  };
+  addBuilding(point, build.id, { allowBattle: true, team: unit.team });
+}
+
 function updateControlledUnit(unit, dt) {
   const up = state.controlKeys.w;
   const down = state.controlKeys.s;
@@ -3413,6 +3722,14 @@ function applyAreaAttack(attacker, x, y, area = attacker.areaAttack, isRanged = 
       noKnockback: attacker.skills.fireBreath,
       owner: attacker,
     });
+  }
+  for (const wall of state.walls) {
+    if (!canUnitDamageWall(attacker, wall)) continue;
+    const closestX = clamp(x, wall.x - wall.w / 2, wall.x + wall.w / 2);
+    const closestY = clamp(y, wall.y - wall.h / 2, wall.y + wall.h / 2);
+    const distance = Math.hypot(x - closestX, y - closestY);
+    if (distance > area.range) continue;
+    damageWall(wall, damageFor(attacker, area.damage * 0.28), closestX, closestY);
   }
   state.particles.push({ x, y, life: 0.55, color: "#f8d36c", size: area.range });
 }
@@ -3642,6 +3959,10 @@ function hurt(target, amount, source) {
     state.particles.push({ x: target.x, y: target.y, life: 0.28, color: "#d7ecff", size: target.radius * 1.6 });
     return;
   }
+  if (source.isRanged && terrainAt(target.x, target.y, "grass") && Math.random() < 0.32) {
+    state.particles.push({ x: target.x, y: target.y, life: 0.35, color: "#8fe07a", size: target.radius * 2.2 });
+    return;
+  }
   const killer = source.owner || source;
   if (!source.isRanged && killer?.skills?.infectTouch) {
     infectUnit(target, killer);
@@ -3673,6 +3994,9 @@ function hurt(target, amount, source) {
   }
   if (source.applyBurn) burnUnit(target, source.fireDuration || 5);
   if (source.applyFreeze) freezeUnit(target, 2.4);
+  if (killer && killer.statsDamage !== undefined && killer !== target) {
+    killer.statsDamage += Math.max(0, Math.min(amount, target.hp));
+  }
   target.hp -= amount;
   updateBerserk(target);
   const angle = Math.atan2(target.y - source.y, target.x - source.x);
@@ -3686,6 +4010,7 @@ function hurt(target, amount, source) {
       return;
     }
     target.dead = true;
+    if (killer && killer.statsKills !== undefined && killer !== target) killer.statsKills += 1;
     handleKillEffects(killer, target);
     if (target.skills.explode) explodeUnit(target);
     if (!target.skills.knockbackImmune) {
@@ -3710,7 +4035,7 @@ function attack(unit, target, mode = null) {
   const burstCount = Math.max(1, Math.floor(active.burstCount || 1));
   unit.cooldown = burstCount > 1 && active.burstCooldown > 0 ? active.burstCooldown : active.cooldown || unit.cooldownTime;
   if (target.kind === "wall") {
-    if (unit.canAttackWalls === false) return;
+    if (!canUnitDamageWall(unit, target.wall)) return;
     if (active.ranged && active.projectileSpeed) {
       for (let i = 0; i < burstCount; i += 1) {
         state.projectiles.push({
@@ -3844,6 +4169,13 @@ function updateUnit(unit, dt) {
     }
   }
   unit.freezeTimer = Math.max(0, unit.freezeTimer - dt);
+  if (!unit.dead && terrainAt(unit.x, unit.y, "fire")) {
+    unit.terrainFireTick = (unit.terrainFireTick || 0) - dt;
+    if (unit.terrainFireTick <= 0) {
+      unit.terrainFireTick = 0.55;
+      hurt(unit, 7, { x: unit.x - 1, y: unit.y, knockback: 0, ignoreDodge: true, noKnockback: true, damageType: "fire" });
+    }
+  }
   unit.stasisTimer = Math.max(0, unit.stasisTimer - dt);
   unit.defensePotionTimer = Math.max(0, unit.defensePotionTimer - dt);
   unit.powerPotionTimer = Math.max(0, unit.powerPotionTimer - dt);
@@ -3957,7 +4289,7 @@ function updateUnit(unit, dt) {
   if (command && !unit.skills.rooted) {
     const goal = wallAvoidancePoint(unit, command);
     const commandDistance = Math.hypot(goal.x - unit.x, goal.y - unit.y);
-    const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1);
+    const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1) * terrainSpeedFactor(unit);
     if (commandDistance > unit.radius + 18) {
       const angle = Math.atan2(goal.y - unit.y, goal.x - unit.x);
       unit.vx += Math.cos(angle) * unit.speed * speedFactor * dt * 3.2;
@@ -3995,15 +4327,16 @@ function updateUnit(unit, dt) {
   const isRanged = Boolean(unit.projectileSpeed);
   const edgeDistance = Math.max(0, distance - unit.radius - target.radius);
   const engagementDistance = isRanged ? distance : edgeDistance;
-  const primaryAttackDistance = isRanged ? unit.range * 0.88 : unit.range;
+  const rangeFactor = terrainRangeFactor(unit);
+  const primaryAttackDistance = isRanged ? unit.range * 0.88 * rangeFactor : unit.range;
   const second = unit.secondAttack;
   const secondEngagementDistance = second && second.ranged ? distance : edgeDistance;
-  const secondAttackDistance = second ? second.range : 0;
+  const secondAttackDistance = second ? second.range * (second.ranged ? rangeFactor : 1) : 0;
   const canPrimaryAttack = engagementDistance <= primaryAttackDistance;
   const canSecondAttack = Boolean(second && secondEngagementDistance <= secondAttackDistance);
   const attackDistance = Math.max(primaryAttackDistance, secondAttackDistance);
   const stopDistance = isRanged ? unit.stopDistance : Math.min(unit.stopDistance, attackDistance);
-  const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1);
+  const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1) * terrainSpeedFactor(unit);
   if (!unit.skills.rooted && engagementDistance > stopDistance) {
     unit.vx += Math.cos(angle) * unit.speed * speedFactor * dt * 2.8;
     unit.vy += Math.sin(angle) * unit.speed * speedFactor * dt * 2.8;
@@ -4285,18 +4618,41 @@ function updateProjectiles(dt) {
   state.projectiles = state.projectiles.filter((projectile) => projectile.life > 0);
 }
 
-function updateArrowTowers(dt) {
+function updateBuildings(dt) {
   for (const wall of state.walls) {
-    if (wall.type !== "arrowTower") continue;
+    const config = buildingTypes[wall.type];
+    if (!config) continue;
     wall.cooldown = Math.max(0, (wall.cooldown || 0) - dt);
     if (wall.cooldown > 0) continue;
     const team = wall.team || "blue";
+    if (wall.type === "goldMine") {
+      if (state.challengeMode) continue;
+      if (!state.sandbox && team === "blue" && state.phase === "battle") {
+        state.budget += config.gold;
+        state.particles.push({ x: wall.x, y: wall.y, life: 0.65, startLife: 0.65, color: "#ffd75a", size: 32 });
+        updateUi();
+      }
+      wall.cooldown = config.cooldown;
+      continue;
+    }
+    if (wall.type === "healTower") {
+      let healed = false;
+      for (const unit of state.units) {
+        if (unit.team !== team || unit.dead || unit.hp >= unit.maxHp) continue;
+        if (Math.hypot(unit.x - wall.x, unit.y - wall.y) > config.range + unit.radius) continue;
+        unit.hp = Math.min(unit.maxHp, unit.hp + config.heal * dt * 2);
+        healed = true;
+      }
+      if (healed) state.particles.push({ x: wall.x, y: wall.y, life: 0.22, startLife: 0.3, color: "#72f0a0", size: config.range });
+      wall.cooldown = 0.5;
+      continue;
+    }
     let target = null;
     let bestDistance = Infinity;
     for (const unit of state.units) {
       if (unit.team === team || unit.dead || unit.airborneTimer > 0) continue;
       const distance = Math.hypot(unit.x - wall.x, unit.y - wall.y);
-      if (distance < bestDistance && distance <= 180 + unit.radius) {
+      if (distance < bestDistance && distance <= config.range + unit.radius) {
         target = unit;
         bestDistance = distance;
       }
@@ -4307,15 +4663,17 @@ function updateArrowTowers(dt) {
       y: wall.y - 10,
       tx: target.id,
       team,
-      damage: 10,
-      speed: 520,
-      radius: 3,
-      life: 1.4,
-      color: team === "blue" ? "#f0d19a" : "#ffb1a8",
+      damage: config.damage,
+      speed: wall.type === "cannonTower" ? 360 : 520,
+      splash: config.splash || 0,
+      radius: wall.type === "cannonTower" ? 7 : 3,
+      life: wall.type === "cannonTower" ? 2.0 : 1.4,
+      color: wall.type === "frostTower" ? "#9bdcff" : team === "blue" ? "#f0d19a" : "#ffb1a8",
       passWalls: true,
+      applyFreeze: wall.type === "frostTower",
     });
-    wall.cooldown = 0.2;
-    state.particles.push({ x: wall.x, y: wall.y - 14, life: 0.16, startLife: 0.2, color: "#f7df9b", size: 12 });
+    wall.cooldown = config.cooldown;
+    state.particles.push({ x: wall.x, y: wall.y - 14, life: 0.16, startLife: 0.2, color: wall.type === "frostTower" ? "#9bdcff" : "#f7df9b", size: 12 });
   }
 }
 
@@ -4406,7 +4764,21 @@ function checkWinner() {
   state.winnerShown = true;
   setPhase("ended");
   const text = translations[state.language] || translations.en;
-  setToast(blueAlive ? text.blueWin : text.redWin);
+  const units = state.units.filter((unit) => unit.statsDamage > 0 || unit.statsKills > 0);
+  const topDamage = units.reduce((best, unit) => (!best || unit.statsDamage > best.statsDamage ? unit : best), null);
+  const topKills = units.reduce((best, unit) => (!best || unit.statsKills > best.statsKills ? unit : best), null);
+  const bestValue = units.reduce((best, unit) => {
+    const price = Math.max(1, typeById(unit.typeId)?.price || 100);
+    const value = unit.statsDamage / price;
+    return !best || value > best.value ? { unit, value } : best;
+  }, null);
+  const statsText = topDamage
+    ? state.language === "zh"
+      ? ` 最高伤害:${topDamage.name} ${Math.round(topDamage.statsDamage)} 击杀:${topKills?.name || "-"} ${topKills?.statsKills || 0} 最值:${bestValue?.unit.name || "-"}`
+      : ` Top damage:${topDamage.name} ${Math.round(topDamage.statsDamage)} Kills:${topKills?.name || "-"} ${topKills?.statsKills || 0} Best value:${bestValue?.unit.name || "-"}`
+    : "";
+  state.battleStats = { topDamage: topDamage?.id, topKills: topKills?.id, bestValue: bestValue?.unit.id };
+  setToast(`${blueAlive ? text.blueWin : text.redWin}${statsText}`);
 }
 
 function update(dt) {
@@ -4418,7 +4790,7 @@ function update(dt) {
     updateFocusTargets(scaledDt);
     for (const unit of state.units) updateUnit(unit, scaledDt);
     resolveCrowding();
-    updateArrowTowers(scaledDt);
+    updateBuildings(scaledDt);
     updateProjectiles(scaledDt);
     updateSlimes(scaledDt);
     updateTornadoes(scaledDt);
@@ -4461,37 +4833,77 @@ function drawGround() {
   ctx.globalAlpha = 1;
 }
 
+function drawTerrains() {
+  for (const terrain of state.terrains) {
+    const colors = {
+      water: ["rgba(78, 168, 255, 0.38)", "#9bdcff"],
+      fire: ["rgba(255, 108, 54, 0.34)", "#ffcf5a"],
+      grass: ["rgba(92, 194, 92, 0.28)", "#b7f08a"],
+      high: ["rgba(190, 173, 124, 0.32)", "#f0dfae"],
+    };
+    const [fill, stroke] = colors[terrain.type] || colors.water;
+    ctx.save();
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(terrain.x, terrain.y, terrain.radius, terrain.radius * 0.58, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function drawWalls() {
   for (const wall of state.walls) {
     ctx.save();
     ctx.translate(wall.x, wall.y);
-    if (wall.type === "arrowTower") {
-      const r = 22;
-      ctx.fillStyle = wall.team === "red" ? "#5d352b" : "#4d3a24";
+    if (buildingTypes[wall.type]) {
+      const r = Math.max(wall.w, wall.h) / 2;
+      const buildingColors = {
+        arrowTower: ["#4d3a24", "#9f7245", "AT"],
+        cannonTower: ["#383834", "#777067", "CN"],
+        healTower: ["#24563c", "#68ce88", "+"],
+        frostTower: ["#26475f", "#86d8ff", "F"],
+        goldMine: ["#5c4722", "#e2b84f", "$"],
+      };
+      const [base, top, label] = buildingColors[wall.type] || buildingColors.arrowTower;
+      ctx.fillStyle = wall.team === "red" ? "#5d352b" : base;
       ctx.fillRect(-r * 0.58, -r * 0.15, r * 1.16, r * 1.18);
-      ctx.fillStyle = wall.team === "red" ? "#a96352" : "#9f7245";
+      ctx.fillStyle = wall.team === "red" ? "#a96352" : top;
       ctx.fillRect(-r * 0.78, -r * 0.66, r * 1.56, r * 0.5);
       ctx.fillStyle = "#2d2118";
       for (let i = -1; i <= 1; i += 1) {
         ctx.fillRect(i * r * 0.44 - r * 0.08, -r * 0.92, r * 0.16, r * 0.36);
       }
-      ctx.strokeStyle = "#f0d19a";
+      ctx.strokeStyle = wall.type === "frostTower" ? "#d9f6ff" : wall.type === "healTower" ? "#d4ffd8" : "#f0d19a";
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(-r * 0.58, -r * 0.34);
-      ctx.lineTo(r * 0.58, -r * 0.34);
+      ctx.moveTo(-r * 0.5, -r * 0.34);
+      ctx.lineTo(r * 0.5, -r * 0.34);
       ctx.moveTo(0, -r * 0.54);
-      ctx.lineTo(r * 0.86, -r * 0.54);
+      ctx.lineTo(wall.type === "healTower" || wall.type === "goldMine" ? 0 : r * 0.86, -r * 0.54);
       ctx.moveTo(0, -r * 0.38);
-      ctx.lineTo(r * 0.84, -r * 0.18);
+      ctx.lineTo(wall.type === "healTower" || wall.type === "goldMine" ? 0 : r * 0.84, -r * 0.18);
       ctx.stroke();
+      if (wall.type === "cannonTower") {
+        ctx.fillStyle = "#1e1d1b";
+        ctx.fillRect(r * 0.1, -r * 0.58, r * 0.85, r * 0.22);
+      }
       ctx.fillStyle = wall.team === "red" ? "#ffb1a8" : "#f7df9b";
-      ctx.beginPath();
-      ctx.moveTo(r * 1.05, -r * 0.54);
-      ctx.lineTo(r * 0.68, -r * 0.7);
-      ctx.lineTo(r * 0.74, -r * 0.38);
-      ctx.closePath();
-      ctx.fill();
+      if (wall.type === "arrowTower") {
+        ctx.beginPath();
+        ctx.moveTo(r * 1.05, -r * 0.54);
+        ctx.lineTo(r * 0.68, -r * 0.7);
+        ctx.lineTo(r * 0.74, -r * 0.38);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.fillStyle = "#fff4d0";
+      ctx.font = `${Math.max(12, r * 0.52)}px Arial`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, 0, r * 0.18);
       const health = Math.max(0, (wall.hp ?? wallMaxHp(wall)) / (wall.maxHp ?? wallMaxHp(wall)));
       ctx.globalAlpha = 0.9;
       ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
@@ -5490,7 +5902,7 @@ function drawUnitSkin(unit) {
 
 function drawProjectiles() {
   for (const projectile of state.projectiles) {
-    ctx.fillStyle = projectile.fireball ? "#ff5d2e" : projectile.applyBurn ? "#ff8a38" : projectile.applyFreeze ? "#9bdcff" : "#f2d27a";
+    ctx.fillStyle = projectile.color || (projectile.fireball ? "#ff5d2e" : projectile.applyBurn ? "#ff8a38" : projectile.applyFreeze ? "#9bdcff" : "#f2d27a");
     ctx.beginPath();
     ctx.arc(projectile.x, projectile.y, projectile.radius, 0, Math.PI * 2);
     ctx.fill();
@@ -5557,6 +5969,7 @@ function drawParticles() {
 
 function draw() {
   drawGround();
+  drawTerrains();
   drawSlimes();
   drawWalls();
   const sorted = [...state.units].sort((a, b) => a.y - b.y);
@@ -5578,21 +5991,39 @@ function updateUi() {
   wallToolBtn.classList.toggle("active", state.mapTool === "wall");
   thickWallToolBtn.classList.toggle("active", state.mapTool === "thickWall");
   arrowWallToolBtn.classList.toggle("active", state.mapTool === "arrowWall");
-  arrowTowerToolBtn.classList.toggle("active", state.mapTool === "arrowTower");
+  arrowTowerToolBtn.classList.toggle("active", false);
+  cannonTowerToolBtn.classList.toggle("active", false);
+  healTowerToolBtn.classList.toggle("active", false);
+  frostTowerToolBtn.classList.toggle("active", false);
+  goldMineToolBtn.classList.toggle("active", false);
+  waterToolBtn.classList.toggle("active", state.mapTool === "water");
+  fireTerrainToolBtn.classList.toggle("active", state.mapTool === "fire");
+  grassToolBtn.classList.toggle("active", state.mapTool === "grass");
+  highGroundToolBtn.classList.toggle("active", state.mapTool === "high");
+  eraseTerrainBtn.classList.toggle("active", state.mapTool === "eraseTerrain");
   commandToolBtn.classList.toggle("active", state.mapTool === "command");
   focusToolBtn.classList.toggle("active", state.mapTool === "focus");
   eraseWallBtn.classList.toggle("active", state.mapTool === "eraseWall");
   wallToolBtn.disabled = state.phase !== "setup";
   thickWallToolBtn.disabled = state.phase !== "setup";
   arrowWallToolBtn.disabled = state.phase !== "setup";
-  arrowTowerToolBtn.disabled = state.phase !== "setup";
+  arrowTowerToolBtn.disabled = true;
+  cannonTowerToolBtn.disabled = true;
+  healTowerToolBtn.disabled = true;
+  frostTowerToolBtn.disabled = true;
+  goldMineToolBtn.disabled = true;
+  waterToolBtn.disabled = state.phase !== "setup";
+  fireTerrainToolBtn.disabled = state.phase !== "setup";
+  grassToolBtn.disabled = state.phase !== "setup";
+  highGroundToolBtn.disabled = state.phase !== "setup";
+  eraseTerrainBtn.disabled = state.phase !== "setup";
   commandToolBtn.disabled = state.phase !== "battle";
   focusToolBtn.disabled = state.phase !== "battle";
   eraseWallBtn.disabled = state.phase !== "setup";
   clearWallsBtn.disabled = state.phase !== "setup" || state.walls.length === 0;
   blueTeamBtn.classList.toggle("active", state.placeTeam === "blue");
   redTeamBtn.classList.toggle("active", state.placeTeam === "red");
-  const canPickTeam = !state.challengeMode && (state.sandbox || Boolean(state.selectedItem) || state.mapTool === "command" || state.mapTool === "focus" || state.mapTool === "arrowTower");
+  const canPickTeam = !state.challengeMode && (state.sandbox || Boolean(state.selectedItem) || state.mapTool === "command" || state.mapTool === "focus");
   blueTeamBtn.disabled = !canPickTeam;
   redTeamBtn.disabled = state.challengeMode || !canPickTeam;
   sandboxToggle.checked = state.sandbox;
@@ -5626,12 +6057,14 @@ function updateUi() {
       const specialText = specials.length
         ? specials.map((special) => `${special.name}: ${special.ready ? "OK" : Math.max(0, special.cd || 0).toFixed(1)}`).join(" / ")
         : "B: -";
+      const build = controlledBuildName();
       controlName.textContent = `${text.controlSelected}: ${unit.name}`;
       controlCooldowns.innerHTML = `
         <span>HP ${Math.max(0, Math.ceil(unit.hp))}/${unit.maxHp}</span>
         <span>Space ${unit.cooldown <= 0 ? "OK" : unit.cooldown.toFixed(1)}</span>
         <span>V ${unit.secondAttack ? (unit.cooldown <= 0 ? "OK" : unit.cooldown.toFixed(1)) : "-"}</span>
         <span>B ${specialText}</span>
+        <span>O/P ${build.name} ${build.cost}</span>
       `;
       controlPanel?.classList.add("active");
     }
@@ -5659,10 +6092,11 @@ function renderUnitList() {
     unitList.appendChild(heading);
     for (const type of pack.types) {
       const display = displayType(type);
+      const level = state.upgrades[type.id] || 0;
       const button = document.createElement("button");
       button.className = `unit-card ${state.selected === type.id ? "selected" : ""}`;
       button.innerHTML = `
-        <span class="icon">${type.glyph}</span>
+        <span class="icon">${level ? `${type.glyph}+${level}` : type.glyph}</span>
         <span><b>${display.name}</b><small>${display.tag}</small></span>
         <span class="price">${type.price}</span>
       `;
@@ -5695,8 +6129,13 @@ canvas.addEventListener("pointerdown", (event) => {
     updateUi();
     return;
   }
-  if (state.phase === "setup" && state.mapTool === "arrowTower") {
-    addArrowTower(point);
+  if (state.phase === "setup" && terrainTypes[state.mapTool]) {
+    addTerrain(point, state.mapTool);
+    updateUi();
+    return;
+  }
+  if (state.phase === "setup" && state.mapTool === "eraseTerrain") {
+    eraseTerrain(point);
     updateUi();
     return;
   }
@@ -5792,6 +6231,22 @@ window.addEventListener("keydown", (event) => {
       controlledSpecialAttack(unit);
       event.preventDefault();
     }
+    return;
+  }
+  if (key === "o") {
+    const unit = controlledUnit();
+    if (unit && state.phase === "battle") {
+      cycleControlledBuild();
+      event.preventDefault();
+    }
+    return;
+  }
+  if (key === "p") {
+    const unit = controlledUnit();
+    if (unit && state.phase === "battle") {
+      buildControlledBuilding(unit);
+      event.preventDefault();
+    }
   }
 });
 
@@ -5812,6 +6267,9 @@ randomBtn.addEventListener("click", randomFormation);
 exportFormationBtn?.addEventListener("click", exportFormation);
 importFormationBtn?.addEventListener("click", importFormation);
 exitChallengeBtn?.addEventListener("click", exitChallengeMode);
+saveSlotBtns.forEach((button, index) => button?.addEventListener("click", () => saveFormationSlot(index + 1)));
+loadSlotBtns.forEach((button, index) => button?.addEventListener("click", () => loadFormationSlot(index + 1)));
+upgradeSelectedBtn?.addEventListener("click", upgradeSelectedUnitType);
 wallToolBtn.addEventListener("click", () => {
   if (state.phase !== "setup") return;
   state.mapTool = state.mapTool === "wall" ? null : "wall";
@@ -5840,13 +6298,39 @@ arrowWallToolBtn.addEventListener("click", () => {
   setToast(state.mapTool === "arrowWall" ? (state.language === "zh" ? "点一下起点，再点一下终点放透射墙" : "Click a start point, then an end point for an arrow wall") : (state.language === "zh" ? "透射墙工具关闭" : "Arrow wall tool off"));
 });
 arrowTowerToolBtn.addEventListener("click", () => {
-  if (state.phase !== "setup") return;
-  state.mapTool = state.mapTool === "arrowTower" ? null : "arrowTower";
-  state.wallStart = null;
-  state.pointer = null;
-  state.selectedItem = null;
-  updateUi();
-  setToast(state.mapTool === "arrowTower" ? (state.language === "zh" ? "点击地图放置箭塔" : "Click the map to place an arrow tower") : (state.language === "zh" ? "箭塔工具关闭" : "Arrow tower tool off"));
+  setToast(state.language === "zh" ? "建筑需要开战后控制兵种：O选择，P建造" : "Buildings are built by controlled units: O pick, P build");
+});
+[
+  [cannonTowerToolBtn, "cannonTower"],
+  [healTowerToolBtn, "healTower"],
+  [frostTowerToolBtn, "frostTower"],
+  [goldMineToolBtn, "goldMine"],
+  [waterToolBtn, "water"],
+  [fireTerrainToolBtn, "fire"],
+  [grassToolBtn, "grass"],
+  [highGroundToolBtn, "high"],
+  [eraseTerrainBtn, "eraseTerrain"],
+].forEach(([button, tool]) => {
+  button?.addEventListener("click", () => {
+    if (buildingTypes[tool]) {
+      setToast(state.language === "zh" ? "建筑需要开战后控制兵种：O选择，P建造" : "Buildings are built by controlled units: O pick, P build");
+      return;
+    }
+    if (state.phase !== "setup") return;
+    if (state.challengeMode && tool === "goldMine") {
+      setToast(state.language === "zh" ? "挑战模式不能使用金矿" : "Gold mines are disabled in challenge mode");
+      return;
+    }
+    state.mapTool = state.mapTool === tool ? null : tool;
+    state.wallStart = null;
+    state.pointer = null;
+    state.selectedItem = null;
+    updateUi();
+    const building = buildingTypes[tool];
+    const terrain = terrainTypes[tool];
+    const name = building ? (state.language === "zh" ? building.zh : building.name) : terrain ? (state.language === "zh" ? terrain.zh : terrain.name) : state.language === "zh" ? "删地形" : "Erase terrain";
+    setToast(state.mapTool === tool ? (state.language === "zh" ? `点击地图使用${name}` : `Click the map to use ${name}`) : (state.language === "zh" ? `${name}关闭` : `${name} off`));
+  });
 });
 commandToolBtn.addEventListener("click", () => {
   if (state.phase !== "battle") return;
@@ -5938,16 +6422,16 @@ sandboxToggle.addEventListener("change", () => {
 });
 blueTeamBtn.addEventListener("pointerdown", (event) => {
   event.preventDefault();
-  if (!state.sandbox && !state.selectedItem && state.mapTool !== "command" && state.mapTool !== "focus" && state.mapTool !== "arrowTower") return;
+  if (!state.sandbox && !state.selectedItem && state.mapTool !== "command" && state.mapTool !== "focus" && !buildingTypes[state.mapTool]) return;
   state.placeTeam = "blue";
-  setToast(state.mapTool === "focus" ? "Focus team: Blue" : state.mapTool === "command" ? "Command team: Blue" : state.mapTool === "arrowTower" ? "Arrow tower team: Blue" : state.selectedItem ? "Item team: Blue" : "Placing team: Blue");
+  setToast(state.mapTool === "focus" ? "Focus team: Blue" : state.mapTool === "command" ? "Command team: Blue" : buildingTypes[state.mapTool] ? "Building team: Blue" : state.selectedItem ? "Item team: Blue" : "Placing team: Blue");
   updateUi();
 });
 redTeamBtn.addEventListener("pointerdown", (event) => {
   event.preventDefault();
-  if (!state.sandbox && !state.selectedItem && state.mapTool !== "command" && state.mapTool !== "focus" && state.mapTool !== "arrowTower") return;
+  if (!state.sandbox && !state.selectedItem && state.mapTool !== "command" && state.mapTool !== "focus" && !buildingTypes[state.mapTool]) return;
   state.placeTeam = "red";
-  setToast(state.mapTool === "focus" ? "Focus team: Red" : state.mapTool === "command" ? "Command team: Red" : state.mapTool === "arrowTower" ? "Arrow tower team: Red" : state.selectedItem ? "Item team: Red" : "Placing team: Red");
+  setToast(state.mapTool === "focus" ? "Focus team: Red" : state.mapTool === "command" ? "Command team: Red" : buildingTypes[state.mapTool] ? "Building team: Red" : state.selectedItem ? "Item team: Red" : "Placing team: Red");
   updateUi();
 });
 customWeapon.addEventListener("change", () => {
