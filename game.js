@@ -160,6 +160,9 @@ const UNIT_PACK_2_IDS = new Set([
   "stormlancer",
   "whirlhammer",
   "zombie",
+  "coneheadzombie",
+  "bucketzombie",
+  "footballzombie",
   "sunflower",
   "peashooter",
   "repeater",
@@ -399,6 +402,9 @@ const translations = {
       stormlancer: ["风暴枪兵", "爆发远程"],
       whirlhammer: ["旋风重锤兵", "跃空重砸"],
       zombie: ["僵尸", "感染"],
+      coneheadzombie: ["路障僵尸", "高血感染"],
+      bucketzombie: ["铁桶僵尸", "重甲感染"],
+      footballzombie: ["橄榄球僵尸", "高速重甲"],
       sunflower: ["向日葵", "产金币"],
       peashooter: ["豌豆射手", "固定远程"],
       repeater: ["双发射手", "双发豌豆"],
@@ -617,6 +623,9 @@ const translations = {
       stormlancer: ["Storm Lancer", "Burst Shot"],
       whirlhammer: ["Whirl Hammer", "Sky Slam"],
       zombie: ["Zombie", "Infection"],
+      coneheadzombie: ["Conehead Zombie", "Tough Infection"],
+      bucketzombie: ["Bucket Zombie", "Armored Infection"],
+      footballzombie: ["Football Zombie", "Fast Heavy"],
       sunflower: ["Sunflower", "Gold Producer"],
       peashooter: ["Peashooter", "Rooted Ranged"],
       repeater: ["Repeater", "Double Pea"],
@@ -1422,6 +1431,57 @@ const unitTypes = [
     weapon: "club",
     skills: { infectTouch: true, infectSeconds: 10 },
     color: "#76b86d",
+  },
+  {
+    id: "coneheadzombie",
+    name: "Conehead Zombie",
+    tag: "Tough Infection",
+    glyph: "CZ",
+    price: 330,
+    hp: 243,
+    damage: 13,
+    range: 30,
+    speed: 34,
+    radius: 17,
+    cooldown: 0.9,
+    knockback: 2,
+    weapon: "club",
+    skills: { infectTouch: true, infectSeconds: 10 },
+    color: "#8aba64",
+  },
+  {
+    id: "bucketzombie",
+    name: "Bucket Zombie",
+    tag: "Armored Infection",
+    glyph: "BZ",
+    price: 480,
+    hp: 405,
+    damage: 14,
+    range: 30,
+    speed: 31,
+    radius: 18,
+    cooldown: 0.95,
+    knockback: 2.1,
+    weapon: "club",
+    skills: { infectTouch: true, infectSeconds: 10 },
+    color: "#6fa260",
+  },
+  {
+    id: "footballzombie",
+    name: "Football Zombie",
+    tag: "Fast Heavy",
+    glyph: "FZ",
+    price: 820,
+    hp: 675,
+    damage: 18,
+    range: 32,
+    speed: 72,
+    radius: 20,
+    cooldown: 0.72,
+    knockback: 3.2,
+    weapon: "club",
+    skills: { infectTouch: true, infectSeconds: 10 },
+    color: "#5f8f58",
   },
   {
     id: "sunflower",
@@ -5441,7 +5501,7 @@ function drawUnitSkin(unit) {
     ctx.arc(r * 0.28, -r * 0.12, r * 0.12, 0, Math.PI * 2);
     ctx.fill();
   }
-  if (unit.typeId === "zombie") {
+  if (unit.typeId === "zombie" || unit.typeId === "coneheadzombie" || unit.typeId === "bucketzombie" || unit.typeId === "footballzombie") {
     ctx.fillStyle = "#2d5b35";
     ctx.beginPath();
     ctx.arc(-r * 0.3, -r * 0.18, r * 0.12, 0, Math.PI * 2);
@@ -5461,6 +5521,45 @@ function drawUnitSkin(unit) {
     ctx.beginPath();
     ctx.arc(0, r * 0.34, r * 0.18, 0, Math.PI * 2);
     ctx.fill();
+    if (unit.typeId === "coneheadzombie") {
+      ctx.fillStyle = "#e8872f";
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.44, -r * 0.76);
+      ctx.lineTo(0, -r * 1.42);
+      ctx.lineTo(r * 0.44, -r * 0.76);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "#ffd37a";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    if (unit.typeId === "bucketzombie") {
+      ctx.fillStyle = "#9ca6ad";
+      ctx.fillRect(-r * 0.52, -r * 1.22, r * 1.04, r * 0.52);
+      ctx.strokeStyle = "#e7eef2";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(-r * 0.52, -r * 1.22, r * 1.04, r * 0.52);
+      ctx.fillStyle = "#5b646a";
+      ctx.fillRect(-r * 0.36, -r * 1.05, r * 0.72, r * 0.12);
+    }
+    if (unit.typeId === "footballzombie") {
+      ctx.fillStyle = "#202733";
+      ctx.beginPath();
+      ctx.arc(0, -r * 0.82, r * 0.56, Math.PI, Math.PI * 2);
+      ctx.lineTo(r * 0.52, -r * 0.64);
+      ctx.lineTo(-r * 0.52, -r * 0.64);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "#f4f7ff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.42, -r * 0.86);
+      ctx.lineTo(r * 0.42, -r * 0.86);
+      ctx.stroke();
+      ctx.fillStyle = "#1d2630";
+      ctx.fillRect(-r * 0.88, -r * 0.04, r * 0.36, r * 0.34);
+      ctx.fillRect(r * 0.52, -r * 0.04, r * 0.36, r * 0.34);
+    }
   }
   if (unit.typeId === "sunflower") {
     ctx.fillStyle = "#2f8f46";
