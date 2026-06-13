@@ -1517,7 +1517,7 @@ const unitTypes = [
     projectileSpeed: 0,
     weapon: "club",
     canAttackWalls: false,
-    skills: { rooted: true, chompBlast: true, chompDamage: 450, chompRange: 120, chompCooldown: 30 },
+    skills: { rooted: true, chompBlast: true, chompDamage: 450, chompRange: 120, chompTriggerRange: 80, chompCooldown: 30 },
     color: "#8b4bc1",
   },
   {
@@ -4262,11 +4262,16 @@ function updateUnit(unit, dt) {
   if (unit.skills.chompBlast) {
     unit.chompCooldown = Math.max(0, (unit.chompCooldown || 0) - dt);
     const radius = unit.skills.chompRange || 200;
-    const enemyNearby = state.units.some((other) => {
-      if (other.team === unit.team || other.dead || other.airborneTimer > 0) return false;
-      return Math.hypot(other.x - unit.x, other.y - unit.y) <= radius + other.radius;
-    });
-    if (enemyNearby && unit.chompCooldown <= 0) {
+    const triggerRadius = unit.skills.chompTriggerRange || Math.min(radius, 80);
+    let enemiesInBlast = 0;
+    let enemyClose = false;
+    for (const other of state.units) {
+      if (other.team === unit.team || other.dead || other.airborneTimer > 0) continue;
+      const distance = Math.hypot(other.x - unit.x, other.y - unit.y);
+      if (distance <= radius + other.radius) enemiesInBlast += 1;
+      if (distance <= triggerRadius + other.radius) enemyClose = true;
+    }
+    if ((enemyClose || enemiesInBlast >= 2) && unit.chompCooldown <= 0) {
       triggerChompBlast(unit);
     }
   }
