@@ -6198,6 +6198,11 @@ canvas.addEventListener("pointerdown", (event) => {
     return;
   }
   if (state.phase === "battle" && !state.selectedItem && !state.mapTool) {
+    if (state.controlBuildMode && event.button === 0) {
+      cycleControlledBuild();
+      updateUi();
+      return;
+    }
     const unit = nearestUnit(point, state.sandbox ? null : "blue");
     const text = translations[state.language] || translations.en;
     if (unit && Math.hypot(unit.x - point.x, unit.y - point.y) <= unit.radius + 18) {
