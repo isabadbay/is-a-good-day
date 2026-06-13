@@ -153,9 +153,10 @@ const UNIT_PACK_2_IDS = new Set([
   "peashooter",
   "repeater",
   "gatlingshooter",
+  "chomper",
 ]);
 
-const PLANT_TYPE_IDS = new Set(["sunflower", "peashooter", "repeater", "gatlingshooter"]);
+const PLANT_TYPE_IDS = new Set(["sunflower", "peashooter", "repeater", "gatlingshooter", "chomper"]);
 
 const INFECTABLE_TYPE_IDS = new Set([
   "clubber",
@@ -364,6 +365,7 @@ const translations = {
       peashooter: ["豌豆射手", "固定远程"],
       repeater: ["双发射手", "双发豌豆"],
       gatlingshooter: ["机枪射手", "狂暴扫射"],
+      chomper: ["大嘴花", "吞咬爆发"],
     },
     tags: {
       ranged: "远程",
@@ -569,6 +571,7 @@ const translations = {
       peashooter: ["Peashooter", "Rooted Ranged"],
       repeater: ["Repeater", "Double Pea"],
       gatlingshooter: ["Gatling Shooter", "Fan Barrage"],
+      chomper: ["Chomper", "Bite Blast"],
     },
     tags: {
       ranged: "Ranged",
@@ -675,9 +678,9 @@ const unitTypes = [
     name: "Clubber",
     tag: "Melee",
     glyph: "C",
-    price: 80,
-    hp: 74,
-    damage: 14,
+    price: 85,
+    hp: 86,
+    damage: 15,
     range: 34,
     speed: 52,
     radius: 15,
@@ -691,15 +694,16 @@ const unitTypes = [
     name: "Shield Guard",
     tag: "Tank",
     glyph: "S",
-    price: 130,
-    hp: 140,
-    damage: 9,
+    price: 155,
+    hp: 180,
+    damage: 10,
     range: 30,
     speed: 38,
     radius: 18,
     cooldown: 0.58,
     knockback: 1.9,
     weapon: "shield",
+    skills: { blockRangedChance: 0.55 },
     color: "#6fd4ff",
   },
   {
@@ -707,9 +711,9 @@ const unitTypes = [
     name: "Spearman",
     tag: "Pierce",
     glyph: "P",
-    price: 150,
-    hp: 86,
-    damage: 24,
+    price: 165,
+    hp: 96,
+    damage: 26,
     range: 58,
     speed: 46,
     radius: 15,
@@ -723,13 +727,13 @@ const unitTypes = [
     name: "Archer",
     tag: "Ranged",
     glyph: "A",
-    price: 170,
-    hp: 58,
-    damage: 17,
-    range: 220,
+    price: 185,
+    hp: 52,
+    damage: 14,
+    range: 205,
     speed: 34,
     radius: 14,
-    cooldown: 0.95,
+    cooldown: 1.08,
     projectileSpeed: 420,
     weapon: "bow",
     color: "#9fd7ff",
@@ -739,8 +743,8 @@ const unitTypes = [
     name: "Berserker",
     tag: "Fast",
     glyph: "B",
-    price: 115,
-    hp: 68,
+    price: 135,
+    hp: 76,
     damage: 18,
     range: 32,
     speed: 76,
@@ -755,9 +759,9 @@ const unitTypes = [
     name: "Hammerer",
     tag: "Knockback",
     glyph: "H",
-    price: 210,
-    hp: 130,
-    damage: 31,
+    price: 230,
+    hp: 155,
+    damage: 34,
     range: 38,
     speed: 34,
     radius: 19,
@@ -771,10 +775,10 @@ const unitTypes = [
     name: "Musketeer",
     tag: "Long Shot",
     glyph: "M",
-    price: 260,
-    hp: 64,
-    damage: 42,
-    range: 310,
+    price: 320,
+    hp: 58,
+    damage: 38,
+    range: 295,
     speed: 27,
     radius: 15,
     cooldown: 1.55,
@@ -787,7 +791,7 @@ const unitTypes = [
     name: "Cannoneer",
     tag: "Explosive",
     glyph: "K",
-    price: 420,
+    price: 500,
     hp: 115,
     damage: 46,
     range: 285,
@@ -804,16 +808,16 @@ const unitTypes = [
     name: "Knight",
     tag: "Armored",
     glyph: "N",
-    price: 240,
-    hp: 185,
-    damage: 24,
+    price: 285,
+    hp: 235,
+    damage: 27,
     range: 36,
     speed: 36,
     radius: 20,
     cooldown: 0.78,
     knockback: 2.6,
     weapon: "spear",
-    skills: { blockRangedChance: 0.28 },
+    skills: { blockRangedChance: 0.42 },
     color: "#6f9adf",
   },
   {
@@ -821,7 +825,7 @@ const unitTypes = [
     name: "Assassin",
     tag: "Dodger",
     glyph: "X",
-    price: 190,
+    price: 230,
     hp: 62,
     damage: 30,
     range: 34,
@@ -838,10 +842,10 @@ const unitTypes = [
     name: "Crossbowman",
     tag: "Piercing Shot",
     glyph: "R",
-    price: 230,
-    hp: 70,
-    damage: 32,
-    range: 260,
+    price: 290,
+    hp: 64,
+    damage: 28,
+    range: 245,
     speed: 30,
     radius: 15,
     cooldown: 1.15,
@@ -854,7 +858,7 @@ const unitTypes = [
     name: "Poisoner",
     tag: "Slime",
     glyph: "O",
-    price: 250,
+    price: 310,
     hp: 82,
     damage: 18,
     range: 205,
@@ -871,7 +875,7 @@ const unitTypes = [
     name: "Storm Caller",
     tag: "Tornado",
     glyph: "T",
-    price: 380,
+    price: 470,
     hp: 95,
     damage: 14,
     range: 240,
@@ -888,7 +892,7 @@ const unitTypes = [
     name: "Bomber",
     tag: "Death Blast",
     glyph: "D",
-    price: 280,
+    price: 340,
     hp: 92,
     damage: 16,
     range: 30,
@@ -905,9 +909,9 @@ const unitTypes = [
     name: "Giant",
     tag: "Heavy",
     glyph: "G",
-    price: 320,
-    hp: 250,
-    damage: 38,
+    price: 390,
+    hp: 340,
+    damage: 44,
     range: 42,
     speed: 28,
     radius: 25,
@@ -921,8 +925,8 @@ const unitTypes = [
     name: "War Wolf",
     tag: "Pounce",
     glyph: "W",
-    price: 145,
-    hp: 78,
+    price: 175,
+    hp: 86,
     damage: 21,
     range: 30,
     speed: 104,
@@ -938,8 +942,8 @@ const unitTypes = [
     name: "Slime Beast",
     tag: "Poison",
     glyph: "L",
-    price: 260,
-    hp: 165,
+    price: 330,
+    hp: 190,
     damage: 17,
     range: 34,
     speed: 33,
@@ -956,7 +960,7 @@ const unitTypes = [
     name: "Dragonling",
     tag: "Fire",
     glyph: "Y",
-    price: 330,
+    price: 420,
     hp: 120,
     damage: 27,
     range: 235,
@@ -1015,7 +1019,7 @@ const unitTypes = [
     name: "Blast Beast",
     tag: "Area",
     glyph: "F",
-    price: 430,
+    price: 520,
     hp: 180,
     damage: 38,
     range: 255,
@@ -1034,8 +1038,8 @@ const unitTypes = [
     name: "Paladin",
     tag: "Guard",
     glyph: "Q",
-    price: 360,
-    hp: 220,
+    price: 450,
+    hp: 270,
     damage: 28,
     range: 44,
     speed: 34,
@@ -1051,7 +1055,7 @@ const unitTypes = [
     name: "Plague Wizard",
     tag: "Poison Storm",
     glyph: "Z",
-    price: 470,
+    price: 580,
     hp: 92,
     damage: 18,
     range: 250,
@@ -1070,7 +1074,7 @@ const unitTypes = [
     name: "Frost Mage",
     tag: "Freeze",
     glyph: "I",
-    price: 310,
+    price: 380,
     hp: 72,
     damage: 16,
     range: 245,
@@ -1089,7 +1093,7 @@ const unitTypes = [
     name: "Necromancer",
     tag: "Summon",
     glyph: "V",
-    price: 390,
+    price: 480,
     hp: 86,
     damage: 21,
     range: 225,
@@ -1107,7 +1111,7 @@ const unitTypes = [
     name: "Banner Lord",
     tag: "Aura",
     glyph: "J",
-    price: 410,
+    price: 500,
     hp: 190,
     damage: 20,
     range: 42,
@@ -1124,7 +1128,7 @@ const unitTypes = [
     name: "Flame Knight",
     tag: "Fireball",
     glyph: "U",
-    price: 440,
+    price: 540,
     hp: 170,
     damage: 30,
     range: 48,
@@ -1143,9 +1147,9 @@ const unitTypes = [
     name: "Frost Giant",
     tag: "Freeze",
     glyph: "E",
-    price: 520,
-    hp: 310,
-    damage: 42,
+    price: 620,
+    hp: 520,
+    damage: 48,
     range: 50,
     speed: 22,
     radius: 27,
@@ -1153,7 +1157,7 @@ const unitTypes = [
     knockback: 4.1,
     weapon: "hammer",
     areaAttack: { range: 90, damage: 18 },
-    skills: { freezeAttack: true, damageAura: true, damageAuraRange: 95, damageAuraDamage: 6, blockRangedChance: 0.18 },
+    skills: { freezeAttack: true, damageAura: true, damageAuraRange: 105, damageAuraDamage: 7, blockRangedChance: 0.55 },
     color: "#9fd8ff",
   },
   {
@@ -1161,10 +1165,10 @@ const unitTypes = [
     name: "Sharpshooter",
     tag: "Snipe",
     glyph: "!",
-    price: 360,
+    price: 500,
     hp: 55,
-    damage: 66,
-    range: 360,
+    damage: 58,
+    range: 340,
     stopDistance: 270,
     speed: 26,
     radius: 14,
@@ -1180,7 +1184,7 @@ const unitTypes = [
     name: "Portal Mage",
     tag: "Spawner",
     glyph: "P+",
-    price: 560,
+    price: 720,
     hp: 95,
     damage: 12,
     range: 210,
@@ -1198,7 +1202,7 @@ const unitTypes = [
     name: "67",
     tag: "Stasis Gaze",
     glyph: "67",
-    price: 250,
+    price: 390,
     hp: 67,
     damage: 10,
     range: 42,
@@ -1215,7 +1219,7 @@ const unitTypes = [
     name: "Hydra Whelp",
     tag: "Triple Fire",
     glyph: "3H",
-    price: 520,
+    price: 660,
     hp: 210,
     damage: 18,
     range: 235,
@@ -1238,7 +1242,7 @@ const unitTypes = [
     name: "Void Binder",
     tag: "Stasis Spell",
     glyph: "VB",
-    price: 430,
+    price: 560,
     hp: 80,
     damage: 15,
     range: 255,
@@ -1256,8 +1260,8 @@ const unitTypes = [
     name: "Wall Crusher",
     tag: "Siege",
     glyph: "WC",
-    price: 460,
-    hp: 260,
+    price: 560,
+    hp: 310,
     damage: 54,
     range: 46,
     speed: 34,
@@ -1276,7 +1280,7 @@ const unitTypes = [
     name: "Phoenix Guard",
     tag: "Holy Fire",
     glyph: "PG",
-    price: 610,
+    price: 760,
     hp: 240,
     damage: 32,
     range: 52,
@@ -1295,7 +1299,7 @@ const unitTypes = [
     name: "Storm Lancer",
     tag: "Burst Shot",
     glyph: "SL",
-    price: 370,
+    price: 470,
     hp: 92,
     damage: 20,
     range: 285,
@@ -1316,7 +1320,7 @@ const unitTypes = [
     name: "Whirl Hammer",
     tag: "Sky Slam",
     glyph: "WH",
-    price: 520,
+    price: 680,
     hp: 190,
     damage: 34,
     range: 44,
@@ -1341,8 +1345,8 @@ const unitTypes = [
     name: "Zombie",
     tag: "Infection",
     glyph: "Z",
-    price: 160,
-    hp: 115,
+    price: 210,
+    hp: 135,
     damage: 13,
     range: 30,
     speed: 36,
@@ -1377,9 +1381,9 @@ const unitTypes = [
     name: "Peashooter",
     tag: "Rooted Ranged",
     glyph: "PS",
-    price: 180,
+    price: 240,
     hp: 70,
-    damage: 18,
+    damage: 16,
     range: 500000000,
     stopDistance: 500000000,
     speed: 0,
@@ -1396,9 +1400,9 @@ const unitTypes = [
     name: "Repeater",
     tag: "Double Pea",
     glyph: "RP",
-    price: 300,
+    price: 410,
     hp: 85,
-    damage: 18,
+    damage: 16,
     range: 500000000,
     stopDistance: 500000000,
     speed: 0,
@@ -1417,9 +1421,9 @@ const unitTypes = [
     name: "Gatling Shooter",
     tag: "Fan Barrage",
     glyph: "GS",
-    price: 550,
-    hp: 115,
-    damage: 9,
+    price: 950,
+    hp: 95,
+    damage: 6,
     range: 500000000,
     stopDistance: 500000000,
     speed: 0,
@@ -1430,6 +1434,25 @@ const unitTypes = [
     canAttackWalls: false,
     skills: { rooted: true, gatling: true, gatlingCheckInterval: 3 },
     color: "#5bd071",
+  },
+  {
+    id: "chomper",
+    name: "Chomper",
+    tag: "Bite Blast",
+    glyph: "CH",
+    price: 780,
+    hp: 220,
+    damage: 0,
+    range: 0,
+    stopDistance: 0,
+    speed: 0,
+    radius: 24,
+    cooldown: 999,
+    projectileSpeed: 0,
+    weapon: "club",
+    canAttackWalls: false,
+    skills: { rooted: true, chompBlast: true, chompDamage: 450, chompRange: 120, chompCooldown: 30 },
+    color: "#8b4bc1",
   },
 ];
 
@@ -1964,6 +1987,7 @@ function addUnit(typeId, team, x, y) {
     sunTimer: type.skills?.sunProducer ? type.skills.sunInterval || 5 : 0,
     gatlingBoosted: false,
     gatlingCheckTimer: type.skills?.gatling ? type.skills.gatlingCheckInterval || 3 : 0,
+    chompCooldown: type.skills?.chompBlast ? 1.2 : 0,
     stasisCooldown: 1 + Math.random() * 2,
     fireBreathCooldown: type.skills?.fireBreath ? 0.8 + Math.random() * 1.1 : 0,
     fireballCooldown: 1.5 + Math.random() * 2,
@@ -2994,6 +3018,7 @@ function randomFormation() {
     "peashooter",
     "repeater",
     "gatlingshooter",
+    "chomper",
   ];
   const team = state.sandbox ? state.placeTeam : "blue";
   let guard = 0;
@@ -3381,6 +3406,43 @@ function spawnRandomUnit(unit) {
   state.particles.push({ x, y, life: 0.9, startLife: 0.9, color: "#c48cff", size: 58 });
 }
 
+function triggerChompBlast(unit) {
+  const radius = unit.skills.chompRange || 200;
+  const damage = unit.skills.chompDamage || 450;
+  let hit = 0;
+  for (const other of state.units) {
+    if (other.team === unit.team || other.dead || other.airborneTimer > 0) continue;
+    const distance = Math.hypot(other.x - unit.x, other.y - unit.y);
+    if (distance > radius + other.radius) continue;
+    const falloff = Math.max(0.72, 1 - distance / Math.max(1, radius));
+    hurt(other, damage * falloff, {
+      x: unit.x,
+      y: unit.y,
+      knockback: 4.6,
+      ignoreDodge: true,
+      owner: unit,
+    });
+    hit += 1;
+  }
+  damageWallsAt(unit.x, unit.y, radius, damage * 0.18);
+  for (let i = 0; i < 36; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 80 + Math.random() * 260;
+    state.particles.push({
+      x: unit.x,
+      y: unit.y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.35 + Math.random() * 0.35,
+      startLife: 0.7,
+      color: Math.random() < 0.5 ? "#b05cff" : "#8cff8f",
+      size: 18 + Math.random() * 26,
+    });
+  }
+  addRingParticle(unit.x, unit.y, hit ? "#b05cff" : "#75d77a", radius);
+  unit.chompCooldown = unit.skills.chompCooldown || 30;
+}
+
 function canBeInfected(unit) {
   return !unit.dead && unit.typeId !== "zombie" && INFECTABLE_TYPE_IDS.has(unit.typeId);
 }
@@ -3747,6 +3809,17 @@ function updateUnit(unit, dt) {
           size: unit.gatlingBoosted ? 70 : 42,
         });
       }
+    }
+  }
+  if (unit.skills.chompBlast) {
+    unit.chompCooldown = Math.max(0, (unit.chompCooldown || 0) - dt);
+    const radius = unit.skills.chompRange || 200;
+    const enemyNearby = state.units.some((other) => {
+      if (other.team === unit.team || other.dead || other.airborneTimer > 0) return false;
+      return Math.hypot(other.x - unit.x, other.y - unit.y) <= radius + other.radius;
+    });
+    if (enemyNearby && unit.chompCooldown <= 0) {
+      triggerChompBlast(unit);
     }
   }
   if (unit.skills.sunProducer) {
@@ -4813,6 +4886,49 @@ function drawUnitSkin(unit) {
     ctx.beginPath();
     ctx.arc(-r * 0.14, -r * 0.42, r * 0.06, 0, Math.PI * 2);
     ctx.arc(r * 0.14, -r * 0.42, r * 0.06, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (unit.typeId === "chomper") {
+    ctx.fillStyle = "#2f8f46";
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.82, r * 0.56, r * 0.24, 0, 0, Math.PI * 2);
+    ctx.ellipse(-r * 0.5, r * 0.58, r * 0.36, r * 0.17, -0.7, 0, Math.PI * 2);
+    ctx.ellipse(r * 0.5, r * 0.58, r * 0.36, r * 0.17, 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#24673b";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(0, r * 0.68);
+    ctx.lineTo(0, -r * 0.08);
+    ctx.stroke();
+    if ((unit.chompCooldown || 0) <= 0.2) {
+      ctx.strokeStyle = "#b05cff";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, -r * 0.25, r * 1.18, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#7c3fb0";
+    ctx.beginPath();
+    ctx.ellipse(0, -r * 0.38, r * 0.78, r * 0.72, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#371542";
+    ctx.beginPath();
+    ctx.ellipse(r * 0.16, -r * 0.22, r * 0.54, r * 0.34, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f7f3d7";
+    for (let i = 0; i < 6; i += 1) {
+      const x = -r * 0.24 + i * r * 0.12;
+      ctx.beginPath();
+      ctx.moveTo(x, -r * 0.5);
+      ctx.lineTo(x + r * 0.05, -r * 0.22);
+      ctx.lineTo(x + r * 0.1, -r * 0.5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = "#f6d8ff";
+    ctx.beginPath();
+    ctx.arc(-r * 0.28, -r * 0.66, r * 0.09, 0, Math.PI * 2);
     ctx.fill();
   }
   if (unit.typeId === "peashooter" || unit.typeId === "repeater" || unit.typeId === "gatlingshooter") {
