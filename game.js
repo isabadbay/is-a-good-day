@@ -12,6 +12,7 @@ const controlName = document.querySelector("#controlName");
 const controlCooldowns = document.querySelector("#controlCooldowns");
 const controlBuildNextBtn = document.querySelector("#controlBuildNextBtn");
 const controlBuildPlaceBtn = document.querySelector("#controlBuildPlaceBtn");
+const controlDemolishBtn = document.querySelector("#controlDemolishBtn");
 const toast = document.querySelector("#toast");
 const startBtn = document.querySelector("#startBtn");
 const pauseBtn = document.querySelector("#pauseBtn");
@@ -236,6 +237,7 @@ const translations = {
     controlKeys: "WASD移动 / 空格攻击 / V第二攻击 / B特殊 / 字母O建造模式 / 右键放置",
     controlPickBuild: "切换建筑",
     controlBuild: "建造",
+    controlDemolish: "拆除",
     controlSelected: "正在操控",
     noControlTarget: "没有可操控兵种",
     noSpecialReady: "没有可用特殊技能",
@@ -458,6 +460,7 @@ const translations = {
     controlKeys: "WASD Move / Space Attack / V Second / B Skill / Letter O Build Mode / Right Click Place",
     controlPickBuild: "Pick Building",
     controlBuild: "Build",
+    controlDemolish: "Demolish",
     controlSelected: "Controlling",
     noControlTarget: "No controllable unit",
     noSpecialReady: "No special skill ready",
@@ -709,6 +712,7 @@ function applyLanguage(lang) {
   if (controlTitle) controlTitle.textContent = text.control;
   if (controlBuildNextBtn) controlBuildNextBtn.textContent = text.controlPickBuild;
   if (controlBuildPlaceBtn) controlBuildPlaceBtn.textContent = text.controlBuild;
+  if (controlDemolishBtn) controlDemolishBtn.textContent = text.controlDemolish;
   const rangeRows = document.querySelectorAll(".range-row");
   if (rangeRows[0]) rangeRows[0].childNodes[0].textContent = text.enemySize;
   if (rangeRows[1]) rangeRows[1].childNodes[0].textContent = text.speed;
@@ -3702,6 +3706,27 @@ function buildControlledBuilding(unit, force = false) {
   if (placed) unit.buildCooldown = 2;
 }
 
+function demolishControlledBuilding(unit) {
+  if (!unit || unit.dead || state.phase !== "battle") return;
+  let best = null;
+  let bestDistance = Infinity;
+  for (const wall of state.walls) {
+    if (!buildingTypes[wall.type] || wall.team !== unit.team) continue;
+    const distance = Math.hypot(wall.x - unit.x, wall.y - unit.y);
+    if (distance < bestDistance && distance <= 80 + unit.radius) {
+      best = wall;
+      bestDistance = distance;
+    }
+  }
+  if (!best) {
+    setToast(state.language === "zh" ? "附近没有自己的建筑" : "No friendly building nearby");
+    return;
+  }
+  state.walls = state.walls.filter((wall) => wall !== best);
+  state.particles.push({ x: best.x, y: best.y, life: 0.55, startLife: 0.55, color: "#d8d0a8", size: Math.max(best.w, best.h) * 1.5 });
+  setToast(state.language === "zh" ? "建筑已拆除" : "Building demolished");
+}
+
 function updateControlledUnit(unit, dt) {
   const up = state.controlKeys.w;
   const down = state.controlKeys.s;
@@ -6103,6 +6128,7 @@ function updateUi() {
         <span>B ${specialText}</span>
         <span>${state.language === "zh" ? "建造模式" : "Build mode"} ${state.controlBuildMode ? "ON" : "OFF"}: ${build.name} ${build.cost}</span>
         <span>${state.language === "zh" ? "建造冷却" : "Build CD"} ${(unit.buildCooldown || 0) <= 0 ? "OK" : unit.buildCooldown.toFixed(1)}</span>
+        <span>X ${state.language === "zh" ? "拆附近建筑" : "Demolish nearby"}</span>
       `;
       controlPanel?.classList.add("active");
     }
@@ -6303,6 +6329,14 @@ window.addEventListener("keydown", (event) => {
       buildControlledBuilding(unit);
       event.preventDefault();
     }
+    return;
+  }
+  if (key === "x") {
+    const unit = controlledUnit();
+    if (unit && state.phase === "battle") {
+      demolishControlledBuilding(unit);
+      event.preventDefault();
+    }
   }
 });
 
@@ -6332,6 +6366,11 @@ controlBuildNextBtn?.addEventListener("click", () => {
 controlBuildPlaceBtn?.addEventListener("click", () => {
   const unit = controlledUnit();
   if (unit && state.phase === "battle") buildControlledBuilding(unit, true);
+  else setToast((translations[state.language] || translations.en).controlEmpty);
+});
+controlDemolishBtn?.addEventListener("click", () => {
+  const unit = controlledUnit();
+  if (unit && state.phase === "battle") demolishControlledBuilding(unit);
   else setToast((translations[state.language] || translations.en).controlEmpty);
 });
 wallToolBtn.addEventListener("click", () => {
