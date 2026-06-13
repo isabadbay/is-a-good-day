@@ -153,9 +153,10 @@ const UNIT_PACK_2_IDS = new Set([
   "peashooter",
   "repeater",
   "gatlingshooter",
+  "chomper",
 ]);
 
-const PLANT_TYPE_IDS = new Set(["sunflower", "peashooter", "repeater", "gatlingshooter"]);
+const PLANT_TYPE_IDS = new Set(["sunflower", "peashooter", "repeater", "gatlingshooter", "chomper"]);
 
 const INFECTABLE_TYPE_IDS = new Set([
   "clubber",
@@ -364,6 +365,7 @@ const translations = {
       peashooter: ["豌豆射手", "固定远程"],
       repeater: ["双发射手", "双发豌豆"],
       gatlingshooter: ["机枪射手", "狂暴扫射"],
+      chomper: ["大嘴花", "吞咬爆发"],
     },
     tags: {
       ranged: "远程",
@@ -569,6 +571,7 @@ const translations = {
       peashooter: ["Peashooter", "Rooted Ranged"],
       repeater: ["Repeater", "Double Pea"],
       gatlingshooter: ["Gatling Shooter", "Fan Barrage"],
+      chomper: ["Chomper", "Bite Blast"],
     },
     tags: {
       ranged: "Ranged",
@@ -1431,6 +1434,25 @@ const unitTypes = [
     skills: { rooted: true, gatling: true, gatlingCheckInterval: 3 },
     color: "#5bd071",
   },
+  {
+    id: "chomper",
+    name: "Chomper",
+    tag: "Bite Blast",
+    glyph: "CH",
+    price: 650,
+    hp: 220,
+    damage: 0,
+    range: 0,
+    stopDistance: 0,
+    speed: 0,
+    radius: 24,
+    cooldown: 999,
+    projectileSpeed: 0,
+    weapon: "club",
+    canAttackWalls: false,
+    skills: { rooted: true, chompBlast: true, chompDamage: 450, chompRange: 200, chompCooldown: 30 },
+    color: "#8b4bc1",
+  },
 ];
 
 let customUnitCounter = 1;
@@ -1964,6 +1986,7 @@ function addUnit(typeId, team, x, y) {
     sunTimer: type.skills?.sunProducer ? type.skills.sunInterval || 5 : 0,
     gatlingBoosted: false,
     gatlingCheckTimer: type.skills?.gatling ? type.skills.gatlingCheckInterval || 3 : 0,
+    chompCooldown: type.skills?.chompBlast ? 1.2 : 0,
     stasisCooldown: 1 + Math.random() * 2,
     fireBreathCooldown: type.skills?.fireBreath ? 0.8 + Math.random() * 1.1 : 0,
     fireballCooldown: 1.5 + Math.random() * 2,
@@ -2994,6 +3017,7 @@ function randomFormation() {
     "peashooter",
     "repeater",
     "gatlingshooter",
+    "chomper",
   ];
   const team = state.sandbox ? state.placeTeam : "blue";
   let guard = 0;
@@ -3381,6 +3405,43 @@ function spawnRandomUnit(unit) {
   state.particles.push({ x, y, life: 0.9, startLife: 0.9, color: "#c48cff", size: 58 });
 }
 
+function triggerChompBlast(unit) {
+  const radius = unit.skills.chompRange || 200;
+  const damage = unit.skills.chompDamage || 450;
+  let hit = 0;
+  for (const other of state.units) {
+    if (other.team === unit.team || other.dead || other.airborneTimer > 0) continue;
+    const distance = Math.hypot(other.x - unit.x, other.y - unit.y);
+    if (distance > radius + other.radius) continue;
+    const falloff = Math.max(0.72, 1 - distance / Math.max(1, radius));
+    hurt(other, damage * falloff, {
+      x: unit.x,
+      y: unit.y,
+      knockback: 4.6,
+      ignoreDodge: true,
+      owner: unit,
+    });
+    hit += 1;
+  }
+  damageWallsAt(unit.x, unit.y, radius, damage * 0.18);
+  for (let i = 0; i < 36; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 80 + Math.random() * 260;
+    state.particles.push({
+      x: unit.x,
+      y: unit.y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.35 + Math.random() * 0.35,
+      startLife: 0.7,
+      color: Math.random() < 0.5 ? "#b05cff" : "#8cff8f",
+      size: 18 + Math.random() * 26,
+    });
+  }
+  addRingParticle(unit.x, unit.y, hit ? "#b05cff" : "#75d77a", radius);
+  unit.chompCooldown = unit.skills.chompCooldown || 30;
+}
+
 function canBeInfected(unit) {
   return !unit.dead && unit.typeId !== "zombie" && INFECTABLE_TYPE_IDS.has(unit.typeId);
 }
@@ -3747,6 +3808,17 @@ function updateUnit(unit, dt) {
           size: unit.gatlingBoosted ? 70 : 42,
         });
       }
+    }
+  }
+  if (unit.skills.chompBlast) {
+    unit.chompCooldown = Math.max(0, (unit.chompCooldown || 0) - dt);
+    const radius = unit.skills.chompRange || 200;
+    const enemyNearby = state.units.some((other) => {
+      if (other.team === unit.team || other.dead || other.airborneTimer > 0) return false;
+      return Math.hypot(other.x - unit.x, other.y - unit.y) <= radius + other.radius;
+    });
+    if (enemyNearby && unit.chompCooldown <= 0) {
+      triggerChompBlast(unit);
     }
   }
   if (unit.skills.sunProducer) {
@@ -4813,6 +4885,49 @@ function drawUnitSkin(unit) {
     ctx.beginPath();
     ctx.arc(-r * 0.14, -r * 0.42, r * 0.06, 0, Math.PI * 2);
     ctx.arc(r * 0.14, -r * 0.42, r * 0.06, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (unit.typeId === "chomper") {
+    ctx.fillStyle = "#2f8f46";
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.82, r * 0.56, r * 0.24, 0, 0, Math.PI * 2);
+    ctx.ellipse(-r * 0.5, r * 0.58, r * 0.36, r * 0.17, -0.7, 0, Math.PI * 2);
+    ctx.ellipse(r * 0.5, r * 0.58, r * 0.36, r * 0.17, 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#24673b";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(0, r * 0.68);
+    ctx.lineTo(0, -r * 0.08);
+    ctx.stroke();
+    if ((unit.chompCooldown || 0) <= 0.2) {
+      ctx.strokeStyle = "#b05cff";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, -r * 0.25, r * 1.18, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#7c3fb0";
+    ctx.beginPath();
+    ctx.ellipse(0, -r * 0.38, r * 0.78, r * 0.72, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#371542";
+    ctx.beginPath();
+    ctx.ellipse(r * 0.16, -r * 0.22, r * 0.54, r * 0.34, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f7f3d7";
+    for (let i = 0; i < 6; i += 1) {
+      const x = -r * 0.24 + i * r * 0.12;
+      ctx.beginPath();
+      ctx.moveTo(x, -r * 0.5);
+      ctx.lineTo(x + r * 0.05, -r * 0.22);
+      ctx.lineTo(x + r * 0.1, -r * 0.5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = "#f6d8ff";
+    ctx.beginPath();
+    ctx.arc(-r * 0.28, -r * 0.66, r * 0.09, 0, Math.PI * 2);
     ctx.fill();
   }
   if (unit.typeId === "peashooter" || unit.typeId === "repeater" || unit.typeId === "gatlingshooter") {
