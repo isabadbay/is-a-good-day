@@ -420,7 +420,8 @@ h1 {
 
 .battlefield-wrap {
   position: relative;
-  min-height: 420px;
+  aspect-ratio: 1280 / 760;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -517,6 +518,17 @@ canvas {
   color: var(--text);
   font-size: 12px;
   font-weight: 800;
+}
+
+.control-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.control-buttons button {
+  min-height: 38px;
 }
 
 .item-box {
@@ -633,7 +645,7 @@ input[type="range"] {
   }
 
   .battlefield-wrap {
-    min-height: 62vh;
+    min-height: 0;
     order: -1;
   }
 }

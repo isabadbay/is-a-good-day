@@ -10,6 +10,8 @@ const controlPanel = document.querySelector("#controlPanel");
 const controlTitle = document.querySelector("#controlTitle");
 const controlName = document.querySelector("#controlName");
 const controlCooldowns = document.querySelector("#controlCooldowns");
+const controlBuildNextBtn = document.querySelector("#controlBuildNextBtn");
+const controlBuildPlaceBtn = document.querySelector("#controlBuildPlaceBtn");
 const toast = document.querySelector("#toast");
 const startBtn = document.querySelector("#startBtn");
 const pauseBtn = document.querySelector("#pauseBtn");
@@ -231,7 +233,9 @@ const translations = {
     battle: "战况",
     control: "操控",
     controlEmpty: "战斗中点击兵种操控",
-    controlKeys: "WASD移动 / 空格攻击 / V第二攻击 / B特殊 / O选建筑 / P建造",
+    controlKeys: "WASD移动 / 空格攻击 / V第二攻击 / B特殊 / 字母O选建筑 / P建造",
+    controlPickBuild: "切换建筑",
+    controlBuild: "建造",
     controlSelected: "正在操控",
     noControlTarget: "没有可操控兵种",
     noSpecialReady: "没有可用特殊技能",
@@ -451,7 +455,9 @@ const translations = {
     battle: "Battle",
     control: "Control",
     controlEmpty: "Click a unit during battle",
-    controlKeys: "WASD Move / Space Attack / V Second / B Skill / O Pick Build / P Build",
+    controlKeys: "WASD Move / Space Attack / V Second / B Skill / Letter O Pick Build / P Build",
+    controlPickBuild: "Pick Building",
+    controlBuild: "Build",
     controlSelected: "Controlling",
     noControlTarget: "No controllable unit",
     noSpecialReady: "No special skill ready",
@@ -701,6 +707,8 @@ function applyLanguage(lang) {
   createCustomBtn.textContent = text.create;
   setText(".inspector .panel-title h2", text.battle);
   if (controlTitle) controlTitle.textContent = text.control;
+  if (controlBuildNextBtn) controlBuildNextBtn.textContent = text.controlPickBuild;
+  if (controlBuildPlaceBtn) controlBuildPlaceBtn.textContent = text.controlBuild;
   const rangeRows = document.querySelectorAll(".range-row");
   if (rangeRows[0]) rangeRows[0].childNodes[0].textContent = text.enemySize;
   if (rangeRows[1]) rangeRows[1].childNodes[0].textContent = text.speed;
@@ -6064,7 +6072,7 @@ function updateUi() {
         <span>Space ${unit.cooldown <= 0 ? "OK" : unit.cooldown.toFixed(1)}</span>
         <span>V ${unit.secondAttack ? (unit.cooldown <= 0 ? "OK" : unit.cooldown.toFixed(1)) : "-"}</span>
         <span>B ${specialText}</span>
-        <span>O/P ${build.name} ${build.cost}</span>
+        <span>字母O/P ${build.name} ${build.cost}</span>
       `;
       controlPanel?.classList.add("active");
     }
@@ -6270,6 +6278,16 @@ exitChallengeBtn?.addEventListener("click", exitChallengeMode);
 saveSlotBtns.forEach((button, index) => button?.addEventListener("click", () => saveFormationSlot(index + 1)));
 loadSlotBtns.forEach((button, index) => button?.addEventListener("click", () => loadFormationSlot(index + 1)));
 upgradeSelectedBtn?.addEventListener("click", upgradeSelectedUnitType);
+controlBuildNextBtn?.addEventListener("click", () => {
+  const unit = controlledUnit();
+  if (unit && state.phase === "battle") cycleControlledBuild();
+  else setToast((translations[state.language] || translations.en).controlEmpty);
+});
+controlBuildPlaceBtn?.addEventListener("click", () => {
+  const unit = controlledUnit();
+  if (unit && state.phase === "battle") buildControlledBuilding(unit);
+  else setToast((translations[state.language] || translations.en).controlEmpty);
+});
 wallToolBtn.addEventListener("click", () => {
   if (state.phase !== "setup") return;
   state.mapTool = state.mapTool === "wall" ? null : "wall";
