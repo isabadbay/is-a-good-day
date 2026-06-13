@@ -3,8 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>TABS Lite</title>
-    <link rel="stylesheet" href="./styles.css?v=20260612-plants" />
+    <link rel="stylesheet" href="./styles.css?v=20260613-challenge-lock" />
   </head>
   <body>
     <main class="app-shell">
@@ -45,6 +48,13 @@
             <span id="batchPlaceLabel">Place Count</span>
             <input id="batchPlaceCount" type="number" min="1" max="60" value="1" />
           </label>
+          <div class="share-tools">
+            <div class="share-actions">
+              <button id="exportFormationBtn">Export Formation</button>
+              <button id="importFormationBtn">Import Formation</button>
+            </div>
+            <textarea id="formationCode" rows="3" placeholder="Formation code"></textarea>
+          </div>
           <div class="map-tools">
             <button id="wallToolBtn">Wall</button>
             <button id="thickWallToolBtn">Thick Wall</button>
@@ -413,6 +423,6 @@
       </section>
     </main>
 
-    <script src="./game.js?v=20260612-plants"></script>
+    <script src="./game.js?v=20260613-challenge-lock"></script>
   </body>
 </html>
