@@ -2198,6 +2198,7 @@ function addUnit(typeId, team, x, y) {
     fireballCooldown: 1.5 + Math.random() * 2,
     randomSpawnCooldown: type.skills?.randomSpawn ? type.skills.randomSpawnInterval || 5 : 0,
     whirlwindCooldown: type.skills?.whirlwindLeap ? 1.2 + Math.random() * 1.8 : 0,
+    buildCooldown: 0,
     airborneTimer: 0,
     airborneTotal: 0,
     damageAuraPulse: 0,
@@ -3678,6 +3679,10 @@ function toggleControlledBuildMode() {
 
 function buildControlledBuilding(unit, force = false) {
   if (!unit || unit.dead || state.phase !== "battle") return;
+  if ((unit.buildCooldown || 0) > 0) {
+    setToast(state.language === "zh" ? `建造冷却中 ${unit.buildCooldown.toFixed(1)}秒` : `Build cooldown ${unit.buildCooldown.toFixed(1)}s`);
+    return;
+  }
   if (!force && !state.controlBuildMode) {
     setToast(state.language === "zh" ? "先按字母O开启建造模式" : "Press letter O to enter build mode first");
     return;
@@ -3693,7 +3698,8 @@ function buildControlledBuilding(unit, force = false) {
     x: unit.x + Math.cos(angle) * (unit.radius + 44),
     y: unit.y + Math.sin(angle) * (unit.radius + 44),
   };
-  addBuilding(point, build.id, { allowBattle: true, team: unit.team });
+  const placed = addBuilding(point, build.id, { allowBattle: true, team: unit.team });
+  if (placed) unit.buildCooldown = 2;
 }
 
 function updateControlledUnit(unit, dt) {
@@ -4178,6 +4184,7 @@ function updateUnit(unit, dt) {
   unit.fireballCooldown = Math.max(0, unit.fireballCooldown - dt);
   unit.randomSpawnCooldown = Math.max(0, unit.randomSpawnCooldown - dt);
   unit.whirlwindCooldown = Math.max(0, unit.whirlwindCooldown - dt);
+  unit.buildCooldown = Math.max(0, (unit.buildCooldown || 0) - dt);
   unit.wobble += dt * (5 + unit.speed / 25);
   updateBerserk(unit);
   if (!unit.dead && unit.poisonTimer > 0) {
@@ -6095,6 +6102,7 @@ function updateUi() {
         <span>V ${unit.secondAttack ? (unit.cooldown <= 0 ? "OK" : unit.cooldown.toFixed(1)) : "-"}</span>
         <span>B ${specialText}</span>
         <span>${state.language === "zh" ? "建造模式" : "Build mode"} ${state.controlBuildMode ? "ON" : "OFF"}: ${build.name} ${build.cost}</span>
+        <span>${state.language === "zh" ? "建造冷却" : "Build CD"} ${(unit.buildCooldown || 0) <= 0 ? "OK" : unit.buildCooldown.toFixed(1)}</span>
       `;
       controlPanel?.classList.add("active");
     }
