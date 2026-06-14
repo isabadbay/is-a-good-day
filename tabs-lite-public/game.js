@@ -1,7 +1,7 @@
 ﻿const canvas = document.querySelector("#battlefield");
 const ctx = canvas.getContext("2d");
 const tiamatSprite = new Image();
-tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-wing-clean-1";
+tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-breath-buff-1";
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
@@ -1107,7 +1107,7 @@ const unitTypes = [
     damage: 170,
     range: 135,
     stopDistance: 90,
-    speed: 1100,
+    speed: 800,
     radius: 56,
     cooldown: 0.78,
     projectileSpeed: 0,
@@ -1121,7 +1121,7 @@ const unitTypes = [
       fireBreath: true,
       fireball: false,
       fireballDamage: 160,
-      fireRange: 230,
+      fireRange: 330,
       fireDuration: 7,
       damageAura: true,
       damageAuraRange: 160,
@@ -1133,6 +1133,7 @@ const unitTypes = [
       defenseLossHp: 100,
       hitSpeedBoost: 10,
       knockbackImmune: true,
+      forceKnockback: true,
       berserkHp: 3000,
       berserkDamage: 0.85,
       berserkHeal: 420,
@@ -3329,9 +3330,9 @@ function empowerDragonMinion(unit, source) {
     ...unit.skills,
     fiveElementBreath: true,
     fiveElementBreathDamage: unit.typeId === "adultdragon" ? 140 : 70,
-    fiveElementBreathRange: unit.typeId === "adultdragon" ? 250 : 175,
+    fiveElementBreathRange: unit.typeId === "adultdragon" ? 330 : 240,
   };
-  unit.fiveElementBreathCooldown = 1.5 + Math.random() * 2;
+  unit.fiveElementBreathCooldown = 0.8 + Math.random() * 1.4;
   unit.summonedByTiamat = true;
   unit.vx += (unit.x - source.x) * 0.8;
   unit.vy += (unit.y - source.y) * 0.8;
@@ -3360,9 +3361,9 @@ function tiamatElementBreath(unit, enemies) {
     { id: "lightning", color: "#d7ecff" },
     { id: "acid", color: "#b8ff5a" },
   ][Math.floor(Math.random() * 5)];
-  const range = element.id === "fire" ? 430 : 360;
-  const width = element.id === "fire" ? 1.05 : 0.86;
-  for (let i = 0; i < 42; i += 1) {
+  const range = element.id === "fire" ? 620 : 540;
+  const width = element.id === "fire" ? 1.18 : 0.98;
+  for (let i = 0; i < 58; i += 1) {
     const spread = (Math.random() - 0.5) * width * 2;
     const distance = Math.random() * range;
     state.particles.push({
@@ -3492,37 +3493,37 @@ function updateTiamatDash(unit, dt) {
 function updateTiamatBoss(unit, dt) {
   if (updateTiamatDash(unit, dt)) return true;
   unit.tiamatMudTimer = Math.max(0, (unit.tiamatMudTimer || 0) - dt);
-  unit.tiamatBreathTimer = Math.max(0, (unit.tiamatBreathTimer || 1.2) - dt);
-  unit.tiamatGazeTimer = Math.max(0, (unit.tiamatGazeTimer || 5) - dt);
-  unit.tiamatSummonTimer = Math.max(0, (unit.tiamatSummonTimer || 8) - dt);
-  unit.tiamatElementBreathTimer = Math.max(0, (unit.tiamatElementBreathTimer || 3.5) - dt);
-  unit.tiamatDashCooldown = Math.max(0, (unit.tiamatDashCooldown || 4) - dt);
-  unit.tiamatCataclysmTimer = Math.max(0, (unit.tiamatCataclysmTimer || 9) - dt);
-  unit.tiamatTideTimer = Math.max(0, (unit.tiamatTideTimer || 13) - dt);
-  unit.tiamatBarrierCooldown = Math.max(0, (unit.tiamatBarrierCooldown || 17) - dt);
+  unit.tiamatBreathTimer = Math.max(0, (unit.tiamatBreathTimer || 0.8) - dt);
+  unit.tiamatGazeTimer = Math.max(0, (unit.tiamatGazeTimer || 4) - dt);
+  unit.tiamatSummonTimer = Math.max(0, (unit.tiamatSummonTimer || 7) - dt);
+  unit.tiamatElementBreathTimer = Math.max(0, (unit.tiamatElementBreathTimer || 2.5) - dt);
+  unit.tiamatDashCooldown = Math.max(0, (unit.tiamatDashCooldown || 3) - dt);
+  unit.tiamatCataclysmTimer = Math.max(0, (unit.tiamatCataclysmTimer || 8) - dt);
+  unit.tiamatTideTimer = Math.max(0, (unit.tiamatTideTimer || 12) - dt);
+  unit.tiamatBarrierCooldown = Math.max(0, (unit.tiamatBarrierCooldown || 16) - dt);
   unit.tiamatBarrierTimer = Math.max(0, (unit.tiamatBarrierTimer || 0) - dt);
   unit.tiamatTideActive = Math.max(0, (unit.tiamatTideActive || 0) - dt);
   unit.tiamatTideTick = Math.max(0, (unit.tiamatTideTick || 0) - dt);
   if (unit.tiamatMudTimer <= 0) {
     spawnChaosMud(unit.x + (Math.random() - 0.5) * 160, unit.y + (Math.random() - 0.5) * 120, unit.team);
-    unit.tiamatMudTimer = 2;
+    unit.tiamatMudTimer = 1.4;
   }
   const enemies = tiamatEnemies(unit);
   if (!enemies.length) return;
   if (unit.tiamatBarrierCooldown <= 0) {
     unit.tiamatBarrierTimer = unit.hp < unit.maxHp * 0.45 ? 6.5 : 4.8;
-    unit.tiamatBarrierCooldown = unit.hp < unit.maxHp * 0.45 ? 13 : 18;
+    unit.tiamatBarrierCooldown = unit.hp < unit.maxHp * 0.45 ? 12 : 17;
     addRingParticle(unit.x, unit.y, "#fff0a8", 190);
     state.particles.push({ x: unit.x, y: unit.y, life: 1, startLife: 1, color: "#c48cff", size: 210 });
   }
   if (unit.tiamatCataclysmTimer <= 0) {
     tiamatCataclysm(unit, enemies);
-    unit.tiamatCataclysmTimer = unit.hp < unit.maxHp * 0.45 ? 7.5 : 11;
+    unit.tiamatCataclysmTimer = unit.hp < unit.maxHp * 0.45 ? 6.5 : 10;
   }
   if (unit.tiamatTideTimer <= 0) {
     unit.tiamatTideActive = unit.hp < unit.maxHp * 0.45 ? 5.5 : 4;
     unit.tiamatTideTick = 0;
-    unit.tiamatTideTimer = unit.hp < unit.maxHp * 0.45 ? 15 : 19;
+    unit.tiamatTideTimer = unit.hp < unit.maxHp * 0.45 ? 14 : 18;
     spawnChaosMud(unit.x, unit.y, unit.team);
   }
   if (unit.tiamatTideActive > 0 && unit.tiamatTideTick <= 0) {
@@ -3531,11 +3532,11 @@ function updateTiamatBoss(unit, dt) {
   }
   if (unit.tiamatElementBreathTimer <= 0) {
     tiamatElementBreath(unit, enemies);
-    unit.tiamatElementBreathTimer = unit.hp < unit.maxHp * 0.45 ? 4.2 : 5.8;
+    unit.tiamatElementBreathTimer = unit.hp < unit.maxHp * 0.45 ? 3.2 : 4.8;
   }
   if (unit.tiamatDashCooldown <= 0) {
     startTiamatDash(unit, enemies);
-    unit.tiamatDashCooldown = unit.hp < unit.maxHp * 0.45 ? 4.8 : 6.2;
+    unit.tiamatDashCooldown = unit.hp < unit.maxHp * 0.45 ? 3.8 : 5.2;
     return true;
   }
   if (unit.tiamatBreathTimer <= 0) {
@@ -3560,7 +3561,7 @@ function updateTiamatBoss(unit, dt) {
       }
     });
     damageWallsAt(target.x, target.y, 120, 38);
-    unit.tiamatBreathTimer = unit.hp < unit.maxHp * 0.45 ? 2.6 : 3.8;
+    unit.tiamatBreathTimer = unit.hp < unit.maxHp * 0.45 ? 1.6 : 2.8;
   }
   if (unit.tiamatGazeTimer <= 0) {
     const byHp = [...enemies].sort((a, b) => a.hp - b.hp)[0];
@@ -3586,14 +3587,14 @@ function updateTiamatBoss(unit, dt) {
       });
       state.particles.push({ x: target.x, y: target.y, life: 0.9, startLife: 0.9, color: "#ff3b4f", size: 90 });
     }
-    unit.tiamatGazeTimer = 8;
+    unit.tiamatGazeTimer = 7;
   }
   if (unit.tiamatSummonTimer <= 0) {
     for (let i = 0; i < 5; i += 1) summonTiamatDragon(unit, "adultdragon", i, 5, 130);
     for (let i = 0; i < 25; i += 1) summonTiamatDragon(unit, "dragonling", i, 25, 205);
     state.particles.push({ x: unit.x, y: unit.y, life: 1.1, startLife: 1.1, color: "#c48cff", size: 260 });
     addRingParticle(unit.x, unit.y, "#c48cff", 230);
-    unit.tiamatSummonTimer = unit.hp < unit.maxHp * 0.45 ? 8 : 12;
+    unit.tiamatSummonTimer = unit.hp < unit.maxHp * 0.45 ? 7 : 11;
   }
 }
 
@@ -4557,7 +4558,8 @@ function hurt(target, amount, source) {
   target.hp -= amount;
   updateBerserk(target);
   const angle = Math.atan2(target.y - source.y, target.x - source.x);
-  const knockback = target.skills.knockbackImmune || source.noKnockback ? 0 : source.knockback || 2.3;
+  const forceKnockback = source.forceKnockback || source.skills?.forceKnockback || source.owner?.skills?.forceKnockback;
+  const knockback = (target.skills.knockbackImmune && !forceKnockback) || source.noKnockback ? 0 : source.knockback || 2.3;
   target.vx += Math.cos(angle) * amount * knockback;
   target.vy += Math.sin(angle) * amount * knockback;
   state.particles.push({ x: target.x, y: target.y, life: 0.45, color: target.team === "blue" ? "#78bbff" : "#ff8582" });
@@ -4570,7 +4572,7 @@ function hurt(target, amount, source) {
     if (killer && killer.statsKills !== undefined && killer !== target) killer.statsKills += 1;
     handleKillEffects(killer, target);
     if (target.skills.explode) explodeUnit(target);
-    if (!target.skills.knockbackImmune) {
+    if (!target.skills.knockbackImmune || forceKnockback) {
       target.vx += Math.cos(angle) * 120;
       target.vy += Math.sin(angle) * 120;
     }
@@ -4908,7 +4910,7 @@ function updateUnit(unit, dt) {
   }
   if (target.kind !== "wall" && unit.skills.fiveElementBreath && unit.fiveElementBreathCooldown <= 0 && distance <= (unit.skills.fiveElementBreathRange || 180)) {
     dragonFiveElementBreath(unit, target);
-    unit.fiveElementBreathCooldown = unit.typeId === "adultdragon" ? 5.5 : 6.8;
+    unit.fiveElementBreathCooldown = unit.typeId === "adultdragon" ? 4.5 : 5.8;
   }
   if (unit.skills.tornado && unit.tornadoCooldown <= 0) {
     spawnTornado(unit, target);
