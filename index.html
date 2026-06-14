@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>TABS Lite</title>
-    <link rel="stylesheet" href="./styles.css?v=20260614-level-clean-2" />
+    <link rel="stylesheet" href="./styles.css?v=20260614-mode-clean-4" />
   </head>
   <body>
     <section id="homeScreen" class="home-screen" aria-label="Mode select">
@@ -55,23 +55,23 @@
 
       <section class="game-layout">
         <aside class="panel roster" aria-label="Unit selection">
-          <div class="panel-title">
+          <div class="panel-title level-only-hidden">
             <h2>Units</h2>
             <span id="budgetText">Gold 900</span>
           </div>
-          <label class="toggle-row">
+          <label class="toggle-row level-only-hidden">
             <input id="sandboxToggle" type="checkbox" />
             Sandbox
           </label>
-          <div class="team-picker" aria-label="Placement team">
+          <div class="team-picker level-only-hidden" aria-label="Placement team">
             <button id="blueTeamBtn" class="active" data-team="blue">Blue</button>
             <button id="redTeamBtn" data-team="red">Red</button>
           </div>
-          <label class="placement-batch">
+          <label class="placement-batch level-only-hidden">
             <span id="batchPlaceLabel">Place Count</span>
             <input id="batchPlaceCount" type="number" min="1" max="60" value="1" />
           </label>
-          <div class="share-tools">
+          <div class="share-tools level-only-hidden">
             <div class="share-actions">
               <button id="exportFormationBtn">Export Formation</button>
               <button id="importFormationBtn">Import Formation</button>
@@ -86,7 +86,7 @@
             </div>
             <textarea id="formationCode" rows="3" placeholder="Formation code"></textarea>
           </div>
-          <div class="map-tools">
+          <div class="map-tools level-only-hidden">
             <button id="wallToolBtn">Wall</button>
             <button id="thickWallToolBtn">Thick Wall</button>
             <button id="arrowWallToolBtn">Arrow Wall</button>
@@ -455,7 +455,7 @@
               </button>
             </div>
           </div>
-          <label class="range-row enemy-size-row">
+          <label class="range-row enemy-size-row level-only-hidden">
             <span id="enemySizeLabelText">Enemy Size</span>
             <input id="enemySlider" type="range" min="4" max="18" value="9" />
           </label>
@@ -472,6 +472,6 @@
       </section>
     </main>
 
-    <script src="./game.js?v=20260614-level-clean-2"></script>
+    <script src="./game.js?v=20260614-mode-clean-4"></script>
   </body>
 </html>

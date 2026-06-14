@@ -316,6 +316,12 @@ body.level-clean .map-tools {
   display: none !important;
 }
 
+body[data-mode="levels"] .level-only-hidden,
+.level-clean .level-only-hidden,
+body.level-clean .level-only-hidden {
+  display: none !important;
+}
+
 .level-clean .roster {
   padding-top: 10px;
 }
@@ -702,13 +708,17 @@ canvas {
 }
 
 .level-tools {
-  display: grid;
+  display: none;
   gap: 10px;
   margin-top: 14px;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
+}
+
+body[data-mode="levels"] .level-tools {
+  display: grid;
 }
 
 .level-tools .range-row {

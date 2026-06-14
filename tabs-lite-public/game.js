@@ -823,6 +823,7 @@ function syncLanguage() {
 function showHome() {
   homeScreen?.classList.remove("home-hidden");
   appShell?.classList.add("app-hidden");
+  document.body.dataset.mode = "home";
 }
 
 function showGame() {
@@ -2934,18 +2935,20 @@ function exitChallengeMode() {
 }
 
 function enterSandboxMode() {
-  showGame();
+  document.body.dataset.mode = "sandbox";
   resetGame(false);
   state.sandbox = true;
   state.challengeMode = false;
   state.levelMode = false;
   state.currentLevel = 0;
   state.placeTeam = "blue";
+  showGame();
   updateUi();
   setToast(state.language === "zh" ? "沙盒模式：无限金币，可以放红队和蓝队" : "Sandbox: infinite gold, red and blue placement enabled");
 }
 
 function enterLevelsMode() {
+  document.body.dataset.mode = "levels";
   showGame();
   const selectedLevel = Number(levelSelect?.value) || state.currentLevel || 1;
   const levelNumber = selectedLevel > state.unlockedLevel ? state.unlockedLevel : selectedLevel;
@@ -7307,11 +7310,16 @@ function updateUi() {
   const levelClean = state.levelMode && !state.sandbox;
   appShell?.classList.toggle("level-clean", levelClean);
   document.body.classList.toggle("level-clean", levelClean);
+  if (levelClean) document.body.dataset.mode = "levels";
+  else if (state.sandbox) document.body.dataset.mode = "sandbox";
   document
-    .querySelectorAll(".roster .panel-title, .roster > .toggle-row, .team-picker, .placement-batch, .share-tools, .map-tools, .enemy-size-row")
+    .querySelectorAll(".level-only-hidden, .roster .panel-title, .roster > .toggle-row, .team-picker, .placement-batch, .share-tools, .map-tools, .enemy-size-row")
     .forEach((node) => {
       node.hidden = levelClean;
     });
+  document.querySelectorAll(".level-tools").forEach((node) => {
+    node.hidden = !levelClean;
+  });
   budgetText.textContent = state.sandbox ? text.infiniteMoney : `${text.budget} ${state.budget}`;
   blueCount.textContent = state.units.filter((unit) => unit.team === "blue" && !unit.dead).length;
   redCount.textContent = state.units.filter((unit) => unit.team === "red" && !unit.dead).length;
