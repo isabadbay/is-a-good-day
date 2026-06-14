@@ -1,7 +1,7 @@
 ﻿const canvas = document.querySelector("#battlefield");
 const ctx = canvas.getContext("2d");
 const tiamatSprite = new Image();
-tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-breath-buff-1";
+tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-normal-wobble-1";
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
@@ -4710,7 +4710,7 @@ function updateUnit(unit, dt) {
   unit.randomSpawnCooldown = Math.max(0, unit.randomSpawnCooldown - dt);
   unit.whirlwindCooldown = Math.max(0, unit.whirlwindCooldown - dt);
   unit.buildCooldown = Math.max(0, (unit.buildCooldown || 0) - dt);
-  unit.wobble += dt * (5 + unit.speed / 25);
+  unit.wobble += dt * (unit.typeId === "tiamat" ? 7 : 5 + unit.speed / 25);
   updateBerserk(unit);
   if (!unit.dead && unit.poisonTimer > 0) {
     unit.poisonTimer -= dt;
