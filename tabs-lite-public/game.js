@@ -1,7 +1,7 @@
 ﻿const canvas = document.querySelector("#battlefield");
 const ctx = canvas.getContext("2d");
 const tiamatSprite = new Image();
-tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-summon-vfx-1";
+tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-summon-lightning-1";
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
@@ -2922,6 +2922,22 @@ function spawnTiamatSummonEffect(unit) {
       color: colors[i],
       size: unit.radius * 1.2,
     });
+  }
+  for (let i = 0; i < 14; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const inner = unit.radius * (0.65 + Math.random() * 0.9);
+    const outer = unit.radius * (2.8 + Math.random() * 2.8);
+    const mid = unit.radius * (1.5 + Math.random() * 1.7);
+    const x1 = unit.x + Math.cos(angle) * inner;
+    const y1 = unit.y + Math.sin(angle) * inner;
+    const x2 = unit.x + Math.cos(angle + (Math.random() - 0.5) * 0.45) * mid;
+    const y2 = unit.y + Math.sin(angle + (Math.random() - 0.5) * 0.45) * mid;
+    const x3 = unit.x + Math.cos(angle + (Math.random() - 0.5) * 0.75) * outer;
+    const y3 = unit.y + Math.sin(angle + (Math.random() - 0.5) * 0.75) * outer;
+    const color = Math.random() < 0.5 ? "#d7ecff" : colors[i % colors.length];
+    state.particles.push({ x: x1, y: y1, x2, y2, life: 0.18 + Math.random() * 0.18, startLife: 0.36, color, line: true });
+    state.particles.push({ x: x2, y: y2, x2: x3, y2: y3, life: 0.18 + Math.random() * 0.18, startLife: 0.36, color, line: true });
+    state.particles.push({ x: x3, y: y3, life: 0.32, startLife: 0.32, color, size: 18 + Math.random() * 28 });
   }
 }
 
