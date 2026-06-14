@@ -12,6 +12,9 @@ const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
 const blueCount = document.querySelector("#blueCount");
 const redCount = document.querySelector("#redCount");
+const levelBudgetBox = document.querySelector("#levelBudgetBox");
+const levelBudgetLabel = document.querySelector("#levelBudgetLabel");
+const levelBudgetText = document.querySelector("#levelBudgetText");
 const phaseText = document.querySelector("#phaseText");
 const controlPanel = document.querySelector("#controlPanel");
 const controlTitle = document.querySelector("#controlTitle");
@@ -214,8 +217,8 @@ const levelDefinitions = [
 ];
 
 const levelUnitUnlocks = [
-  { maxLevel: 3, banned: ["adultdragon", "tiamat", "frostgiant", "giantzombie", "gatlingshooter", "chomper"] },
-  { maxLevel: 6, banned: ["adultdragon", "tiamat", "giantzombie", "gatlingshooter"] },
+  { maxLevel: 3, banned: ["dragonling", "adultdragon", "tiamat", "frostgiant", "giantzombie", "gatlingshooter", "chomper"] },
+  { maxLevel: 6, banned: ["dragonling", "adultdragon", "tiamat", "giantzombie", "gatlingshooter"] },
   { maxLevel: 8, banned: ["adultdragon", "tiamat", "giantzombie"] },
   { maxLevel: 9, banned: ["tiamat"] },
   { maxLevel: 10, banned: [] },
@@ -1121,9 +1124,9 @@ const unitTypes = [
     name: "Dragonling",
     tag: "Fire",
     glyph: "Y",
-    price: 420,
+    price: 620,
     hp: 120,
-    damage: 27,
+    damage: 22,
     range: 235,
     stopDistance: 165,
     speed: 44,
@@ -1131,9 +1134,9 @@ const unitTypes = [
     cooldown: 1.05,
     projectileSpeed: 420,
     weapon: "bow",
-    areaAttack: { range: 45, damage: 16 },
+    areaAttack: { range: 36, damage: 9 },
     secondAttack: { weapon: "club", range: 38, damage: 22, ranged: false, projectileSpeed: 0, splash: 0, cooldown: 0.72 },
-    skills: { fireBreath: true, fireball: true },
+    skills: { fireBreath: true, fireball: true, fireDuration: 2.2, fireRange: 72, fireballDamage: 30 },
     color: "#f47b55",
   },
   {
@@ -3446,7 +3449,7 @@ function castFireBreathAtPoint(unit, point, freeCast = false) {
     const delta = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - angle), Math.cos(Math.atan2(dy, dx) - angle)));
     if (delta <= width) damageWall(wall, Math.max(8, unit.damage * 0.22), closestX, closestY);
   }
-  if (!freeCast) unit.fireBreathCooldown = unit.typeId === "adultdragon" ? 2.6 : 3.4;
+  if (!freeCast) unit.fireBreathCooldown = unit.typeId === "adultdragon" ? 2.6 : unit.typeId === "dragonling" ? 5.2 : 3.4;
 }
 
 function holyShieldReduction(target) {
@@ -3825,17 +3828,19 @@ function updateTiamatBoss(unit, dt) {
 }
 
 function spawnTornado(unit, target) {
+  const baseRadius = unit.skills.tornadoRange || 82;
+  const poison = Boolean(unit.skills.poisonSlime);
   state.tornadoes.push({
     x: unit.x + (target.x - unit.x) * 0.35,
     y: unit.y + (target.y - unit.y) * 0.35,
     team: unit.team,
     vx: (target.x - unit.x) * 0.32,
     vy: (target.y - unit.y) * 0.32,
-    radius: unit.skills.tornadoRange || 82,
+    radius: poison ? baseRadius * 0.82 : baseRadius,
     damage: unit.skills.tornadoDamage || 6,
     spin: Math.random() < 0.5 ? -1 : 1,
-    life: unit.skills.tornadoDuration || 4.2,
-    poison: Boolean(unit.skills.poisonSlime),
+    life: (unit.skills.tornadoDuration || 4.2) * (poison ? 0.82 : 1),
+    poison,
   });
 }
 
@@ -4356,7 +4361,9 @@ function controlledRangedAttack(unit, mode) {
   const burstCount = Math.max(1, Math.floor(mode.burstCount || 1));
   unit.cooldown = burstCount > 1 && mode.burstCooldown > 0 ? mode.burstCooldown : mode.cooldown || unit.cooldownTime;
   if (unit.tiamatFrostTimer > 0) unit.cooldown *= 1.5;
-  const baseAngle = controlAimAngle(unit, Math.max(mode.range || unit.range || 280, 280));
+  const shotRange = Math.max(24, mode.range || unit.range || 280);
+  const burnDuration = unit.typeId === "dragonling" ? 1.6 : unit.skills.fireDuration || 5;
+  const baseAngle = controlAimAngle(unit, Math.max(shotRange, 280));
   unit.lastControlAngle = baseAngle;
   if (unit.skills.fireBreath) {
     castFireBreathAtPoint(unit, {
@@ -4384,10 +4391,10 @@ function controlledRangedAttack(unit, mode) {
       passWalls: unit.skills.rooted,
       continueOnTargetDeath: true,
       applyBurn: unit.skills.fireBreath,
-      fireDuration: unit.skills.fireDuration || 5,
+      fireDuration: burnDuration,
       applyFreeze: unit.skills.freezeAttack,
       damageType: unit.skills.fireBreath ? "fire" : unit.skills.freezeAttack ? "ice" : null,
-      life: mode.weapon === "musket" ? 0.9 : 1.8,
+      life: Math.max(0.08, shotRange / Math.max(1, mode.projectileSpeed)),
     });
   }
 }
@@ -5627,6 +5634,16 @@ function updateSlimes(dt) {
   state.slimes = state.slimes.filter((slime) => slime.life > 0);
 }
 
+function tornadoControlFactor(unit) {
+  let factor = 1;
+  factor *= clamp(22 / Math.max(10, unit.radius || 16), 0.18, 1);
+  factor *= clamp(180 / Math.max(60, unit.maxHp || 100), 0.2, 1);
+  if (unit.skills?.knockbackImmune) factor *= 0.08;
+  if (unit.skills?.tiamatBoss || unit.skills?.zombieBoss) factor *= 0.05;
+  if (unit.maxHp >= 500 || unit.radius >= 32) factor *= 0.45;
+  return clamp(factor, 0.03, 1);
+}
+
 function updateTornadoes(dt) {
   for (const tornado of state.tornadoes) {
     tornado.life -= dt;
@@ -5651,28 +5668,30 @@ function updateTornadoes(dt) {
       const effect = 1 - distance / (tornado.radius + unit.radius);
       const nx = dx / distance;
       const ny = dy / distance;
-      if (!unit.skills.knockbackImmune) {
+      const controlFactor = tornadoControlFactor(unit);
+      if (controlFactor > 0.04) {
         const edgePressure = Math.max(0, distance / tornado.radius - 0.62);
-        const pull = effect * 145 + edgePressure * 540;
-        const orbit = (0.35 + effect * 0.65) * 640 * tornado.spin;
+        const poisonFactor = tornado.poison ? 0.72 : 1;
+        const pull = (effect * 92 + edgePressure * 255) * controlFactor * poisonFactor;
+        const orbit = (0.28 + effect * 0.42) * 360 * tornado.spin * controlFactor * poisonFactor;
         const tx = -ny;
         const ty = nx;
         unit.vx += (dx / distance) * pull * dt;
         unit.vy += (dy / distance) * pull * dt;
         unit.vx += tx * orbit * dt;
         unit.vy += ty * orbit * dt;
-        const containment = 1 - Math.min(0.38, (0.12 + edgePressure * 0.38) * dt * 60);
+        const containment = 1 - Math.min(0.18, (0.045 + edgePressure * 0.18) * controlFactor * dt * 60);
         unit.vx *= containment;
         unit.vy *= containment;
-        const carry = 0.42 + effect * 0.28;
+        const carry = (0.18 + effect * 0.16) * controlFactor;
         unit.vx += tornado.vx * carry * 0.08;
         unit.vy += tornado.vy * carry * 0.08;
         unit.x += tornado.vx * carry * dt;
         unit.y += tornado.vy * carry * dt;
         const innerRadius = tornado.radius * 0.34;
         if (distance < innerRadius) {
-          unit.vx -= nx * 190 * dt;
-          unit.vy -= ny * 190 * dt;
+          unit.vx -= nx * 90 * controlFactor * dt;
+          unit.vy -= ny * 90 * controlFactor * dt;
         }
       }
       hurt(unit, (tornado.damage || 6) * dt, { x: tornado.x, y: tornado.y, knockback: 0.35, damageType: "tornado" });
@@ -7320,7 +7339,10 @@ function updateUi() {
   document.querySelectorAll(".level-tools").forEach((node) => {
     node.hidden = !levelClean;
   });
+  if (levelBudgetBox) levelBudgetBox.hidden = !levelClean;
   budgetText.textContent = state.sandbox ? text.infiniteMoney : `${text.budget} ${state.budget}`;
+  if (levelBudgetLabel) levelBudgetLabel.textContent = text.budget;
+  if (levelBudgetText) levelBudgetText.textContent = state.budget;
   blueCount.textContent = state.units.filter((unit) => unit.team === "blue" && !unit.dead).length;
   redCount.textContent = state.units.filter((unit) => unit.team === "red" && !unit.dead).length;
   const labels = { setup: text.setup, battle: text.fight, paused: text.paused, ended: text.ended };

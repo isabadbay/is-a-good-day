@@ -583,6 +583,28 @@ canvas {
   font-size: 28px;
 }
 
+.level-budget-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -4px 0 12px;
+  padding: 11px 12px;
+  border: 1px solid rgba(232, 189, 87, 0.42);
+  border-radius: 8px;
+  background: rgba(232, 189, 87, 0.12);
+}
+
+.level-budget-box span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.level-budget-box strong {
+  color: var(--gold);
+  font-size: 26px;
+}
+
 .control-panel {
   margin: 12px 0 14px;
   border: 1px solid var(--line);
