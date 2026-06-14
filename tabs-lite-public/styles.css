@@ -306,16 +306,23 @@ h1 {
 .level-clean .team-picker,
 .level-clean .placement-batch,
 .level-clean .share-tools,
-.level-clean .map-tools {
-  display: none;
+.level-clean .map-tools,
+body.level-clean .roster .panel-title,
+body.level-clean .roster > .toggle-row,
+body.level-clean .team-picker,
+body.level-clean .placement-batch,
+body.level-clean .share-tools,
+body.level-clean .map-tools {
+  display: none !important;
 }
 
 .level-clean .roster {
   padding-top: 10px;
 }
 
-.level-clean .enemy-size-row {
-  display: none;
+.level-clean .enemy-size-row,
+body.level-clean .enemy-size-row {
+  display: none !important;
 }
 
 .unit-list {

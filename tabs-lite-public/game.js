@@ -7304,7 +7304,14 @@ function draw() {
 
 function updateUi() {
   const text = translations[state.language] || translations.zh;
-  appShell?.classList.toggle("level-clean", state.levelMode);
+  const levelClean = state.levelMode && !state.sandbox;
+  appShell?.classList.toggle("level-clean", levelClean);
+  document.body.classList.toggle("level-clean", levelClean);
+  document
+    .querySelectorAll(".roster .panel-title, .roster > .toggle-row, .team-picker, .placement-batch, .share-tools, .map-tools, .enemy-size-row")
+    .forEach((node) => {
+      node.hidden = levelClean;
+    });
   budgetText.textContent = state.sandbox ? text.infiniteMoney : `${text.budget} ${state.budget}`;
   blueCount.textContent = state.units.filter((unit) => unit.team === "blue" && !unit.dead).length;
   redCount.textContent = state.units.filter((unit) => unit.team === "red" && !unit.dead).length;
