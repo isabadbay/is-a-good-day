@@ -1097,37 +1097,40 @@ const unitTypes = [
     name: "Tiamat",
     tag: "Fivefold Dragon God",
     glyph: "T5",
-    price: 6500,
-    hp: 5200,
-    damage: 86,
-    range: 330,
-    stopDistance: 235,
-    speed: 82,
+    price: 9000,
+    hp: 7600,
+    damage: 118,
+    range: 360,
+    stopDistance: 255,
+    speed: 95,
     radius: 56,
     cooldown: 1.25,
     projectileSpeed: 380,
-    splash: 130,
-    knockback: 16,
+    splash: 160,
+    knockback: 22,
     weapon: "cannon",
-    areaAttack: { range: 140, damage: 36 },
-    secondAttack: { weapon: "club", range: 105, damage: 110, ranged: false, projectileSpeed: 0, splash: 0, cooldown: 0.9 },
+    areaAttack: { range: 165, damage: 52 },
+    secondAttack: { weapon: "club", range: 120, damage: 150, ranged: false, projectileSpeed: 0, splash: 0, cooldown: 0.8 },
     skills: {
       tiamatBoss: true,
       fireBreath: true,
       fireball: true,
-      fireballDamage: 110,
-      fireRange: 180,
-      fireDuration: 6,
+      fireballDamage: 160,
+      fireRange: 230,
+      fireDuration: 7,
       damageAura: true,
-      damageAuraRange: 125,
-      damageAuraDamage: 12,
+      damageAuraRange: 160,
+      damageAuraDamage: 20,
       burnImmune: true,
       fireResist: 1,
-      magicResist: 0.9,
+      magicResist: 1,
+      defensePercent: 100,
+      defenseLossHp: 100,
+      hitSpeedBoost: 10,
       knockbackImmune: true,
-      berserkHp: 1800,
-      berserkDamage: 0.65,
-      berserkHeal: 250,
+      berserkHp: 3000,
+      berserkDamage: 0.85,
+      berserkHeal: 420,
     },
     color: "#6d2f69",
   },
@@ -2791,12 +2794,27 @@ function freezeUnit(unit, seconds = 2.4) {
   unit.freezeTimer = Math.max(unit.freezeTimer || 0, seconds);
 }
 
+function applyTiamatBurn(unit, dps = 50, seconds = 60) {
+  if (unit.dead || (unit.skills?.burnImmune && unit.typeId !== "adultdragon")) return;
+  unit.tiamatBurnTimer = Math.max(unit.tiamatBurnTimer || 0, seconds);
+  unit.tiamatBurnTick = Math.min(unit.tiamatBurnTick || 1, 1);
+  unit.tiamatBurnDps = Math.max(unit.tiamatBurnDps || 0, dps);
+}
+
+function applyTiamatFrost(unit, seconds = 60) {
+  if (unit.dead) return;
+  unit.tiamatFrostTimer = Math.max(unit.tiamatFrostTimer || 0, seconds);
+  unit.tiamatFrostTick = Math.min(unit.tiamatFrostTick || 1, 1);
+  freezeUnit(unit, seconds);
+}
+
 function isMagicOrPoisonDamage(source) {
   return (
     source.damageType === "poison" ||
     source.damageType === "tornado" ||
     source.damageType === "fire" ||
     source.damageType === "ice" ||
+    source.damageType === "magic" ||
     source.damageType === "fireball" ||
     source.applyBurn ||
     source.applyFreeze ||
@@ -2806,6 +2824,14 @@ function isMagicOrPoisonDamage(source) {
 
 function isFireDamage(source) {
   return source.damageType === "fire" || source.damageType === "fireball" || source.applyBurn || source.fireball;
+}
+
+function tiamatDefensePercent(unit) {
+  if (!unit.skills?.tiamatBoss) return 0;
+  const maxDefense = unit.skills.defensePercent ?? 0;
+  const lossHp = Math.max(1, unit.skills.defenseLossHp || 100);
+  const missingHp = Math.max(0, unit.maxHp - unit.hp);
+  return clamp(maxDefense - Math.floor(missingHp / lossHp), 0, maxDefense);
 }
 
 function itemTeam() {
@@ -3214,17 +3240,191 @@ function tiamatEnemies(unit) {
   return state.units.filter((other) => other.team !== unit.team && !other.dead && other.airborneTimer <= 0);
 }
 
+function tiamatCataclysm(unit, enemies) {
+  const elements = [
+    { color: "#ff7838", burn: true, type: "fireball" },
+    { color: "#9bdcff", freeze: true, type: "ice" },
+    { color: "#73e66e", poison: true, type: "poison" },
+    { color: "#d7ecff", stun: true, type: "lightning" },
+  ];
+  const strikes = Math.min(8, Math.max(4, enemies.length + 2));
+  for (let i = 0; i < strikes; i += 1) {
+    const target = enemies[Math.floor(Math.random() * enemies.length)];
+    const element = elements[i % elements.length];
+    const x = clamp(target.x + (Math.random() - 0.5) * 180, 24, canvas.width - 24);
+    const y = clamp(target.y + (Math.random() - 0.5) * 140, 24, canvas.height - 24);
+    state.projectiles.push({
+      x: x + (Math.random() - 0.5) * 120,
+      y: -40,
+      targetX: x,
+      targetY: y,
+      team: unit.team,
+      ownerId: unit.id,
+      damage: 185,
+      speed: 650,
+      splash: 120,
+      radius: 13,
+      itemFireball: true,
+      fireball: element.burn,
+      applyBurn: element.burn,
+      applyFreeze: element.freeze,
+      damageType: element.type,
+      color: element.color,
+      life: 2.3,
+    });
+    if (element.poison) spawnSlime(x, y, unit.team);
+    if (element.stun) state.particles.push({ x, y, life: 0.8, startLife: 0.8, color: "#d7ecff", size: 110 });
+    state.particles.push({ x, y, life: 0.9, startLife: 0.9, color: element.color, size: 85 });
+    damageWallsAt(x, y, 110, 42);
+  }
+}
+
+function tiamatChaosTide(unit, enemies) {
+  for (const other of enemies) {
+    hurt(other, 24, { x: unit.x, y: unit.y, owner: unit, ignoreDodge: true, noKnockback: true, damageType: "magic" });
+    if (Math.random() < 0.35) poisonUnit(other, 4);
+    if (Math.random() < 0.18) freezeUnit(other, 1.2);
+  }
+  addRingParticle(unit.x, unit.y, "#8f4cff", 260);
+  state.particles.push({ x: unit.x, y: unit.y, life: 0.75, startLife: 0.75, color: "#2b112f", size: 260 });
+}
+
+function tiamatElementBreath(unit, enemies) {
+  const target = enemies.reduce((best, other) => (Math.hypot(other.x - unit.x, other.y - unit.y) < Math.hypot(best.x - unit.x, best.y - unit.y) ? other : best), enemies[0]);
+  const baseAngle = Math.atan2(target.y - unit.y, target.x - unit.x);
+  const element = [
+    { id: "fire", color: "#ff5d2e" },
+    { id: "ice", color: "#9bdcff" },
+    { id: "poison", color: "#70e071" },
+    { id: "lightning", color: "#d7ecff" },
+    { id: "acid", color: "#b8ff5a" },
+  ][Math.floor(Math.random() * 5)];
+  const range = element.id === "fire" ? 430 : 360;
+  const width = element.id === "fire" ? 1.05 : 0.86;
+  for (let i = 0; i < 42; i += 1) {
+    const spread = (Math.random() - 0.5) * width * 2;
+    const distance = Math.random() * range;
+    state.particles.push({
+      x: unit.x + Math.cos(baseAngle + spread) * distance,
+      y: unit.y + Math.sin(baseAngle + spread) * distance,
+      vx: Math.cos(baseAngle + spread) * (80 + Math.random() * 120),
+      vy: Math.sin(baseAngle + spread) * (80 + Math.random() * 120),
+      life: 0.35 + Math.random() * 0.35,
+      startLife: 0.7,
+      color: element.color,
+      size: 22 + Math.random() * 28,
+    });
+  }
+  for (const other of enemies) {
+    const dx = other.x - unit.x;
+    const dy = other.y - unit.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance > range + other.radius || distance < 1) continue;
+    const delta = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - baseAngle), Math.cos(Math.atan2(dy, dx) - baseAngle)));
+    if (delta > width) continue;
+    hurt(other, 1000, {
+      x: unit.x,
+      y: unit.y,
+      owner: unit,
+      isRanged: true,
+      ignoreDodge: true,
+      noKnockback: element.id === "fire",
+      applyFreeze: element.id === "ice",
+      damageType: element.id === "fire" ? "fire" : element.id === "ice" ? "ice" : element.id === "poison" || element.id === "acid" ? "poison" : "magic",
+    });
+    if (element.id === "fire") applyTiamatBurn(other, other.typeId === "adultdragon" ? 10 : 50, 60);
+    if (element.id === "ice") applyTiamatFrost(other, 60);
+    if (element.id === "poison" || element.id === "acid") poisonUnit(other, 60);
+    if (element.id === "lightning") other.stasisTimer = Math.max(other.stasisTimer || 0, 2);
+  }
+  damageWallsAt(unit.x + Math.cos(baseAngle) * range * 0.55, unit.y + Math.sin(baseAngle) * range * 0.55, range * 0.32, 220);
+  addRingParticle(unit.x, unit.y, element.color, 170);
+}
+
+function startTiamatDash(unit, enemies) {
+  const target = enemies[Math.floor(Math.random() * enemies.length)];
+  unit.tiamatDashAngle = Math.atan2(target.y - unit.y, target.x - unit.x);
+  unit.tiamatDashTimer = 2.4;
+  unit.tiamatDashHitIds = [];
+  state.particles.push({ x: unit.x, y: unit.y, life: 0.8, startLife: 0.8, color: "#ffcf5f", size: 180 });
+}
+
+function updateTiamatDash(unit, dt) {
+  if (unit.tiamatDashTimer <= 0) return false;
+  unit.tiamatDashTimer = Math.max(0, unit.tiamatDashTimer - dt);
+  const angle = unit.tiamatDashAngle || 0;
+  const speed = 760;
+  unit.x += Math.cos(angle) * speed * dt;
+  unit.y += Math.sin(angle) * speed * dt;
+  unit.vx = Math.cos(angle) * 180;
+  unit.vy = Math.sin(angle) * 180;
+  const hitIds = unit.tiamatDashHitIds || [];
+  for (const other of state.units) {
+    if (other.team === unit.team || other.dead || hitIds.includes(other.id)) continue;
+    if (Math.hypot(other.x - unit.x, other.y - unit.y) <= unit.radius + other.radius + 42) {
+      hitIds.push(other.id);
+      hurt(other, 800, { x: unit.x, y: unit.y, owner: unit, ignoreDodge: true, knockback: 3.5 });
+    }
+  }
+  unit.tiamatDashHitIds = hitIds;
+  damageWallsAt(unit.x, unit.y, unit.radius + 44, 120);
+  if (Math.random() < dt * 26) state.particles.push({ x: unit.x, y: unit.y, life: 0.28, startLife: 0.28, color: "#c48cff", size: 54 });
+  const hitEdge = unit.x <= unit.radius || unit.x >= canvas.width - unit.radius || unit.y <= unit.radius || unit.y >= canvas.height - unit.radius;
+  unit.x = clamp(unit.x, unit.radius, canvas.width - unit.radius);
+  unit.y = clamp(unit.y, unit.radius, canvas.height - unit.radius);
+  if (hitEdge) unit.tiamatDashTimer = 0;
+  return true;
+}
+
 function updateTiamatBoss(unit, dt) {
+  if (updateTiamatDash(unit, dt)) return true;
   unit.tiamatMudTimer = Math.max(0, (unit.tiamatMudTimer || 0) - dt);
   unit.tiamatBreathTimer = Math.max(0, (unit.tiamatBreathTimer || 2.5) - dt);
   unit.tiamatGazeTimer = Math.max(0, (unit.tiamatGazeTimer || 5) - dt);
   unit.tiamatSummonTimer = Math.max(0, (unit.tiamatSummonTimer || 8) - dt);
+  unit.tiamatElementBreathTimer = Math.max(0, (unit.tiamatElementBreathTimer || 6) - dt);
+  unit.tiamatDashCooldown = Math.max(0, (unit.tiamatDashCooldown || 10) - dt);
+  unit.tiamatCataclysmTimer = Math.max(0, (unit.tiamatCataclysmTimer || 9) - dt);
+  unit.tiamatTideTimer = Math.max(0, (unit.tiamatTideTimer || 13) - dt);
+  unit.tiamatBarrierCooldown = Math.max(0, (unit.tiamatBarrierCooldown || 17) - dt);
+  unit.tiamatBarrierTimer = Math.max(0, (unit.tiamatBarrierTimer || 0) - dt);
+  unit.tiamatTideActive = Math.max(0, (unit.tiamatTideActive || 0) - dt);
+  unit.tiamatTideTick = Math.max(0, (unit.tiamatTideTick || 0) - dt);
   if (unit.tiamatMudTimer <= 0) {
     spawnChaosMud(unit.x + (Math.random() - 0.5) * 160, unit.y + (Math.random() - 0.5) * 120, unit.team);
     unit.tiamatMudTimer = 2;
   }
   const enemies = tiamatEnemies(unit);
   if (!enemies.length) return;
+  if (unit.tiamatBarrierCooldown <= 0) {
+    unit.tiamatBarrierTimer = unit.hp < unit.maxHp * 0.45 ? 6.5 : 4.8;
+    unit.tiamatBarrierCooldown = unit.hp < unit.maxHp * 0.45 ? 13 : 18;
+    addRingParticle(unit.x, unit.y, "#fff0a8", 190);
+    state.particles.push({ x: unit.x, y: unit.y, life: 1, startLife: 1, color: "#c48cff", size: 210 });
+  }
+  if (unit.tiamatCataclysmTimer <= 0) {
+    tiamatCataclysm(unit, enemies);
+    unit.tiamatCataclysmTimer = unit.hp < unit.maxHp * 0.45 ? 7.5 : 11;
+  }
+  if (unit.tiamatTideTimer <= 0) {
+    unit.tiamatTideActive = unit.hp < unit.maxHp * 0.45 ? 5.5 : 4;
+    unit.tiamatTideTick = 0;
+    unit.tiamatTideTimer = unit.hp < unit.maxHp * 0.45 ? 15 : 19;
+    spawnChaosMud(unit.x, unit.y, unit.team);
+  }
+  if (unit.tiamatTideActive > 0 && unit.tiamatTideTick <= 0) {
+    tiamatChaosTide(unit, enemies);
+    unit.tiamatTideTick = 0.8;
+  }
+  if (unit.tiamatElementBreathTimer <= 0) {
+    tiamatElementBreath(unit, enemies);
+    unit.tiamatElementBreathTimer = unit.hp < unit.maxHp * 0.45 ? 7 : 9.5;
+  }
+  if (unit.tiamatDashCooldown <= 0) {
+    startTiamatDash(unit, enemies);
+    unit.tiamatDashCooldown = unit.hp < unit.maxHp * 0.45 ? 9 : 13;
+    return true;
+  }
   if (unit.tiamatBreathTimer <= 0) {
     const target = enemies.reduce((best, other) => (Math.hypot(other.x - unit.x, other.y - unit.y) < Math.hypot(best.x - unit.x, best.y - unit.y) ? other : best), enemies[0]);
     const elements = [
@@ -3719,6 +3919,7 @@ function controlledSecondAttack(unit) {
 function controlledRangedAttack(unit, mode) {
   const burstCount = Math.max(1, Math.floor(mode.burstCount || 1));
   unit.cooldown = burstCount > 1 && mode.burstCooldown > 0 ? mode.burstCooldown : mode.cooldown || unit.cooldownTime;
+  if (unit.tiamatFrostTimer > 0) unit.cooldown *= 1.5;
   const baseAngle = controlAimAngle(unit, Math.max(mode.range || unit.range || 280, 280));
   unit.lastControlAngle = baseAngle;
   if (unit.skills.fireBreath) {
@@ -4221,6 +4422,23 @@ function hurt(target, amount, source) {
     amount *= 0.72;
     state.particles.push({ x: target.x, y: target.y, life: 0.38, color: "#c48cff", size: target.radius * 3 });
   }
+  if (target.skills.tiamatBoss && target.skills.defensePercent > 0 && !isMagicOrPoisonDamage(source)) {
+    const defensePercent = tiamatDefensePercent(target);
+    amount *= Math.max(0, 1 - defensePercent / 100);
+    if (defensePercent > 0) {
+      state.particles.push({ x: target.x, y: target.y, life: 0.45, color: amount > 0 ? "#ffcf5f" : "#d8d0a8", size: target.radius * (2.3 + defensePercent / 85) });
+    }
+    if (amount > 0) {
+      target.tiamatRageSpeedTimer = Math.max(target.tiamatRageSpeedTimer || 0, 1.7);
+    }
+  }
+  if (target.skills.tiamatBoss && target.tiamatBarrierTimer > 0) {
+    amount *= 0.38;
+    state.particles.push({ x: target.x, y: target.y, life: 0.55, color: "#fff0a8", size: target.radius * 3.4 });
+    if (!source.reflected && killer && killer !== target && !killer.dead && killer.hp > 0) {
+      hurt(killer, Math.max(8, amount * 0.45), { x: target.x, y: target.y, owner: target, ignoreDodge: true, noKnockback: true, damageType: "magic", reflected: true });
+    }
+  }
   if (source.applyBurn) burnUnit(target, source.fireDuration || 5);
   if (source.applyFreeze) freezeUnit(target, 2.4);
   if (killer && killer.statsDamage !== undefined && killer !== target) {
@@ -4263,6 +4481,7 @@ function attack(unit, target, mode = null) {
   };
   const burstCount = Math.max(1, Math.floor(active.burstCount || 1));
   unit.cooldown = burstCount > 1 && active.burstCooldown > 0 ? active.burstCooldown : active.cooldown || unit.cooldownTime;
+  if (unit.tiamatFrostTimer > 0) unit.cooldown *= 1.5;
   if (target.kind === "wall") {
     if (!canUnitDamageWall(unit, target.wall)) return;
     if (active.ranged && active.projectileSpeed) {
@@ -4398,7 +4617,26 @@ function updateUnit(unit, dt) {
       state.particles.push({ x: unit.x, y: unit.y, life: 0.4, color: "#ff8a38", size: 20 });
     }
   }
+  if (!unit.dead && unit.tiamatBurnTimer > 0) {
+    unit.tiamatBurnTimer -= dt;
+    unit.tiamatBurnTick -= dt;
+    if (unit.tiamatBurnTick <= 0) {
+      unit.tiamatBurnTick += 1;
+      hurt(unit, unit.tiamatBurnDps || 50, { x: unit.x - 1, y: unit.y, knockback: 0, ignoreDodge: true, noKnockback: true, damageType: "fire" });
+      state.particles.push({ x: unit.x, y: unit.y, life: 0.48, color: "#ff5d2e", size: 32 });
+    }
+  }
+  if (!unit.dead && unit.tiamatFrostTimer > 0) {
+    unit.tiamatFrostTimer -= dt;
+    unit.tiamatFrostTick -= dt;
+    if (unit.tiamatFrostTick <= 0) {
+      unit.tiamatFrostTick += 1;
+      hurt(unit, 35, { x: unit.x - 1, y: unit.y, knockback: 0, ignoreDodge: true, noKnockback: true, damageType: "ice" });
+      state.particles.push({ x: unit.x, y: unit.y, life: 0.48, color: "#9bdcff", size: 30 });
+    }
+  }
   unit.freezeTimer = Math.max(0, unit.freezeTimer - dt);
+  unit.tiamatRageSpeedTimer = Math.max(0, (unit.tiamatRageSpeedTimer || 0) - dt);
   if (!unit.dead && terrainAt(unit.x, unit.y, "fire")) {
     unit.terrainFireTick = (unit.terrainFireTick || 0) - dt;
     if (unit.terrainFireTick <= 0) {
@@ -4430,7 +4668,7 @@ function updateUnit(unit, dt) {
     return;
   }
   if (unit.skills.tiamatBoss) {
-    updateTiamatBoss(unit, dt);
+    if (updateTiamatBoss(unit, dt)) return;
   }
   if (unit.skills.gatling) {
     unit.gatlingCheckTimer = Math.max(0, (unit.gatlingCheckTimer || unit.skills.gatlingCheckInterval || 3) - dt);
@@ -4527,7 +4765,7 @@ function updateUnit(unit, dt) {
   if (command && !unit.skills.rooted) {
     const goal = wallAvoidancePoint(unit, command);
     const commandDistance = Math.hypot(goal.x - unit.x, goal.y - unit.y);
-    const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1) * terrainSpeedFactor(unit);
+    const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.tiamatFrostTimer > 0 ? 0.2 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1) * (unit.tiamatRageSpeedTimer > 0 ? unit.skills.hitSpeedBoost || 10 : 1) * terrainSpeedFactor(unit);
     if (commandDistance > unit.radius + 18) {
       const angle = Math.atan2(goal.y - unit.y, goal.x - unit.x);
       unit.vx += Math.cos(angle) * unit.speed * speedFactor * dt * 3.2;
@@ -4574,7 +4812,7 @@ function updateUnit(unit, dt) {
   const canSecondAttack = Boolean(second && secondEngagementDistance <= secondAttackDistance);
   const attackDistance = Math.max(primaryAttackDistance, secondAttackDistance);
   const stopDistance = isRanged ? unit.stopDistance : Math.min(unit.stopDistance, attackDistance);
-  const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1) * terrainSpeedFactor(unit);
+  const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.tiamatFrostTimer > 0 ? 0.2 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1) * (unit.tiamatRageSpeedTimer > 0 ? unit.skills.hitSpeedBoost || 10 : 1) * terrainSpeedFactor(unit);
   if (!unit.skills.rooted && engagementDistance > stopDistance) {
     unit.vx += Math.cos(angle) * unit.speed * speedFactor * dt * 2.8;
     unit.vy += Math.sin(angle) * unit.speed * speedFactor * dt * 2.8;
@@ -5292,6 +5530,21 @@ function drawUnit(unit) {
     ctx.stroke();
     ctx.restore();
   }
+  if (!unit.dead && unit.skills.tiamatBoss && unit.tiamatBarrierTimer > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.22 + Math.sin(performance.now() / 90) * 0.08;
+    ctx.fillStyle = "#fff0a8";
+    ctx.beginPath();
+    ctx.arc(0, 0, unit.radius + 34, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.78;
+    ctx.strokeStyle = "#c48cff";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(0, 0, unit.radius + 38, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
   ctx.fillStyle = unit.color;
   ctx.beginPath();
   ctx.arc(0, 0, unit.radius, 0, Math.PI * 2);
@@ -5951,78 +6204,201 @@ function drawUnitSkin(unit) {
     ctx.fill();
   }
   if (unit.typeId === "tiamat") {
-    ctx.fillStyle = "#211022";
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#170818";
     ctx.beginPath();
-    ctx.moveTo(-r * 2.55, -r * 0.1);
-    ctx.lineTo(-r * 0.76, -r * 1.42);
-    ctx.lineTo(-r * 0.34, r * 0.5);
+    ctx.moveTo(-r * 2.9, r * 0.15);
+    ctx.lineTo(-r * 0.95, -r * 1.18);
+    ctx.lineTo(-r * 0.42, r * 0.58);
     ctx.closePath();
-    ctx.moveTo(r * 2.55, -r * 0.1);
-    ctx.lineTo(r * 0.76, -r * 1.42);
-    ctx.lineTo(r * 0.34, r * 0.5);
+    ctx.moveTo(r * 2.9, r * 0.15);
+    ctx.lineTo(r * 0.95, -r * 1.18);
+    ctx.lineTo(r * 0.42, r * 0.58);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = "#c48cff";
-    ctx.lineWidth = 5;
+    ctx.fillStyle = "#2a0d2f";
     ctx.beginPath();
-    ctx.moveTo(-r * 2.02, -r * 0.16);
-    ctx.lineTo(-r * 0.66, -r * 0.86);
-    ctx.moveTo(r * 2.02, -r * 0.16);
-    ctx.lineTo(r * 0.66, -r * 0.86);
-    ctx.stroke();
-    ctx.strokeStyle = "#120812";
-    ctx.lineWidth = 9;
-    ctx.beginPath();
-    ctx.moveTo(0, r * 0.58);
-    ctx.quadraticCurveTo(-r * 0.88, r * 1.48, -r * 2.1, r * 0.98);
-    ctx.stroke();
-    ctx.fillStyle = "#2f1236";
-    ctx.beginPath();
-    ctx.ellipse(0, r * 0.04, r * 0.92, r * 1.12, 0, 0, Math.PI * 2);
+    ctx.moveTo(-r * 2.35, r * 0.05);
+    ctx.lineTo(-r * 1.05, -r * 0.68);
+    ctx.lineTo(-r * 0.55, r * 0.28);
+    ctx.closePath();
+    ctx.moveTo(r * 2.35, r * 0.05);
+    ctx.lineTo(r * 1.05, -r * 0.68);
+    ctx.lineTo(r * 0.55, r * 0.28);
+    ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = "#53306b";
+    ctx.strokeStyle = "#9b64ff";
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.ellipse(0, -r * 0.34, r * 0.62, r * 0.54, 0, 0, Math.PI * 2);
+    ctx.moveTo(-r * 2.34, r * 0.08);
+    ctx.lineTo(-r * 0.9, -r * 0.62);
+    ctx.moveTo(r * 2.34, r * 0.08);
+    ctx.lineTo(r * 0.9, -r * 0.62);
+    ctx.stroke();
+    ctx.strokeStyle = "#09040b";
+    ctx.lineWidth = 11;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.1, r * 0.82);
+    ctx.quadraticCurveTo(-r * 0.9, r * 1.38, -r * 2.42, r * 1.2);
+    ctx.stroke();
+    ctx.strokeStyle = "#211022";
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.1, r * 0.82);
+    ctx.quadraticCurveTo(-r * 0.9, r * 1.38, -r * 2.42, r * 1.2);
+    ctx.stroke();
+    ctx.fillStyle = "#31123b";
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.18, r * 0.88, r * 1.2, -0.08, 0, Math.PI * 2);
     ctx.fill();
+    ctx.fillStyle = "#5a3476";
+    ctx.beginPath();
+    ctx.ellipse(0, -r * 0.16, r * 0.54, r * 0.84, -0.08, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#1a081d";
+    ctx.lineWidth = 3;
+    for (let i = -2; i <= 2; i += 1) {
+      ctx.beginPath();
+      ctx.moveTo(i * r * 0.18, -r * 0.92);
+      ctx.lineTo(i * r * 0.1, r * 0.68);
+      ctx.stroke();
+    }
     const heads = [
-      { x: -0.92, y: -1.0, color: "#9bdcff" },
-      { x: -0.46, y: -1.22, color: "#6fe66d" },
-      { x: 0, y: -1.34, color: "#f4f0dc" },
-      { x: 0.46, y: -1.22, color: "#ff6b3a" },
-      { x: 0.92, y: -1.0, color: "#1c1c24" },
+      { x: -1.5, y: -1.02, neck: -0.56, color: "#15191f", horn: "#aeb3bd", eye: "#ff3b4f", dir: -1 },
+      { x: -0.75, y: -1.34, neck: -0.28, color: "#efe9c9", horn: "#fff4b8", eye: "#f0d65a", dir: -1 },
+      { x: 0, y: -1.58, neck: 0, color: "#1499a6", horn: "#bffcff", eye: "#62fff1", dir: 1 },
+      { x: 0.76, y: -1.34, neck: 0.28, color: "#ff6429", horn: "#ffd083", eye: "#ffcf5f", dir: 1 },
+      { x: 1.52, y: -1.02, neck: 0.56, color: "#4bc85e", horn: "#c8ffd8", eye: "#92ff8d", dir: 1 },
     ];
     for (const head of heads) {
       ctx.strokeStyle = "#120812";
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 9;
       ctx.beginPath();
-      ctx.moveTo(0, -r * 0.62);
-      ctx.lineTo(head.x * r, head.y * r);
+      ctx.moveTo(head.neck * r, -r * 0.46);
+      ctx.quadraticCurveTo(head.x * r * 0.74, -r * 0.95, head.x * r, head.y * r);
       ctx.stroke();
+      ctx.strokeStyle = head.color;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(head.neck * r, -r * 0.46);
+      ctx.quadraticCurveTo(head.x * r * 0.74, -r * 0.95, head.x * r, head.y * r);
+      ctx.stroke();
+      const hx = head.x * r;
+      const hy = head.y * r;
+      const dir = head.dir;
+      ctx.fillStyle = head.color;
+      ctx.strokeStyle = "#09040b";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(hx - dir * r * 0.42, hy - r * 0.18);
+      ctx.lineTo(hx - dir * r * 0.22, hy - r * 0.44);
+      ctx.lineTo(hx + dir * r * 0.14, hy - r * 0.5);
+      ctx.lineTo(hx + dir * r * 0.42, hy - r * 0.26);
+      ctx.lineTo(hx + dir * r * 0.66, hy - r * 0.06);
+      ctx.lineTo(hx + dir * r * 0.5, hy + r * 0.14);
+      ctx.lineTo(hx + dir * r * 0.12, hy + r * 0.22);
+      ctx.lineTo(hx - dir * r * 0.18, hy + r * 0.36);
+      ctx.lineTo(hx - dir * r * 0.32, hy + r * 0.08);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "rgba(0, 0, 0, 0.16)";
+      ctx.beginPath();
+      ctx.moveTo(hx - dir * r * 0.18, hy + r * 0.02);
+      ctx.lineTo(hx + dir * r * 0.32, hy + r * 0.04);
+      ctx.lineTo(hx + dir * r * 0.08, hy + r * 0.18);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = head.horn;
+      ctx.beginPath();
+      ctx.moveTo(hx - dir * r * 0.18, hy - r * 0.35);
+      ctx.lineTo(hx - dir * r * 0.08, hy - r * 0.95);
+      ctx.lineTo(hx + dir * r * 0.02, hy - r * 0.34);
+      ctx.closePath();
+      ctx.moveTo(hx + dir * r * 0.12, hy - r * 0.36);
+      ctx.lineTo(hx + dir * r * 0.34, hy - r * 0.88);
+      ctx.lineTo(hx + dir * r * 0.3, hy - r * 0.28);
+      ctx.closePath();
+      ctx.fill();
       ctx.fillStyle = head.color;
       ctx.beginPath();
-      ctx.ellipse(head.x * r, head.y * r, r * 0.28, r * 0.22, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#fff0a8";
-      ctx.beginPath();
-      ctx.moveTo((head.x - 0.18) * r, (head.y - 0.18) * r);
-      ctx.lineTo((head.x - 0.08) * r, (head.y - 0.45) * r);
-      ctx.lineTo((head.x + 0.02) * r, (head.y - 0.16) * r);
+      ctx.moveTo(hx - dir * r * 0.34, hy - r * 0.16);
+      ctx.lineTo(hx - dir * r * 0.7, hy - r * 0.38);
+      ctx.lineTo(hx - dir * r * 0.48, hy - r * 0.02);
       ctx.closePath();
-      ctx.moveTo((head.x + 0.18) * r, (head.y - 0.18) * r);
-      ctx.lineTo((head.x + 0.08) * r, (head.y - 0.45) * r);
-      ctx.lineTo((head.x - 0.02) * r, (head.y - 0.16) * r);
+      ctx.moveTo(hx - dir * r * 0.3, hy + r * 0.06);
+      ctx.lineTo(hx - dir * r * 0.66, hy + r * 0.18);
+      ctx.lineTo(hx - dir * r * 0.36, hy + r * 0.24);
       ctx.closePath();
       ctx.fill();
-      ctx.fillStyle = head.color === "#1c1c24" ? "#ff3b4f" : "#120812";
+      ctx.fillStyle = head.eye;
       ctx.beginPath();
-      ctx.arc((head.x - 0.08) * r, (head.y - 0.02) * r, r * 0.035, 0, Math.PI * 2);
-      ctx.arc((head.x + 0.08) * r, (head.y - 0.02) * r, r * 0.035, 0, Math.PI * 2);
+      ctx.ellipse(hx + dir * r * 0.2, hy - r * 0.12, r * 0.075, r * 0.035, -dir * 0.35, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = "#09040b";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(hx + dir * r * 0.08, hy + r * 0.02);
+      ctx.lineTo(hx + dir * r * 0.52, hy + r * 0.02);
+      ctx.moveTo(hx + dir * r * 0.5, hy + r * 0.04);
+      ctx.lineTo(hx + dir * r * 0.6, hy + r * 0.01);
+      ctx.stroke();
     }
-    ctx.strokeStyle = "#8f4cff";
+    ctx.fillStyle = "#201026";
+    ctx.strokeStyle = "#09040b";
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(0, 0, r * 1.15, 0.15, Math.PI * 1.85);
+    ctx.moveTo(0, -r * 0.94);
+    ctx.lineTo(r * 0.46, -r * 0.62);
+    ctx.lineTo(r * 0.62, -r * 0.16);
+    ctx.lineTo(r * 0.42, r * 0.28);
+    ctx.lineTo(0, r * 0.62);
+    ctx.lineTo(-r * 0.42, r * 0.28);
+    ctx.lineTo(-r * 0.62, -r * 0.16);
+    ctx.lineTo(-r * 0.46, -r * 0.62);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#7b4fa8";
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 1.38);
+    ctx.lineTo(r * 0.14, -r * 0.82);
+    ctx.lineTo(0, -r * 0.94);
+    ctx.lineTo(-r * 0.14, -r * 0.82);
+    ctx.closePath();
+    ctx.moveTo(-r * 0.38, -r * 0.8);
+    ctx.lineTo(-r * 0.64, -r * 1.2);
+    ctx.lineTo(-r * 0.48, -r * 0.58);
+    ctx.closePath();
+    ctx.moveTo(r * 0.38, -r * 0.8);
+    ctx.lineTo(r * 0.64, -r * 1.2);
+    ctx.lineTo(r * 0.48, -r * 0.58);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#a868ff";
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.22, -r * 0.22, r * 0.11, r * 0.055, -0.2, 0, Math.PI * 2);
+    ctx.ellipse(r * 0.22, -r * 0.22, r * 0.11, r * 0.055, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#0b0510";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.34, r * 0.02);
+    ctx.lineTo(0, r * 0.22);
+    ctx.lineTo(r * 0.34, r * 0.02);
+    ctx.moveTo(-r * 0.26, r * 0.22);
+    ctx.lineTo(0, r * 0.44);
+    ctx.lineTo(r * 0.26, r * 0.22);
+    ctx.stroke();
+    ctx.fillStyle = "#120812";
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.62, r * 0.78, r * 0.22, r * 0.14, -0.25, 0, Math.PI * 2);
+    ctx.ellipse(r * 0.62, r * 0.78, r * 0.22, r * 0.14, 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#8f4cff";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, r * 0.1, r * 1.08, 0.1, Math.PI * 1.88);
     ctx.stroke();
   }
   if (unit.typeId === "firebeast") {
@@ -6336,6 +6712,8 @@ function drawBossHealthBar() {
   if (!bosses.length) return;
   const boss = bosses.sort((a, b) => b.maxHp - a.maxHp || b.hp - a.hp)[0];
   const health = clamp(boss.hp / boss.maxHp, 0, 1);
+  const defense = tiamatDefensePercent(boss);
+  const defenseLabel = state.language === "zh" ? "防御值" : "Defense";
   const type = typeById(boss.typeId) || boss;
   const display = displayType(type);
   const barWidth = Math.min(520, canvas.width - 120);
@@ -6368,7 +6746,7 @@ function drawBossHealthBar() {
   ctx.fillText(display.name, canvas.width / 2, y + 8);
   ctx.font = "700 12px Arial";
   ctx.fillStyle = "#ffffff";
-  ctx.fillText(`${Math.ceil(Math.max(0, boss.hp))} / ${boss.maxHp}`, canvas.width / 2, y + 29);
+  ctx.fillText(`${Math.ceil(Math.max(0, boss.hp))} / ${boss.maxHp}   ${defenseLabel} ${defense}%`, canvas.width / 2, y + 29);
   ctx.fillStyle = boss.team === "blue" ? "#6bbcff" : "#ff706c";
   ctx.beginPath();
   ctx.arc(x - 26, y + 29, 8, 0, Math.PI * 2);

@@ -1124,7 +1124,8 @@ const unitTypes = [
       burnImmune: true,
       fireResist: 1,
       magicResist: 1,
-      flatDefense: 260,
+      defensePercent: 100,
+      defenseLossHp: 100,
       hitSpeedBoost: 10,
       knockbackImmune: true,
       berserkHp: 3000,
@@ -2825,6 +2826,14 @@ function isFireDamage(source) {
   return source.damageType === "fire" || source.damageType === "fireball" || source.applyBurn || source.fireball;
 }
 
+function tiamatDefensePercent(unit) {
+  if (!unit.skills?.tiamatBoss) return 0;
+  const maxDefense = unit.skills.defensePercent ?? 0;
+  const lossHp = Math.max(1, unit.skills.defenseLossHp || 100);
+  const missingHp = Math.max(0, unit.maxHp - unit.hp);
+  return clamp(maxDefense - Math.floor(missingHp / lossHp), 0, maxDefense);
+}
+
 function itemTeam() {
   return state.selectedItem ? state.placeTeam : state.sandbox ? state.placeTeam : "blue";
 }
@@ -4413,14 +4422,14 @@ function hurt(target, amount, source) {
     amount *= 0.72;
     state.particles.push({ x: target.x, y: target.y, life: 0.38, color: "#c48cff", size: target.radius * 3 });
   }
-  if (target.skills.tiamatBoss && target.skills.flatDefense > 0 && !isMagicOrPoisonDamage(source)) {
-    if (amount > target.skills.flatDefense) {
-      amount -= target.skills.flatDefense;
+  if (target.skills.tiamatBoss && target.skills.defensePercent > 0 && !isMagicOrPoisonDamage(source)) {
+    const defensePercent = tiamatDefensePercent(target);
+    amount *= Math.max(0, 1 - defensePercent / 100);
+    if (defensePercent > 0) {
+      state.particles.push({ x: target.x, y: target.y, life: 0.45, color: amount > 0 ? "#ffcf5f" : "#d8d0a8", size: target.radius * (2.3 + defensePercent / 85) });
+    }
+    if (amount > 0) {
       target.tiamatRageSpeedTimer = Math.max(target.tiamatRageSpeedTimer || 0, 1.7);
-      state.particles.push({ x: target.x, y: target.y, life: 0.5, color: "#ffcf5f", size: target.radius * 2.9 });
-    } else {
-      amount = 0;
-      state.particles.push({ x: target.x, y: target.y, life: 0.45, color: "#d8d0a8", size: target.radius * 2.4 });
     }
   }
   if (target.skills.tiamatBoss && target.tiamatBarrierTimer > 0) {
@@ -6255,11 +6264,11 @@ function drawUnitSkin(unit) {
       ctx.stroke();
     }
     const heads = [
-      { x: -1.18, y: -1.0, neck: -0.5, color: "#1d2528", horn: "#d8d0a8", eye: "#ff3b4f" },
-      { x: -0.58, y: -1.34, neck: -0.24, color: "#f4f0dc", horn: "#fff0a8", eye: "#120812" },
-      { x: 0, y: -1.54, neck: 0, color: "#199ea8", horn: "#d8fff8", eye: "#120812" },
-      { x: 0.58, y: -1.34, neck: 0.24, color: "#ff6438", horn: "#ffe0a0", eye: "#120812" },
-      { x: 1.18, y: -1.0, neck: 0.5, color: "#4ed36f", horn: "#d8fff0", eye: "#120812" },
+      { x: -1.5, y: -1.02, neck: -0.56, color: "#15191f", horn: "#aeb3bd", eye: "#ff3b4f", dir: -1 },
+      { x: -0.75, y: -1.34, neck: -0.28, color: "#efe9c9", horn: "#fff4b8", eye: "#f0d65a", dir: -1 },
+      { x: 0, y: -1.58, neck: 0, color: "#1499a6", horn: "#bffcff", eye: "#62fff1", dir: 1 },
+      { x: 0.76, y: -1.34, neck: 0.28, color: "#ff6429", horn: "#ffd083", eye: "#ffcf5f", dir: 1 },
+      { x: 1.52, y: -1.02, neck: 0.56, color: "#4bc85e", horn: "#c8ffd8", eye: "#92ff8d", dir: 1 },
     ];
     for (const head of heads) {
       ctx.strokeStyle = "#120812";
@@ -6274,69 +6283,113 @@ function drawUnitSkin(unit) {
       ctx.moveTo(head.neck * r, -r * 0.46);
       ctx.quadraticCurveTo(head.x * r * 0.74, -r * 0.95, head.x * r, head.y * r);
       ctx.stroke();
-      const dir = head.x < -0.05 ? -1 : 1;
       const hx = head.x * r;
       const hy = head.y * r;
+      const dir = head.dir;
       ctx.fillStyle = head.color;
-      ctx.strokeStyle = "#09040b";
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(hx - dir * r * 0.32, hy - r * 0.15);
-      ctx.quadraticCurveTo(hx - dir * r * 0.02, hy - r * 0.38, hx + dir * r * 0.38, hy - r * 0.27);
-      ctx.quadraticCurveTo(hx + dir * r * 0.72, hy - r * 0.18, hx + dir * r * 0.82, hy + r * 0.04);
-      ctx.quadraticCurveTo(hx + dir * r * 0.62, hy + r * 0.18, hx + dir * r * 0.28, hy + r * 0.17);
-      ctx.quadraticCurveTo(hx + dir * r * 0.04, hy + r * 0.35, hx - dir * r * 0.34, hy + r * 0.18);
-      ctx.quadraticCurveTo(hx - dir * r * 0.48, hy + r * 0.02, hx - dir * r * 0.32, hy - r * 0.15);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = "rgba(230, 255, 190, 0.55)";
-      ctx.beginPath();
-      ctx.moveTo(hx - dir * r * 0.18, hy + r * 0.14);
-      ctx.quadraticCurveTo(hx + dir * r * 0.08, hy + r * 0.28, hx + dir * r * 0.43, hy + r * 0.09);
-      ctx.quadraticCurveTo(hx + dir * r * 0.12, hy + r * 0.16, hx - dir * r * 0.18, hy + r * 0.14);
-      ctx.fill();
       ctx.strokeStyle = "#09040b";
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(hx + dir * r * 0.18, hy + r * 0.03);
-      ctx.quadraticCurveTo(hx + dir * r * 0.45, hy + r * 0.12, hx + dir * r * 0.72, hy + r * 0.02);
-      ctx.moveTo(hx + dir * r * 0.62, hy - r * 0.04);
-      ctx.lineTo(hx + dir * r * 0.73, hy - r * 0.05);
-      ctx.moveTo(hx + dir * r * 0.56, hy + r * 0.11);
-      ctx.lineTo(hx + dir * r * 0.67, hy + r * 0.12);
+      ctx.moveTo(hx - dir * r * 0.42, hy - r * 0.18);
+      ctx.lineTo(hx - dir * r * 0.22, hy - r * 0.44);
+      ctx.lineTo(hx + dir * r * 0.14, hy - r * 0.5);
+      ctx.lineTo(hx + dir * r * 0.42, hy - r * 0.26);
+      ctx.lineTo(hx + dir * r * 0.66, hy - r * 0.06);
+      ctx.lineTo(hx + dir * r * 0.5, hy + r * 0.14);
+      ctx.lineTo(hx + dir * r * 0.12, hy + r * 0.22);
+      ctx.lineTo(hx - dir * r * 0.18, hy + r * 0.36);
+      ctx.lineTo(hx - dir * r * 0.32, hy + r * 0.08);
+      ctx.closePath();
+      ctx.fill();
       ctx.stroke();
+      ctx.fillStyle = "rgba(0, 0, 0, 0.16)";
+      ctx.beginPath();
+      ctx.moveTo(hx - dir * r * 0.18, hy + r * 0.02);
+      ctx.lineTo(hx + dir * r * 0.32, hy + r * 0.04);
+      ctx.lineTo(hx + dir * r * 0.08, hy + r * 0.18);
+      ctx.closePath();
+      ctx.fill();
       ctx.fillStyle = head.horn;
       ctx.beginPath();
-      ctx.moveTo(hx - dir * r * 0.16, hy - r * 0.2);
-      ctx.quadraticCurveTo(hx - dir * r * 0.46, hy - r * 0.72, hx - dir * r * 0.9, hy - r * 0.82);
-      ctx.lineTo(hx - dir * r * 0.34, hy - r * 0.08);
+      ctx.moveTo(hx - dir * r * 0.18, hy - r * 0.35);
+      ctx.lineTo(hx - dir * r * 0.08, hy - r * 0.95);
+      ctx.lineTo(hx + dir * r * 0.02, hy - r * 0.34);
       ctx.closePath();
-      ctx.moveTo(hx + dir * r * 0.08, hy - r * 0.22);
-      ctx.quadraticCurveTo(hx - dir * r * 0.22, hy - r * 0.68, hx - dir * r * 0.58, hy - r * 0.92);
-      ctx.lineTo(hx + dir * r * 0.28, hy - r * 0.16);
+      ctx.moveTo(hx + dir * r * 0.12, hy - r * 0.36);
+      ctx.lineTo(hx + dir * r * 0.34, hy - r * 0.88);
+      ctx.lineTo(hx + dir * r * 0.3, hy - r * 0.28);
       ctx.closePath();
       ctx.fill();
       ctx.fillStyle = head.color;
       ctx.beginPath();
-      ctx.moveTo(hx - dir * r * 0.4, hy - r * 0.06);
-      ctx.lineTo(hx - dir * r * 0.68, hy - r * 0.24);
-      ctx.lineTo(hx - dir * r * 0.48, hy + r * 0.05);
+      ctx.moveTo(hx - dir * r * 0.34, hy - r * 0.16);
+      ctx.lineTo(hx - dir * r * 0.7, hy - r * 0.38);
+      ctx.lineTo(hx - dir * r * 0.48, hy - r * 0.02);
       ctx.closePath();
-      ctx.moveTo(hx - dir * r * 0.38, hy + r * 0.1);
-      ctx.lineTo(hx - dir * r * 0.68, hy + r * 0.22);
-      ctx.lineTo(hx - dir * r * 0.4, hy + r * 0.25);
+      ctx.moveTo(hx - dir * r * 0.3, hy + r * 0.06);
+      ctx.lineTo(hx - dir * r * 0.66, hy + r * 0.18);
+      ctx.lineTo(hx - dir * r * 0.36, hy + r * 0.24);
       ctx.closePath();
       ctx.fill();
       ctx.fillStyle = head.eye;
       ctx.beginPath();
-      ctx.ellipse(hx + dir * r * 0.24, hy - r * 0.08, r * 0.085, r * 0.045, -dir * 0.35, 0, Math.PI * 2);
+      ctx.ellipse(hx + dir * r * 0.2, hy - r * 0.12, r * 0.075, r * 0.035, -dir * 0.35, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = "#ffcf5f";
+      ctx.strokeStyle = "#09040b";
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.ellipse(hx + dir * r * 0.25, hy - r * 0.085, r * 0.045, r * 0.025, -dir * 0.35, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(hx + dir * r * 0.08, hy + r * 0.02);
+      ctx.lineTo(hx + dir * r * 0.52, hy + r * 0.02);
+      ctx.moveTo(hx + dir * r * 0.5, hy + r * 0.04);
+      ctx.lineTo(hx + dir * r * 0.6, hy + r * 0.01);
+      ctx.stroke();
     }
+    ctx.fillStyle = "#201026";
+    ctx.strokeStyle = "#09040b";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.94);
+    ctx.lineTo(r * 0.46, -r * 0.62);
+    ctx.lineTo(r * 0.62, -r * 0.16);
+    ctx.lineTo(r * 0.42, r * 0.28);
+    ctx.lineTo(0, r * 0.62);
+    ctx.lineTo(-r * 0.42, r * 0.28);
+    ctx.lineTo(-r * 0.62, -r * 0.16);
+    ctx.lineTo(-r * 0.46, -r * 0.62);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#7b4fa8";
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 1.38);
+    ctx.lineTo(r * 0.14, -r * 0.82);
+    ctx.lineTo(0, -r * 0.94);
+    ctx.lineTo(-r * 0.14, -r * 0.82);
+    ctx.closePath();
+    ctx.moveTo(-r * 0.38, -r * 0.8);
+    ctx.lineTo(-r * 0.64, -r * 1.2);
+    ctx.lineTo(-r * 0.48, -r * 0.58);
+    ctx.closePath();
+    ctx.moveTo(r * 0.38, -r * 0.8);
+    ctx.lineTo(r * 0.64, -r * 1.2);
+    ctx.lineTo(r * 0.48, -r * 0.58);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#a868ff";
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.22, -r * 0.22, r * 0.11, r * 0.055, -0.2, 0, Math.PI * 2);
+    ctx.ellipse(r * 0.22, -r * 0.22, r * 0.11, r * 0.055, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#0b0510";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.34, r * 0.02);
+    ctx.lineTo(0, r * 0.22);
+    ctx.lineTo(r * 0.34, r * 0.02);
+    ctx.moveTo(-r * 0.26, r * 0.22);
+    ctx.lineTo(0, r * 0.44);
+    ctx.lineTo(r * 0.26, r * 0.22);
+    ctx.stroke();
     ctx.fillStyle = "#120812";
     ctx.beginPath();
     ctx.ellipse(-r * 0.62, r * 0.78, r * 0.22, r * 0.14, -0.25, 0, Math.PI * 2);
@@ -6659,6 +6712,8 @@ function drawBossHealthBar() {
   if (!bosses.length) return;
   const boss = bosses.sort((a, b) => b.maxHp - a.maxHp || b.hp - a.hp)[0];
   const health = clamp(boss.hp / boss.maxHp, 0, 1);
+  const defense = tiamatDefensePercent(boss);
+  const defenseLabel = state.language === "zh" ? "防御值" : "Defense";
   const type = typeById(boss.typeId) || boss;
   const display = displayType(type);
   const barWidth = Math.min(520, canvas.width - 120);
@@ -6691,7 +6746,7 @@ function drawBossHealthBar() {
   ctx.fillText(display.name, canvas.width / 2, y + 8);
   ctx.font = "700 12px Arial";
   ctx.fillStyle = "#ffffff";
-  ctx.fillText(`${Math.ceil(Math.max(0, boss.hp))} / ${boss.maxHp}`, canvas.width / 2, y + 29);
+  ctx.fillText(`${Math.ceil(Math.max(0, boss.hp))} / ${boss.maxHp}   ${defenseLabel} ${defense}%`, canvas.width / 2, y + 29);
   ctx.fillStyle = boss.team === "blue" ? "#6bbcff" : "#ff706c";
   ctx.beginPath();
   ctx.arc(x - 26, y + 29, 8, 0, Math.PI * 2);
