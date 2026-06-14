@@ -234,6 +234,14 @@ const levelUnitUnlocks = [
   { maxLevel: 20, banned: [] },
 ];
 
+const levelSpecificBans = {
+  12: ["adultdragon"],
+  13: ["adultdragon"],
+  14: ["adultdragon"],
+  15: ["adultdragon"],
+  16: ["adultdragon"],
+};
+
 const INFECTABLE_TYPE_IDS = new Set([
   "clubber",
   "shield",
@@ -2462,7 +2470,7 @@ function spendFor(type) {
 function bannedUnitsForCurrentLevel() {
   if (!state.levelMode || state.currentLevel <= 0) return new Set();
   const rule = levelUnitUnlocks.find((entry) => state.currentLevel <= entry.maxLevel) || levelUnitUnlocks[levelUnitUnlocks.length - 1];
-  return new Set(rule.banned);
+  return new Set([...(rule.banned || []), ...(levelSpecificBans[state.currentLevel] || [])]);
 }
 
 function isUnitAllowedInCurrentLevel(type) {
