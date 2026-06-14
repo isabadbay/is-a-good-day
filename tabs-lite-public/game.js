@@ -1,7 +1,7 @@
 ﻿const canvas = document.querySelector("#battlefield");
 const ctx = canvas.getContext("2d");
 const tiamatSprite = new Image();
-tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-defense-200-1";
+tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-crush-move-1";
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
@@ -3490,6 +3490,33 @@ function updateTiamatDash(unit, dt) {
   return true;
 }
 
+function updateTiamatMoveCrush(unit, dt) {
+  if (!unit.skills?.tiamatBoss || unit.dead || unit.tiamatDashTimer > 0) return;
+  unit.tiamatCrushCooldowns = unit.tiamatCrushCooldowns || {};
+  for (const id of Object.keys(unit.tiamatCrushCooldowns)) {
+    unit.tiamatCrushCooldowns[id] -= dt;
+    if (unit.tiamatCrushCooldowns[id] <= 0) delete unit.tiamatCrushCooldowns[id];
+  }
+  const movingFast = Math.hypot(unit.vx || 0, unit.vy || 0) > 90 || unit.tiamatRageSpeedTimer > 0;
+  if (!movingFast) return;
+  for (const other of state.units) {
+    if (other.team === unit.team || other.dead || other.airborneTimer > 0) continue;
+    if (unit.tiamatCrushCooldowns[other.id] > 0) continue;
+    if (Math.hypot(other.x - unit.x, other.y - unit.y) > unit.radius + other.radius + 22) continue;
+    unit.tiamatCrushCooldowns[other.id] = 0.6;
+    const damage = 120 + Math.random() * 100;
+    hurt(other, damage, {
+      x: unit.x,
+      y: unit.y,
+      owner: unit,
+      ignoreDodge: true,
+      knockback: 4.8,
+      forceKnockback: true,
+    });
+    state.particles.push({ x: other.x, y: other.y, life: 0.35, startLife: 0.35, color: "#c48cff", size: other.radius * 2.8 });
+  }
+}
+
 function updateTiamatBoss(unit, dt) {
   if (updateTiamatDash(unit, dt)) return true;
   unit.tiamatMudTimer = Math.max(0, (unit.tiamatMudTimer || 0) - dt);
@@ -4957,6 +4984,7 @@ function updateUnit(unit, dt) {
   }
   unit.x = Math.max(unit.radius, Math.min(canvas.width - unit.radius, unit.x));
   unit.y = Math.max(unit.radius, Math.min(canvas.height - unit.radius, unit.y));
+  updateTiamatMoveCrush(unit, dt);
 }
 
 function resolveCrowding() {
