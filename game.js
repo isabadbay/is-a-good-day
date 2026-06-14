@@ -2,6 +2,11 @@
 const ctx = canvas.getContext("2d");
 const tiamatSprite = new Image();
 tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-particles-before-battle-1";
+const homeScreen = document.querySelector("#homeScreen");
+const appShell = document.querySelector("#appShell");
+const sandboxModeBtn = document.querySelector("#sandboxModeBtn");
+const levelsModeBtn = document.querySelector("#levelsModeBtn");
+const homeBtn = document.querySelector("#homeBtn");
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
@@ -208,6 +213,14 @@ const levelDefinitions = [
   { number: 10, budget: 15000, name: "Tiamat", zh: "第十关：龙神提亚马特", enemies: [["tiamat", 1], ["adultdragon", 2], ["dragonling", 6]] },
 ];
 
+const levelUnitUnlocks = [
+  { maxLevel: 3, banned: ["adultdragon", "tiamat", "frostgiant", "giantzombie", "gatlingshooter", "chomper"] },
+  { maxLevel: 6, banned: ["adultdragon", "tiamat", "giantzombie", "gatlingshooter"] },
+  { maxLevel: 8, banned: ["adultdragon", "tiamat", "giantzombie"] },
+  { maxLevel: 9, banned: ["tiamat"] },
+  { maxLevel: 10, banned: [] },
+];
+
 const INFECTABLE_TYPE_IDS = new Set([
   "clubber",
   "shield",
@@ -231,6 +244,12 @@ const INFECTABLE_TYPE_IDS = new Set([
 const translations = {
   zh: {
     subtitle: "布阵、开战、看小人乱斗",
+    home: "主页",
+    homeSubtitle: "选择模式",
+    sandboxModeTitle: "沙盒",
+    sandboxModeDesc: "无限金币，可以放红队和蓝队，测试自定义兵种、建筑和Boss。",
+    levelsModeTitle: "关卡",
+    levelsModeDesc: "用有限金币挑战固定敌军，赢了就解锁下一关。",
     start: "开战",
     pause: "暂停",
     reset: "重置",
@@ -462,6 +481,12 @@ const translations = {
   },
   en: {
     subtitle: "Place units, start battle, watch chaos",
+    home: "Home",
+    homeSubtitle: "Choose a mode",
+    sandboxModeTitle: "Sandbox",
+    sandboxModeDesc: "Infinite gold, place red and blue units, and test custom units, buildings, and bosses.",
+    levelsModeTitle: "Levels",
+    levelsModeDesc: "Use limited gold against fixed enemy levels and unlock the next challenge.",
     start: "Start",
     pause: "Pause",
     reset: "Reset",
@@ -701,6 +726,12 @@ function applyLanguage(lang) {
     if (node) node.textContent = value;
   };
   setText(".brand p", text.subtitle);
+  setText("#homeSubtitle", text.homeSubtitle);
+  setText("#sandboxModeTitle", text.sandboxModeTitle);
+  setText("#sandboxModeDesc", text.sandboxModeDesc);
+  setText("#levelsModeTitle", text.levelsModeTitle);
+  setText("#levelsModeDesc", text.levelsModeDesc);
+  if (homeBtn) homeBtn.textContent = text.home;
   startBtn.textContent = text.start;
   pauseBtn.textContent = text.pause;
   resetBtn.textContent = text.reset;
@@ -787,6 +818,18 @@ function syncLanguage() {
   if (languageSelect.value !== state.language) {
     applyLanguage(languageSelect.value);
   }
+}
+
+function showHome() {
+  homeScreen?.classList.remove("home-hidden");
+  appShell?.classList.add("app-hidden");
+}
+
+function showGame() {
+  homeScreen?.classList.add("home-hidden");
+  appShell?.classList.remove("app-hidden");
+  resizeCanvas();
+  updateUi();
 }
 
 const unitTypes = [
@@ -2402,6 +2445,29 @@ function spendFor(type) {
   updateUi();
 }
 
+function bannedUnitsForCurrentLevel() {
+  if (!state.levelMode || state.currentLevel <= 0) return new Set();
+  const rule = levelUnitUnlocks.find((entry) => state.currentLevel <= entry.maxLevel) || levelUnitUnlocks[levelUnitUnlocks.length - 1];
+  return new Set(rule.banned);
+}
+
+function isUnitAllowedInCurrentLevel(type) {
+  if (!type || !state.levelMode || state.sandbox) return true;
+  return !bannedUnitsForCurrentLevel().has(type.id);
+}
+
+function levelBanMessage(type) {
+  const name = type ? displayType(type).name : "";
+  return state.language === "zh" ? `这个关卡不能使用 ${name}` : `${name} is locked for this level`;
+}
+
+function ensureSelectedUnitAllowed() {
+  const selectedType = typeById(state.selected);
+  if (isUnitAllowedInCurrentLevel(selectedType)) return;
+  const fallback = unitTypes.find((type) => type.id !== "arrowtower" && isUnitAllowedInCurrentLevel(type));
+  if (fallback) state.selected = fallback.id;
+}
+
 function upgradeSelectedUnitType() {
   if (state.phase !== "setup") {
     setToast(state.language === "zh" ? "布阵阶段才能升级" : "Upgrade during setup");
@@ -2463,6 +2529,10 @@ function placePlayerUnit(point) {
   if (!type) return;
   if (state.challengeMode && type.id === "sunflower") {
     setToast(state.language === "zh" ? "挑战模式不能使用向日葵" : "Sunflowers are disabled in challenge mode");
+    return;
+  }
+  if (!isUnitAllowedInCurrentLevel(type)) {
+    setToast(levelBanMessage(type));
     return;
   }
   const battlePlantPlacement = state.phase === "battle" && state.plantMode && isPlantType(type);
@@ -2861,6 +2931,25 @@ function importFormation() {
 function exitChallengeMode() {
   resetGame(false);
   setToast((translations[state.language] || translations.en).challengeExited);
+}
+
+function enterSandboxMode() {
+  showGame();
+  resetGame(false);
+  state.sandbox = true;
+  state.challengeMode = false;
+  state.levelMode = false;
+  state.currentLevel = 0;
+  state.placeTeam = "blue";
+  updateUi();
+  setToast(state.language === "zh" ? "沙盒模式：无限金币，可以放红队和蓝队" : "Sandbox: infinite gold, red and blue placement enabled");
+}
+
+function enterLevelsMode() {
+  showGame();
+  const selectedLevel = Number(levelSelect?.value) || state.currentLevel || 1;
+  const levelNumber = selectedLevel > state.unlockedLevel ? state.unlockedLevel : selectedLevel;
+  loadLevel(levelNumber);
 }
 
 function poisonUnit(unit, seconds = 5) {
@@ -3942,6 +4031,7 @@ function resetBattlefieldForLevel(level) {
   state.mapTool = null;
   state.selectedItem = null;
   state.winnerShown = false;
+  ensureSelectedUnitAllowed();
 }
 
 function spawnLevelEnemies(level) {
@@ -4017,6 +4107,7 @@ function resetGame(keepEnemies = false) {
   state.challengeBudget = 0;
   state.levelMode = false;
   state.currentLevel = 0;
+  ensureSelectedUnitAllowed();
   state.dragging = null;
   state.controlledId = null;
   state.controlKeys = {};
@@ -4085,7 +4176,11 @@ function randomFormation() {
   let guard = 0;
   const maxUnits = state.sandbox ? 12 : 20;
   while ((state.sandbox || state.budget >= 80) && guard < maxUnits) {
-    const possible = state.sandbox ? order : order.filter((id) => typeById(id).price <= state.budget);
+    const possible = state.sandbox ? order : order.filter((id) => {
+      const type = typeById(id);
+      return type && type.price <= state.budget && isUnitAllowedInCurrentLevel(type);
+    });
+    if (!possible.length) break;
     const id = possible[Math.floor(Math.random() * possible.length)];
     const type = typeById(id);
     const minX = state.sandbox && team === "red" ? canvas.width * 0.54 : 75;
@@ -7314,14 +7409,19 @@ function renderUnitList() {
     for (const type of pack.types) {
       const display = displayType(type);
       const level = state.upgrades[type.id] || 0;
+      const lockedForLevel = !isUnitAllowedInCurrentLevel(type);
       const button = document.createElement("button");
-      button.className = `unit-card ${state.selected === type.id ? "selected" : ""}`;
+      button.className = `unit-card ${state.selected === type.id ? "selected" : ""} ${lockedForLevel ? "locked" : ""}`;
       button.innerHTML = `
         <span class="icon">${level ? `${type.glyph}+${level}` : type.glyph}</span>
         <span><b>${display.name}</b><small>${display.tag}</small></span>
-        <span class="price">${type.price}</span>
+        <span class="price">${lockedForLevel ? "LOCK" : type.price}</span>
       `;
       button.addEventListener("click", () => {
+        if (lockedForLevel) {
+          setToast(levelBanMessage(type));
+          return;
+        }
         state.selected = type.id;
         eraseBtn.textContent = text.erase;
         renderUnitList();
@@ -7510,6 +7610,9 @@ window.addEventListener("keyup", (event) => {
 startBtn.addEventListener("click", startBattle);
 pauseBtn.addEventListener("click", pauseBattle);
 resetBtn.addEventListener("click", () => resetGame(false));
+sandboxModeBtn?.addEventListener("click", enterSandboxMode);
+levelsModeBtn?.addEventListener("click", enterLevelsMode);
+homeBtn?.addEventListener("click", showHome);
 randomBtn.addEventListener("click", randomFormation);
 exportFormationBtn?.addEventListener("click", exportFormation);
 importFormationBtn?.addEventListener("click", importFormation);
