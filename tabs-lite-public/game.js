@@ -1123,7 +1123,9 @@ const unitTypes = [
       damageAuraDamage: 20,
       burnImmune: true,
       fireResist: 1,
-      magicResist: 0.9,
+      magicResist: 1,
+      flatDefense: 260,
+      hitSpeedBoost: 10,
       knockbackImmune: true,
       berserkHp: 3000,
       berserkDamage: 0.85,
@@ -2791,12 +2793,27 @@ function freezeUnit(unit, seconds = 2.4) {
   unit.freezeTimer = Math.max(unit.freezeTimer || 0, seconds);
 }
 
+function applyTiamatBurn(unit, dps = 50, seconds = 60) {
+  if (unit.dead || (unit.skills?.burnImmune && unit.typeId !== "adultdragon")) return;
+  unit.tiamatBurnTimer = Math.max(unit.tiamatBurnTimer || 0, seconds);
+  unit.tiamatBurnTick = Math.min(unit.tiamatBurnTick || 1, 1);
+  unit.tiamatBurnDps = Math.max(unit.tiamatBurnDps || 0, dps);
+}
+
+function applyTiamatFrost(unit, seconds = 60) {
+  if (unit.dead) return;
+  unit.tiamatFrostTimer = Math.max(unit.tiamatFrostTimer || 0, seconds);
+  unit.tiamatFrostTick = Math.min(unit.tiamatFrostTick || 1, 1);
+  freezeUnit(unit, seconds);
+}
+
 function isMagicOrPoisonDamage(source) {
   return (
     source.damageType === "poison" ||
     source.damageType === "tornado" ||
     source.damageType === "fire" ||
     source.damageType === "ice" ||
+    source.damageType === "magic" ||
     source.damageType === "fireball" ||
     source.applyBurn ||
     source.applyFreeze ||
@@ -3263,11 +3280,101 @@ function tiamatChaosTide(unit, enemies) {
   state.particles.push({ x: unit.x, y: unit.y, life: 0.75, startLife: 0.75, color: "#2b112f", size: 260 });
 }
 
+function tiamatElementBreath(unit, enemies) {
+  const target = enemies.reduce((best, other) => (Math.hypot(other.x - unit.x, other.y - unit.y) < Math.hypot(best.x - unit.x, best.y - unit.y) ? other : best), enemies[0]);
+  const baseAngle = Math.atan2(target.y - unit.y, target.x - unit.x);
+  const element = [
+    { id: "fire", color: "#ff5d2e" },
+    { id: "ice", color: "#9bdcff" },
+    { id: "poison", color: "#70e071" },
+    { id: "lightning", color: "#d7ecff" },
+    { id: "acid", color: "#b8ff5a" },
+  ][Math.floor(Math.random() * 5)];
+  const range = element.id === "fire" ? 430 : 360;
+  const width = element.id === "fire" ? 1.05 : 0.86;
+  for (let i = 0; i < 42; i += 1) {
+    const spread = (Math.random() - 0.5) * width * 2;
+    const distance = Math.random() * range;
+    state.particles.push({
+      x: unit.x + Math.cos(baseAngle + spread) * distance,
+      y: unit.y + Math.sin(baseAngle + spread) * distance,
+      vx: Math.cos(baseAngle + spread) * (80 + Math.random() * 120),
+      vy: Math.sin(baseAngle + spread) * (80 + Math.random() * 120),
+      life: 0.35 + Math.random() * 0.35,
+      startLife: 0.7,
+      color: element.color,
+      size: 22 + Math.random() * 28,
+    });
+  }
+  for (const other of enemies) {
+    const dx = other.x - unit.x;
+    const dy = other.y - unit.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance > range + other.radius || distance < 1) continue;
+    const delta = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - baseAngle), Math.cos(Math.atan2(dy, dx) - baseAngle)));
+    if (delta > width) continue;
+    hurt(other, 1000, {
+      x: unit.x,
+      y: unit.y,
+      owner: unit,
+      isRanged: true,
+      ignoreDodge: true,
+      noKnockback: element.id === "fire",
+      applyFreeze: element.id === "ice",
+      damageType: element.id === "fire" ? "fire" : element.id === "ice" ? "ice" : element.id === "poison" || element.id === "acid" ? "poison" : "magic",
+    });
+    if (element.id === "fire") applyTiamatBurn(other, other.typeId === "adultdragon" ? 10 : 50, 60);
+    if (element.id === "ice") applyTiamatFrost(other, 60);
+    if (element.id === "poison" || element.id === "acid") poisonUnit(other, 60);
+    if (element.id === "lightning") other.stasisTimer = Math.max(other.stasisTimer || 0, 2);
+  }
+  damageWallsAt(unit.x + Math.cos(baseAngle) * range * 0.55, unit.y + Math.sin(baseAngle) * range * 0.55, range * 0.32, 220);
+  addRingParticle(unit.x, unit.y, element.color, 170);
+}
+
+function startTiamatDash(unit, enemies) {
+  const target = enemies[Math.floor(Math.random() * enemies.length)];
+  unit.tiamatDashAngle = Math.atan2(target.y - unit.y, target.x - unit.x);
+  unit.tiamatDashTimer = 2.4;
+  unit.tiamatDashHitIds = [];
+  state.particles.push({ x: unit.x, y: unit.y, life: 0.8, startLife: 0.8, color: "#ffcf5f", size: 180 });
+}
+
+function updateTiamatDash(unit, dt) {
+  if (unit.tiamatDashTimer <= 0) return false;
+  unit.tiamatDashTimer = Math.max(0, unit.tiamatDashTimer - dt);
+  const angle = unit.tiamatDashAngle || 0;
+  const speed = 760;
+  unit.x += Math.cos(angle) * speed * dt;
+  unit.y += Math.sin(angle) * speed * dt;
+  unit.vx = Math.cos(angle) * 180;
+  unit.vy = Math.sin(angle) * 180;
+  const hitIds = unit.tiamatDashHitIds || [];
+  for (const other of state.units) {
+    if (other.team === unit.team || other.dead || hitIds.includes(other.id)) continue;
+    if (Math.hypot(other.x - unit.x, other.y - unit.y) <= unit.radius + other.radius + 42) {
+      hitIds.push(other.id);
+      hurt(other, 800, { x: unit.x, y: unit.y, owner: unit, ignoreDodge: true, knockback: 3.5 });
+    }
+  }
+  unit.tiamatDashHitIds = hitIds;
+  damageWallsAt(unit.x, unit.y, unit.radius + 44, 120);
+  if (Math.random() < dt * 26) state.particles.push({ x: unit.x, y: unit.y, life: 0.28, startLife: 0.28, color: "#c48cff", size: 54 });
+  const hitEdge = unit.x <= unit.radius || unit.x >= canvas.width - unit.radius || unit.y <= unit.radius || unit.y >= canvas.height - unit.radius;
+  unit.x = clamp(unit.x, unit.radius, canvas.width - unit.radius);
+  unit.y = clamp(unit.y, unit.radius, canvas.height - unit.radius);
+  if (hitEdge) unit.tiamatDashTimer = 0;
+  return true;
+}
+
 function updateTiamatBoss(unit, dt) {
+  if (updateTiamatDash(unit, dt)) return true;
   unit.tiamatMudTimer = Math.max(0, (unit.tiamatMudTimer || 0) - dt);
   unit.tiamatBreathTimer = Math.max(0, (unit.tiamatBreathTimer || 2.5) - dt);
   unit.tiamatGazeTimer = Math.max(0, (unit.tiamatGazeTimer || 5) - dt);
   unit.tiamatSummonTimer = Math.max(0, (unit.tiamatSummonTimer || 8) - dt);
+  unit.tiamatElementBreathTimer = Math.max(0, (unit.tiamatElementBreathTimer || 6) - dt);
+  unit.tiamatDashCooldown = Math.max(0, (unit.tiamatDashCooldown || 10) - dt);
   unit.tiamatCataclysmTimer = Math.max(0, (unit.tiamatCataclysmTimer || 9) - dt);
   unit.tiamatTideTimer = Math.max(0, (unit.tiamatTideTimer || 13) - dt);
   unit.tiamatBarrierCooldown = Math.max(0, (unit.tiamatBarrierCooldown || 17) - dt);
@@ -3299,6 +3406,15 @@ function updateTiamatBoss(unit, dt) {
   if (unit.tiamatTideActive > 0 && unit.tiamatTideTick <= 0) {
     tiamatChaosTide(unit, enemies);
     unit.tiamatTideTick = 0.8;
+  }
+  if (unit.tiamatElementBreathTimer <= 0) {
+    tiamatElementBreath(unit, enemies);
+    unit.tiamatElementBreathTimer = unit.hp < unit.maxHp * 0.45 ? 7 : 9.5;
+  }
+  if (unit.tiamatDashCooldown <= 0) {
+    startTiamatDash(unit, enemies);
+    unit.tiamatDashCooldown = unit.hp < unit.maxHp * 0.45 ? 9 : 13;
+    return true;
   }
   if (unit.tiamatBreathTimer <= 0) {
     const target = enemies.reduce((best, other) => (Math.hypot(other.x - unit.x, other.y - unit.y) < Math.hypot(best.x - unit.x, best.y - unit.y) ? other : best), enemies[0]);
@@ -3794,6 +3910,7 @@ function controlledSecondAttack(unit) {
 function controlledRangedAttack(unit, mode) {
   const burstCount = Math.max(1, Math.floor(mode.burstCount || 1));
   unit.cooldown = burstCount > 1 && mode.burstCooldown > 0 ? mode.burstCooldown : mode.cooldown || unit.cooldownTime;
+  if (unit.tiamatFrostTimer > 0) unit.cooldown *= 1.5;
   const baseAngle = controlAimAngle(unit, Math.max(mode.range || unit.range || 280, 280));
   unit.lastControlAngle = baseAngle;
   if (unit.skills.fireBreath) {
@@ -4296,6 +4413,16 @@ function hurt(target, amount, source) {
     amount *= 0.72;
     state.particles.push({ x: target.x, y: target.y, life: 0.38, color: "#c48cff", size: target.radius * 3 });
   }
+  if (target.skills.tiamatBoss && target.skills.flatDefense > 0 && !isMagicOrPoisonDamage(source)) {
+    if (amount > target.skills.flatDefense) {
+      amount -= target.skills.flatDefense;
+      target.tiamatRageSpeedTimer = Math.max(target.tiamatRageSpeedTimer || 0, 1.7);
+      state.particles.push({ x: target.x, y: target.y, life: 0.5, color: "#ffcf5f", size: target.radius * 2.9 });
+    } else {
+      amount = 0;
+      state.particles.push({ x: target.x, y: target.y, life: 0.45, color: "#d8d0a8", size: target.radius * 2.4 });
+    }
+  }
   if (target.skills.tiamatBoss && target.tiamatBarrierTimer > 0) {
     amount *= 0.38;
     state.particles.push({ x: target.x, y: target.y, life: 0.55, color: "#fff0a8", size: target.radius * 3.4 });
@@ -4345,6 +4472,7 @@ function attack(unit, target, mode = null) {
   };
   const burstCount = Math.max(1, Math.floor(active.burstCount || 1));
   unit.cooldown = burstCount > 1 && active.burstCooldown > 0 ? active.burstCooldown : active.cooldown || unit.cooldownTime;
+  if (unit.tiamatFrostTimer > 0) unit.cooldown *= 1.5;
   if (target.kind === "wall") {
     if (!canUnitDamageWall(unit, target.wall)) return;
     if (active.ranged && active.projectileSpeed) {
@@ -4480,7 +4608,26 @@ function updateUnit(unit, dt) {
       state.particles.push({ x: unit.x, y: unit.y, life: 0.4, color: "#ff8a38", size: 20 });
     }
   }
+  if (!unit.dead && unit.tiamatBurnTimer > 0) {
+    unit.tiamatBurnTimer -= dt;
+    unit.tiamatBurnTick -= dt;
+    if (unit.tiamatBurnTick <= 0) {
+      unit.tiamatBurnTick += 1;
+      hurt(unit, unit.tiamatBurnDps || 50, { x: unit.x - 1, y: unit.y, knockback: 0, ignoreDodge: true, noKnockback: true, damageType: "fire" });
+      state.particles.push({ x: unit.x, y: unit.y, life: 0.48, color: "#ff5d2e", size: 32 });
+    }
+  }
+  if (!unit.dead && unit.tiamatFrostTimer > 0) {
+    unit.tiamatFrostTimer -= dt;
+    unit.tiamatFrostTick -= dt;
+    if (unit.tiamatFrostTick <= 0) {
+      unit.tiamatFrostTick += 1;
+      hurt(unit, 35, { x: unit.x - 1, y: unit.y, knockback: 0, ignoreDodge: true, noKnockback: true, damageType: "ice" });
+      state.particles.push({ x: unit.x, y: unit.y, life: 0.48, color: "#9bdcff", size: 30 });
+    }
+  }
   unit.freezeTimer = Math.max(0, unit.freezeTimer - dt);
+  unit.tiamatRageSpeedTimer = Math.max(0, (unit.tiamatRageSpeedTimer || 0) - dt);
   if (!unit.dead && terrainAt(unit.x, unit.y, "fire")) {
     unit.terrainFireTick = (unit.terrainFireTick || 0) - dt;
     if (unit.terrainFireTick <= 0) {
@@ -4512,7 +4659,7 @@ function updateUnit(unit, dt) {
     return;
   }
   if (unit.skills.tiamatBoss) {
-    updateTiamatBoss(unit, dt);
+    if (updateTiamatBoss(unit, dt)) return;
   }
   if (unit.skills.gatling) {
     unit.gatlingCheckTimer = Math.max(0, (unit.gatlingCheckTimer || unit.skills.gatlingCheckInterval || 3) - dt);
@@ -4609,7 +4756,7 @@ function updateUnit(unit, dt) {
   if (command && !unit.skills.rooted) {
     const goal = wallAvoidancePoint(unit, command);
     const commandDistance = Math.hypot(goal.x - unit.x, goal.y - unit.y);
-    const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1) * terrainSpeedFactor(unit);
+    const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.tiamatFrostTimer > 0 ? 0.2 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1) * (unit.tiamatRageSpeedTimer > 0 ? unit.skills.hitSpeedBoost || 10 : 1) * terrainSpeedFactor(unit);
     if (commandDistance > unit.radius + 18) {
       const angle = Math.atan2(goal.y - unit.y, goal.x - unit.x);
       unit.vx += Math.cos(angle) * unit.speed * speedFactor * dt * 3.2;
@@ -4656,7 +4803,7 @@ function updateUnit(unit, dt) {
   const canSecondAttack = Boolean(second && secondEngagementDistance <= secondAttackDistance);
   const attackDistance = Math.max(primaryAttackDistance, secondAttackDistance);
   const stopDistance = isRanged ? unit.stopDistance : Math.min(unit.stopDistance, attackDistance);
-  const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1) * terrainSpeedFactor(unit);
+  const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.tiamatFrostTimer > 0 ? 0.2 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1) * (unit.tiamatRageSpeedTimer > 0 ? unit.skills.hitSpeedBoost || 10 : 1) * terrainSpeedFactor(unit);
   if (!unit.skills.rooted && engagementDistance > stopDistance) {
     unit.vx += Math.cos(angle) * unit.speed * speedFactor * dt * 2.8;
     unit.vy += Math.sin(angle) * unit.speed * speedFactor * dt * 2.8;
@@ -6161,13 +6308,13 @@ function drawUnitSkin(unit) {
       ctx.stroke();
       ctx.fillStyle = head.horn;
       ctx.beginPath();
-      ctx.moveTo(hx - dir * r * 0.2, hy - r * 0.2);
-      ctx.quadraticCurveTo(hx - dir * r * 0.3, hy - r * 0.78, hx - dir * r * 0.02, hy - r * 0.98);
-      ctx.lineTo(hx - dir * r * 0.02, hy - r * 0.24);
+      ctx.moveTo(hx - dir * r * 0.16, hy - r * 0.2);
+      ctx.quadraticCurveTo(hx - dir * r * 0.46, hy - r * 0.72, hx - dir * r * 0.9, hy - r * 0.82);
+      ctx.lineTo(hx - dir * r * 0.34, hy - r * 0.08);
       ctx.closePath();
-      ctx.moveTo(hx + dir * r * 0.08, hy - r * 0.23);
-      ctx.quadraticCurveTo(hx + dir * r * 0.24, hy - r * 0.72, hx + dir * r * 0.55, hy - r * 0.88);
-      ctx.lineTo(hx + dir * r * 0.28, hy - r * 0.18);
+      ctx.moveTo(hx + dir * r * 0.08, hy - r * 0.22);
+      ctx.quadraticCurveTo(hx - dir * r * 0.22, hy - r * 0.68, hx - dir * r * 0.58, hy - r * 0.92);
+      ctx.lineTo(hx + dir * r * 0.28, hy - r * 0.16);
       ctx.closePath();
       ctx.fill();
       ctx.fillStyle = head.color;
