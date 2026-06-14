@@ -1,7 +1,7 @@
 ﻿const canvas = document.querySelector("#battlefield");
 const ctx = canvas.getContext("2d");
 const tiamatSprite = new Image();
-tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-crush-move-1";
+tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-summon-vfx-1";
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
@@ -2338,6 +2338,7 @@ function addUnit(typeId, team, x, y) {
     dead: false,
   };
   state.units.push(unit);
+  if (typeId === "tiamat") spawnTiamatSummonEffect(unit);
   return unit;
 }
 
@@ -2886,6 +2887,42 @@ function spendForItem(item) {
 
 function addRingParticle(x, y, color, size = ITEM_RADIUS) {
   state.particles.push({ x, y, life: 0.75, startLife: 0.75, color, size });
+}
+
+function spawnTiamatSummonEffect(unit) {
+  const colors = ["#ff5d2e", "#9bdcff", "#70e071", "#d7ecff", "#8f4cff"];
+  addRingParticle(unit.x, unit.y, "#8f4cff", unit.radius * 5.2);
+  addRingParticle(unit.x, unit.y, "#fff0a8", unit.radius * 3.7);
+  state.particles.push({ x: unit.x, y: unit.y, life: 1.25, startLife: 1.25, color: "#2b112f", size: unit.radius * 5.8 });
+  state.particles.push({ x: unit.x, y: unit.y, life: 0.95, startLife: 0.95, color: "#c48cff", size: unit.radius * 4.4 });
+  for (let i = 0; i < 90; i += 1) {
+    const angle = (Math.PI * 2 * i) / 90 + Math.random() * 0.18;
+    const distance = unit.radius * (0.8 + Math.random() * 4.1);
+    const color = colors[i % colors.length];
+    state.particles.push({
+      x: unit.x + Math.cos(angle) * distance,
+      y: unit.y + Math.sin(angle) * distance,
+      vx: Math.cos(angle) * (45 + Math.random() * 180),
+      vy: Math.sin(angle) * (45 + Math.random() * 180) - 35 - Math.random() * 120,
+      life: 0.55 + Math.random() * 0.75,
+      startLife: 1.25,
+      color,
+      size: 16 + Math.random() * 34,
+    });
+  }
+  for (let i = 0; i < 5; i += 1) {
+    const angle = -Math.PI / 2 + (i - 2) * 0.32;
+    state.particles.push({
+      x: unit.x + Math.cos(angle) * unit.radius * 1.6,
+      y: unit.y + Math.sin(angle) * unit.radius * 1.2,
+      vx: Math.cos(angle) * 120,
+      vy: Math.sin(angle) * 120 - 180,
+      life: 1.05,
+      startLife: 1.05,
+      color: colors[i],
+      size: unit.radius * 1.2,
+    });
+  }
 }
 
 function itemCastOrigin(team) {
