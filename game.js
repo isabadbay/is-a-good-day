@@ -3841,12 +3841,18 @@ function updateTiamatBoss(unit, dt) {
     const byHp = [...enemies].sort((a, b) => a.hp - b.hp)[0];
     const byDamage = [...enemies].sort((a, b) => (b.statsDamage || 0) - (a.statsDamage || 0))[0];
     const randomTarget = enemies[Math.floor(Math.random() * enemies.length)];
-    for (const target of Array.from(new Set([byHp, byDamage, randomTarget])).filter(Boolean)) {
+    const meteorTargets = Array.from(new Set([byHp, byDamage, randomTarget])).filter(Boolean);
+    for (let i = 0; i < 15; i += 1) {
+      const target = meteorTargets[i % meteorTargets.length] || enemies[Math.floor(Math.random() * enemies.length)];
+      const spread = 35 + Math.random() * 150;
+      const angle = Math.random() * Math.PI * 2;
+      const targetX = clamp(target.x + Math.cos(angle) * spread, 30, canvas.width - 30);
+      const targetY = clamp(target.y + Math.sin(angle) * spread, 30, canvas.height - 30);
       state.projectiles.push({
-        x: target.x + (Math.random() - 0.5) * 180,
+        x: targetX + (Math.random() - 0.5) * 180,
         y: -30,
-        targetX: target.x,
-        targetY: target.y,
+        targetX,
+        targetY,
         team: unit.team,
         ownerId: unit.id,
         damage: 260,
@@ -3860,7 +3866,7 @@ function updateTiamatBoss(unit, dt) {
         damageType: "fireball",
         life: 2.2,
       });
-      state.particles.push({ x: target.x, y: target.y, life: 0.9, startLife: 0.9, color: "#ff3b4f", size: 90 });
+      state.particles.push({ x: targetX, y: targetY, life: 0.9, startLife: 0.9, color: "#ff3b4f", size: 90 });
     }
     unit.tiamatGazeTimer = unit.hp < unit.maxHp * 0.45 ? 4.2 : 5.4;
   }
