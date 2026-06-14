@@ -1,7 +1,7 @@
 ﻿const canvas = document.querySelector("#battlefield");
 const ctx = canvas.getContext("2d");
 const tiamatSprite = new Image();
-tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-reference-skin-1";
+tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-new-clean-skin-1";
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
@@ -1107,7 +1107,7 @@ const unitTypes = [
     damage: 170,
     range: 135,
     stopDistance: 90,
-    speed: 112,
+    speed: 2800,
     radius: 56,
     cooldown: 0.78,
     projectileSpeed: 0,
