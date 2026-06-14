@@ -210,18 +210,28 @@ const levelDefinitions = [
   { number: 4, budget: 1500, name: "Heavy Camp", zh: "第四关：重甲营地", enemies: [["knight", 3], ["hammer", 3], ["musketeer", 3], ["wolf", 2]] },
   { number: 5, budget: 2100, name: "Poison Field", zh: "第五关：毒液战场", enemies: [["poisoner", 3], ["slimebeast", 2], ["plaguewizard", 1], ["giant", 1]] },
   { number: 6, budget: 2900, name: "Frozen Dead", zh: "第六关：冰冻亡灵", enemies: [["zombie", 8], ["coneheadzombie", 4], ["frostmage", 2], ["necromancer", 1]] },
-  { number: 7, budget: 3900, name: "Dragon Nest", zh: "第七关：龙巢", enemies: [["dragonling", 8], ["adultdragon", 1], ["flameknight", 2], ["sharpshooter", 2]] },
-  { number: 8, budget: 5200, name: "Zombie Wall", zh: "第八关：僵尸墙", enemies: [["zombie", 10], ["coneheadzombie", 5], ["bucketzombie", 3], ["footballzombie", 2], ["giantzombie", 1]] },
-  { number: 9, budget: 7600, name: "Storm Legion", zh: "第九关：风暴军团", enemies: [["frostgiant", 2], ["stormlancer", 4], ["phoenixguard", 2], ["adultdragon", 2], ["voidbinder", 2]] },
-  { number: 10, budget: 15000, name: "Tiamat", zh: "第十关：龙神提亚马特", enemies: [["tiamat", 1], ["adultdragon", 2], ["dragonling", 6]] },
+  { number: 7, budget: 3400, name: "67 Lockdown", zh: "第七关：67封锁", enemies: [["unit67", 5], ["shield", 5], ["sharpshooter", 2], ["voidbinder", 1]] },
+  { number: 8, budget: 4300, name: "Dragon Nest", zh: "第八关：龙巢", enemies: [["dragonling", 8], ["adultdragon", 1], ["flameknight", 2], ["sharpshooter", 2]] },
+  { number: 9, budget: 5600, name: "Zombie Wall", zh: "第九关：僵尸墙", enemies: [["zombie", 10], ["coneheadzombie", 5], ["bucketzombie", 3], ["footballzombie", 2], ["giantzombie", 1]] },
+  { number: 10, budget: 8000, name: "Storm Legion", zh: "第十关：风暴军团", enemies: [["frostgiant", 2], ["stormlancer", 4], ["phoenixguard", 2], ["adultdragon", 2], ["voidbinder", 2]] },
+  { number: 11, budget: 15000, name: "Tiamat", zh: "第十一关：龙神提亚马特", enemies: [["tiamat", 1], ["adultdragon", 2], ["dragonling", 6]] },
+  { number: 12, budget: 9000, name: "Hydra Burn", zh: "第十二关：九头火阵", enemies: [["hydra", 4], ["flameknight", 4], ["phoenixguard", 2], ["dragonling", 8]] },
+  { number: 13, budget: 9800, name: "Frozen Fortress", zh: "第十三关：冰霜堡垒", enemies: [["frostgiant", 4], ["frostmage", 4], ["shield", 8], ["sharpshooter", 3]] },
+  { number: 14, budget: 11000, name: "Zombie Stampede", zh: "第十四关：僵尸冲锋", enemies: [["giantzombie", 2], ["footballzombie", 6], ["bucketzombie", 8], ["zombie", 16]] },
+  { number: 15, budget: 12000, name: "Portal Disaster", zh: "第十五关：传送灾难", enemies: [["portalmage", 4], ["voidbinder", 4], ["unit67", 4], ["stormcaller", 4], ["sharpshooter", 3]] },
+  { number: 16, budget: 13500, name: "Plant Siege", zh: "第十六关：植物火线", enemies: [["gatlingshooter", 3], ["repeater", 6], ["peashooter", 10], ["chomper", 4], ["sunflower", 6]] },
+  { number: 17, budget: 15000, name: "Dragon Crown", zh: "第十七关：龙冠军团", enemies: [["adultdragon", 3], ["hydra", 3], ["dragonling", 12], ["phoenixguard", 3]] },
+  { number: 18, budget: 16500, name: "Control Nightmare", zh: "第十八关：控制噩梦", enemies: [["unit67", 8], ["voidbinder", 5], ["stormcaller", 4], ["frostmage", 4], ["shield", 10]] },
+  { number: 19, budget: 19000, name: "Two-Headed Doom", zh: "第十九关：双重末日", enemies: [["tiamat", 1], ["giantzombie", 2], ["adultdragon", 2], ["frostgiant", 2], ["voidbinder", 3]] },
+  { number: 20, budget: 24000, name: "Final Chaos", zh: "第二十关：终极混沌", enemies: [["tiamat", 1], ["adultdragon", 4], ["giantzombie", 3], ["hydra", 4], ["unit67", 6], ["phoenixguard", 4]] },
 ];
 
 const levelUnitUnlocks = [
   { maxLevel: 3, banned: ["dragonling", "adultdragon", "tiamat", "frostgiant", "giantzombie", "gatlingshooter", "chomper"] },
-  { maxLevel: 6, banned: ["dragonling", "adultdragon", "tiamat", "giantzombie", "gatlingshooter"] },
-  { maxLevel: 8, banned: ["adultdragon", "tiamat", "giantzombie"] },
-  { maxLevel: 9, banned: ["tiamat"] },
-  { maxLevel: 10, banned: [] },
+  { maxLevel: 7, banned: ["dragonling", "adultdragon", "tiamat", "giantzombie", "gatlingshooter"] },
+  { maxLevel: 9, banned: ["adultdragon", "tiamat", "giantzombie"] },
+  { maxLevel: 10, banned: ["tiamat"] },
+  { maxLevel: 20, banned: [] },
 ];
 
 const INFECTABLE_TYPE_IDS = new Set([
@@ -3723,9 +3733,9 @@ function updateTiamatBoss(unit, dt) {
   if (updateTiamatDash(unit, dt)) return true;
   unit.tiamatMudTimer = Math.max(0, (unit.tiamatMudTimer || 0) - dt);
   unit.tiamatBreathTimer = Math.max(0, (unit.tiamatBreathTimer || 0.8) - dt);
-  unit.tiamatGazeTimer = Math.max(0, (unit.tiamatGazeTimer || 4) - dt);
+  unit.tiamatGazeTimer = Math.max(0, (unit.tiamatGazeTimer || 2.8) - dt);
   unit.tiamatSummonTimer = Math.max(0, (unit.tiamatSummonTimer || 7) - dt);
-  unit.tiamatElementBreathTimer = Math.max(0, (unit.tiamatElementBreathTimer || 2.5) - dt);
+  unit.tiamatElementBreathTimer = Math.max(0, (unit.tiamatElementBreathTimer || 1.7) - dt);
   unit.tiamatDashCooldown = Math.max(0, (unit.tiamatDashCooldown || 3) - dt);
   unit.tiamatCataclysmTimer = Math.max(0, (unit.tiamatCataclysmTimer || 8) - dt);
   unit.tiamatTideTimer = Math.max(0, (unit.tiamatTideTimer || 12) - dt);
@@ -3761,7 +3771,7 @@ function updateTiamatBoss(unit, dt) {
   }
   if (unit.tiamatElementBreathTimer <= 0) {
     tiamatElementBreath(unit, enemies);
-    unit.tiamatElementBreathTimer = unit.hp < unit.maxHp * 0.45 ? 3.2 : 4.8;
+    unit.tiamatElementBreathTimer = unit.hp < unit.maxHp * 0.45 ? 2.1 : 3.2;
   }
   if (unit.tiamatDashCooldown <= 0) {
     startTiamatDash(unit, enemies);
@@ -3795,7 +3805,8 @@ function updateTiamatBoss(unit, dt) {
   if (unit.tiamatGazeTimer <= 0) {
     const byHp = [...enemies].sort((a, b) => a.hp - b.hp)[0];
     const byDamage = [...enemies].sort((a, b) => (b.statsDamage || 0) - (a.statsDamage || 0))[0];
-    for (const target of Array.from(new Set([byHp, byDamage])).filter(Boolean)) {
+    const randomTarget = enemies[Math.floor(Math.random() * enemies.length)];
+    for (const target of Array.from(new Set([byHp, byDamage, randomTarget])).filter(Boolean)) {
       state.projectiles.push({
         x: target.x + (Math.random() - 0.5) * 180,
         y: -30,
@@ -3816,7 +3827,7 @@ function updateTiamatBoss(unit, dt) {
       });
       state.particles.push({ x: target.x, y: target.y, life: 0.9, startLife: 0.9, color: "#ff3b4f", size: 90 });
     }
-    unit.tiamatGazeTimer = 7;
+    unit.tiamatGazeTimer = unit.hp < unit.maxHp * 0.45 ? 4.2 : 5.4;
   }
   if (unit.tiamatSummonTimer <= 0) {
     for (let i = 0; i < 5; i += 1) summonTiamatDragon(unit, "adultdragon", i, 5, 130);
