@@ -1,5 +1,7 @@
 ﻿const canvas = document.querySelector("#battlefield");
 const ctx = canvas.getContext("2d");
+const tiamatSprite = new Image();
+tiamatSprite.src = "./assets/tiamat-sprite.png";
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
@@ -1102,22 +1104,22 @@ const unitTypes = [
     glyph: "T5",
     price: 9000,
     hp: 7600,
-    damage: 118,
-    range: 360,
-    stopDistance: 255,
-    speed: 95,
+    damage: 170,
+    range: 135,
+    stopDistance: 90,
+    speed: 112,
     radius: 56,
-    cooldown: 1.25,
-    projectileSpeed: 380,
-    splash: 160,
-    knockback: 22,
-    weapon: "cannon",
-    areaAttack: { range: 165, damage: 52 },
-    secondAttack: { weapon: "club", range: 120, damage: 150, ranged: false, projectileSpeed: 0, splash: 0, cooldown: 0.8 },
+    cooldown: 0.78,
+    projectileSpeed: 0,
+    splash: 0,
+    knockback: 28,
+    weapon: "club",
+    areaAttack: { range: 175, damage: 72 },
+    secondAttack: { weapon: "club", range: 145, damage: 210, ranged: false, projectileSpeed: 0, splash: 0, cooldown: 0.95 },
     skills: {
       tiamatBoss: true,
       fireBreath: true,
-      fireball: true,
+      fireball: false,
       fireballDamage: 160,
       fireRange: 230,
       fireDuration: 7,
@@ -3455,7 +3457,7 @@ function dragonFiveElementBreath(unit, target) {
 function startTiamatDash(unit, enemies) {
   const target = enemies[Math.floor(Math.random() * enemies.length)];
   unit.tiamatDashAngle = Math.atan2(target.y - unit.y, target.x - unit.x);
-  unit.tiamatDashTimer = 2.4;
+  unit.tiamatDashTimer = 2.8;
   unit.tiamatDashHitIds = [];
   state.particles.push({ x: unit.x, y: unit.y, life: 0.8, startLife: 0.8, color: "#ffcf5f", size: 180 });
 }
@@ -3490,11 +3492,11 @@ function updateTiamatDash(unit, dt) {
 function updateTiamatBoss(unit, dt) {
   if (updateTiamatDash(unit, dt)) return true;
   unit.tiamatMudTimer = Math.max(0, (unit.tiamatMudTimer || 0) - dt);
-  unit.tiamatBreathTimer = Math.max(0, (unit.tiamatBreathTimer || 2.5) - dt);
+  unit.tiamatBreathTimer = Math.max(0, (unit.tiamatBreathTimer || 1.2) - dt);
   unit.tiamatGazeTimer = Math.max(0, (unit.tiamatGazeTimer || 5) - dt);
   unit.tiamatSummonTimer = Math.max(0, (unit.tiamatSummonTimer || 8) - dt);
-  unit.tiamatElementBreathTimer = Math.max(0, (unit.tiamatElementBreathTimer || 6) - dt);
-  unit.tiamatDashCooldown = Math.max(0, (unit.tiamatDashCooldown || 10) - dt);
+  unit.tiamatElementBreathTimer = Math.max(0, (unit.tiamatElementBreathTimer || 3.5) - dt);
+  unit.tiamatDashCooldown = Math.max(0, (unit.tiamatDashCooldown || 4) - dt);
   unit.tiamatCataclysmTimer = Math.max(0, (unit.tiamatCataclysmTimer || 9) - dt);
   unit.tiamatTideTimer = Math.max(0, (unit.tiamatTideTimer || 13) - dt);
   unit.tiamatBarrierCooldown = Math.max(0, (unit.tiamatBarrierCooldown || 17) - dt);
@@ -3529,11 +3531,11 @@ function updateTiamatBoss(unit, dt) {
   }
   if (unit.tiamatElementBreathTimer <= 0) {
     tiamatElementBreath(unit, enemies);
-    unit.tiamatElementBreathTimer = unit.hp < unit.maxHp * 0.45 ? 7 : 9.5;
+    unit.tiamatElementBreathTimer = unit.hp < unit.maxHp * 0.45 ? 4.2 : 5.8;
   }
   if (unit.tiamatDashCooldown <= 0) {
     startTiamatDash(unit, enemies);
-    unit.tiamatDashCooldown = unit.hp < unit.maxHp * 0.45 ? 9 : 13;
+    unit.tiamatDashCooldown = unit.hp < unit.maxHp * 0.45 ? 4.8 : 6.2;
     return true;
   }
   if (unit.tiamatBreathTimer <= 0) {
@@ -3558,7 +3560,7 @@ function updateTiamatBoss(unit, dt) {
       }
     });
     damageWallsAt(target.x, target.y, 120, 38);
-    unit.tiamatBreathTimer = unit.hp < unit.maxHp * 0.45 ? 4.5 : 6.2;
+    unit.tiamatBreathTimer = unit.hp < unit.maxHp * 0.45 ? 2.6 : 3.8;
   }
   if (unit.tiamatGazeTimer <= 0) {
     const byHp = [...enemies].sort((a, b) => a.hp - b.hp)[0];
@@ -5657,6 +5659,21 @@ function drawUnit(unit) {
     ctx.arc(0, 0, unit.radius + 38, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
+  }
+  if (unit.typeId === "tiamat" && tiamatSprite.complete && tiamatSprite.naturalWidth > 0) {
+    const spriteWidth = unit.radius * 6.7;
+    const spriteHeight = spriteWidth * (tiamatSprite.naturalHeight / tiamatSprite.naturalWidth);
+    ctx.drawImage(tiamatSprite, -spriteWidth / 2, -spriteHeight * 0.56, spriteWidth, spriteHeight);
+    ctx.restore();
+    if (!unit.dead) {
+      const barWidth = unit.radius * 2;
+      const health = Math.max(0, unit.hp / unit.maxHp);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.38)";
+      ctx.fillRect(unit.x - barWidth / 2, unit.y - unit.radius - 12, barWidth, 4);
+      ctx.fillStyle = health > 0.42 ? "#63d28a" : "#e8bd57";
+      ctx.fillRect(unit.x - barWidth / 2, unit.y - unit.radius - 12, barWidth * health, 4);
+    }
+    return;
   }
   ctx.fillStyle = unit.color;
   ctx.beginPath();
