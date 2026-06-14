@@ -230,7 +230,7 @@ const levelUnitUnlocks = [
   { maxLevel: 3, banned: ["dragonling", "adultdragon", "tiamat", "frostgiant", "giantzombie", "gatlingshooter", "chomper"] },
   { maxLevel: 7, banned: ["dragonling", "adultdragon", "tiamat", "giantzombie", "gatlingshooter"] },
   { maxLevel: 9, banned: ["adultdragon", "tiamat", "giantzombie"] },
-  { maxLevel: 10, banned: ["tiamat"] },
+  { maxLevel: 19, banned: ["tiamat"] },
   { maxLevel: 20, banned: [] },
 ];
 
