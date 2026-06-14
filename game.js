@@ -7304,6 +7304,7 @@ function draw() {
 
 function updateUi() {
   const text = translations[state.language] || translations.zh;
+  appShell?.classList.toggle("level-clean", state.levelMode);
   budgetText.textContent = state.sandbox ? text.infiniteMoney : `${text.budget} ${state.budget}`;
   blueCount.textContent = state.units.filter((unit) => unit.team === "blue" && !unit.dead).length;
   redCount.textContent = state.units.filter((unit) => unit.team === "red" && !unit.dead).length;

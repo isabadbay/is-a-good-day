@@ -391,6 +391,14 @@
               <strong id="redCount">0</strong>
             </div>
           </div>
+          <div class="level-tools">
+            <label class="range-row">
+              <span id="levelLabelText">Level</span>
+              <select id="levelSelect"></select>
+            </label>
+            <button id="loadLevelBtn">Load Level</button>
+            <p id="levelInfo">Beat a level to unlock the next one.</p>
+          </div>
           <div id="controlPanel" class="control-panel">
             <h3 id="controlTitle">Control</h3>
             <p id="controlName">Click a unit during battle</p>
@@ -447,15 +455,7 @@
               </button>
             </div>
           </div>
-          <div class="level-tools">
-            <label class="range-row">
-              <span id="levelLabelText">Level</span>
-              <select id="levelSelect"></select>
-            </label>
-            <button id="loadLevelBtn">Load Level</button>
-            <p id="levelInfo">Beat a level to unlock the next one.</p>
-          </div>
-          <label class="range-row">
+          <label class="range-row enemy-size-row">
             <span id="enemySizeLabelText">Enemy Size</span>
             <input id="enemySlider" type="range" min="4" max="18" value="9" />
           </label>

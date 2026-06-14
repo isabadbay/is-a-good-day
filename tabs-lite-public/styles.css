@@ -301,6 +301,23 @@ h1 {
   font-size: 17px;
 }
 
+.level-clean .roster .panel-title,
+.level-clean .roster > .toggle-row,
+.level-clean .team-picker,
+.level-clean .placement-batch,
+.level-clean .share-tools,
+.level-clean .map-tools {
+  display: none;
+}
+
+.level-clean .roster {
+  padding-top: 10px;
+}
+
+.level-clean .enemy-size-row {
+  display: none;
+}
+
 .unit-list {
   display: grid;
   gap: 9px;
