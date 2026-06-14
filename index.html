@@ -424,12 +424,20 @@
               </button>
             </div>
           </div>
+          <div class="level-tools">
+            <label class="range-row">
+              <span id="levelLabelText">Level</span>
+              <select id="levelSelect"></select>
+            </label>
+            <button id="loadLevelBtn">Load Level</button>
+            <p id="levelInfo">Beat a level to unlock the next one.</p>
+          </div>
           <label class="range-row">
-            Enemy Size
+            <span id="enemySizeLabelText">Enemy Size</span>
             <input id="enemySlider" type="range" min="4" max="18" value="9" />
           </label>
           <label class="range-row">
-            Camera Speed
+            <span id="cameraSpeedLabelText">Camera Speed</span>
             <input id="speedSlider" type="range" min="60" max="180" value="100" />
           </label>
           <div class="tips">
@@ -441,6 +449,6 @@
       </section>
     </main>
 
-    <script src="./game.js?v=20260614-tiamat-summon-lightning-1"></script>
+    <script src="./game.js?v=20260614-levels-1"></script>
   </body>
 </html>

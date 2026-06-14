@@ -1,7 +1,7 @@
 ﻿const canvas = document.querySelector("#battlefield");
 const ctx = canvas.getContext("2d");
 const tiamatSprite = new Image();
-tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-summon-lightning-1";
+tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-particles-before-battle-1";
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
@@ -22,6 +22,9 @@ const resetBtn = document.querySelector("#resetBtn");
 const eraseBtn = document.querySelector("#eraseBtn");
 const randomBtn = document.querySelector("#randomBtn");
 const enemySlider = document.querySelector("#enemySlider");
+const levelSelect = document.querySelector("#levelSelect");
+const loadLevelBtn = document.querySelector("#loadLevelBtn");
+const levelInfo = document.querySelector("#levelInfo");
 const speedSlider = document.querySelector("#speedSlider");
 const sandboxToggle = document.querySelector("#sandboxToggle");
 const blueTeamBtn = document.querySelector("#blueTeamBtn");
@@ -192,6 +195,19 @@ const terrainTypes = {
   high: { name: "High Ground", zh: "高地", cost: 120, radius: 72 },
 };
 
+const levelDefinitions = [
+  { number: 1, budget: 500, name: "First Clash", zh: "第一关：小冲突", enemies: [["clubber", 5], ["archer", 1]] },
+  { number: 2, budget: 800, name: "Shield Line", zh: "第二关：盾墙", enemies: [["shield", 4], ["spear", 4], ["archer", 2]] },
+  { number: 3, budget: 1100, name: "Fast Raiders", zh: "第三关：突袭队", enemies: [["berserker", 4], ["assassin", 2], ["crossbow", 3]] },
+  { number: 4, budget: 1500, name: "Heavy Camp", zh: "第四关：重甲营地", enemies: [["knight", 3], ["hammer", 3], ["musketeer", 3], ["wolf", 2]] },
+  { number: 5, budget: 2100, name: "Poison Field", zh: "第五关：毒液战场", enemies: [["poisoner", 3], ["slimebeast", 2], ["plaguewizard", 1], ["giant", 1]] },
+  { number: 6, budget: 2900, name: "Frozen Dead", zh: "第六关：冰冻亡灵", enemies: [["zombie", 8], ["coneheadzombie", 4], ["frostmage", 2], ["necromancer", 1]] },
+  { number: 7, budget: 3900, name: "Dragon Nest", zh: "第七关：龙巢", enemies: [["dragonling", 8], ["adultdragon", 1], ["flameknight", 2], ["sharpshooter", 2]] },
+  { number: 8, budget: 5200, name: "Zombie Wall", zh: "第八关：僵尸墙", enemies: [["zombie", 10], ["coneheadzombie", 5], ["bucketzombie", 3], ["footballzombie", 2], ["giantzombie", 1]] },
+  { number: 9, budget: 7600, name: "Storm Legion", zh: "第九关：风暴军团", enemies: [["frostgiant", 2], ["stormlancer", 4], ["phoenixguard", 2], ["adultdragon", 2], ["voidbinder", 2]] },
+  { number: 10, budget: 15000, name: "Tiamat", zh: "第十关：龙神提亚马特", enemies: [["tiamat", 1], ["adultdragon", 2], ["dragonling", 6]] },
+];
+
 const INFECTABLE_TYPE_IDS = new Set([
   "clubber",
   "shield",
@@ -243,6 +259,14 @@ const translations = {
     controlSelected: "正在操控",
     noControlTarget: "没有可操控兵种",
     noSpecialReady: "没有可用特殊技能",
+    level: "关卡",
+    loadLevel: "加载关卡",
+    levelLocked: "还没解锁",
+    levelUnlocked: "已解锁下一关",
+    levelInfo: "金币",
+    levelHint: "赢下当前关卡会解锁下一关",
+    levelLoaded: "关卡已加载",
+    levelWin: "关卡胜利",
     enemySize: "敌军规模",
     speed: "镜头速度",
     erase: "橡皮擦",
@@ -466,6 +490,14 @@ const translations = {
     controlSelected: "Controlling",
     noControlTarget: "No controllable unit",
     noSpecialReady: "No special skill ready",
+    level: "Level",
+    loadLevel: "Load Level",
+    levelLocked: "Locked",
+    levelUnlocked: "Next level unlocked",
+    levelInfo: "Gold",
+    levelHint: "Win this level to unlock the next one",
+    levelLoaded: "Level loaded",
+    levelWin: "Level cleared",
     enemySize: "Enemy Size",
     speed: "Camera Speed",
     erase: "Erase",
@@ -710,12 +742,14 @@ function applyLanguage(lang) {
   if (controlBuildNextBtn) controlBuildNextBtn.textContent = text.controlPickBuild;
   if (controlBuildPlaceBtn) controlBuildPlaceBtn.textContent = text.controlBuild;
   if (controlDemolishBtn) controlDemolishBtn.textContent = text.controlDemolish;
-  const rangeRows = document.querySelectorAll(".range-row");
-  if (rangeRows[0]) rangeRows[0].childNodes[0].textContent = text.enemySize;
-  if (rangeRows[1]) rangeRows[1].childNodes[0].textContent = text.speed;
+  setText("#levelLabelText", text.level);
+  if (loadLevelBtn) loadLevelBtn.textContent = text.loadLevel;
+  setText("#enemySizeLabelText", text.enemySize);
+  setText("#cameraSpeedLabelText", text.speed);
   if (state.selected !== "erase") eraseBtn.textContent = text.erase;
   randomBtn.textContent = text.random;
   applyFormLanguage(text);
+  renderLevelSelect();
   renderUnitList();
   updateUi();
 }
@@ -1682,6 +1716,23 @@ const unitTypes = [
 
 let customUnitCounter = 1;
 
+function readUnlockedLevel() {
+  try {
+    const saved = Number(localStorage.getItem("tabsLiteUnlockedLevel"));
+    return Math.min(levelDefinitions.length, Math.max(1, Number.isFinite(saved) ? saved : 1));
+  } catch {
+    return 1;
+  }
+}
+
+function saveUnlockedLevel(level) {
+  try {
+    localStorage.setItem("tabsLiteUnlockedLevel", String(level));
+  } catch {
+    // Local save can fail in private browser modes. The level still works for this session.
+  }
+}
+
 const state = {
   phase: "setup",
   selected: unitTypes[0].id,
@@ -1694,6 +1745,9 @@ const state = {
   plantMode: false,
   challengeMode: false,
   challengeBudget: 0,
+  levelMode: false,
+  currentLevel: 0,
+  unlockedLevel: readUnlockedLevel(),
   language: "en",
   budget: 900,
   units: [],
@@ -3854,6 +3908,97 @@ function spawnEnemyArmy() {
   updateUi();
 }
 
+function levelName(level) {
+  return state.language === "zh" ? level.zh : level.name;
+}
+
+function resetBattlefieldForLevel(level) {
+  state.phase = "setup";
+  state.sandbox = false;
+  state.plantMode = false;
+  state.challengeMode = true;
+  state.levelMode = true;
+  state.currentLevel = level.number;
+  state.challengeBudget = level.budget;
+  state.budget = level.budget;
+  state.placeTeam = "blue";
+  state.units = [];
+  state.projectiles = [];
+  state.particles = [];
+  state.slimes = [];
+  state.tornadoes = [];
+  state.walls = [];
+  state.terrains = [];
+  state.battleStats = null;
+  state.commands = { blue: null, red: null };
+  state.focusTargets = { blue: null, red: null };
+  state.controlledId = null;
+  state.controlKeys = {};
+  state.controlSpecialIndex = 0;
+  state.controlBuildMode = false;
+  state.dragging = null;
+  state.wallStart = null;
+  state.pointer = null;
+  state.mapTool = null;
+  state.selectedItem = null;
+  state.winnerShown = false;
+}
+
+function spawnLevelEnemies(level) {
+  const entries = level.enemies.flatMap(([typeId, count]) => Array.from({ length: count }, () => typeId));
+  const rows = Math.max(1, Math.ceil(entries.length / 4));
+  entries.forEach((typeId, index) => {
+    if (!typeById(typeId)) return;
+    const col = index % 4;
+    const row = Math.floor(index / 4);
+    const x = canvas.width * 0.62 + col * 68 + (row % 2) * 18;
+    const y = 90 + row * Math.max(48, Math.min(84, (canvas.height - 180) / rows));
+    addUnit(typeId, "red", Math.min(canvas.width - 70, x), Math.min(canvas.height - 70, y));
+  });
+}
+
+function renderLevelSelect() {
+  if (!levelSelect) return;
+  const selected = Number(levelSelect.value) || state.currentLevel || 1;
+  levelSelect.innerHTML = levelDefinitions
+    .map((level) => {
+      const locked = level.number > state.unlockedLevel;
+      const name = state.language === "zh" ? level.zh : level.name;
+      const label = locked ? `${level.number}. ${name} (${(translations[state.language] || translations.en).levelLocked})` : `${level.number}. ${name}`;
+      return `<option value="${level.number}" ${level.number === selected ? "selected" : ""}>${label}</option>`;
+    })
+    .join("");
+}
+
+function updateLevelUi() {
+  if (!levelSelect || !loadLevelBtn || !levelInfo) return;
+  const text = translations[state.language] || translations.en;
+  const levelNumber = Number(levelSelect.value) || state.currentLevel || 1;
+  const level = levelDefinitions.find((entry) => entry.number === levelNumber) || levelDefinitions[0];
+  const locked = level.number > state.unlockedLevel;
+  loadLevelBtn.disabled = locked || state.phase === "battle";
+  levelInfo.textContent = locked
+    ? `${text.levelLocked}: ${text.levelHint}`
+    : `${levelName(level)} - ${text.levelInfo} ${level.budget}. ${text.levelHint}`;
+}
+
+function loadLevel(levelNumber) {
+  const text = translations[state.language] || translations.en;
+  const level = levelDefinitions.find((entry) => entry.number === levelNumber) || levelDefinitions[0];
+  if (level.number > state.unlockedLevel) {
+    setToast(`${text.levelLocked}: ${text.levelHint}`);
+    updateLevelUi();
+    return;
+  }
+  resetBattlefieldForLevel(level);
+  spawnLevelEnemies(level);
+  syncBudgetToEnemySize();
+  renderUnitList();
+  renderLevelSelect();
+  updateUi();
+  setToast(`${text.levelLoaded}: ${levelName(level)} - ${text.budget} ${level.budget}`);
+}
+
 function resetGame(keepEnemies = false) {
   state.phase = "setup";
   state.budget = totalBudgetForEnemySize();
@@ -3870,6 +4015,8 @@ function resetGame(keepEnemies = false) {
   state.plantMode = false;
   state.challengeMode = false;
   state.challengeBudget = 0;
+  state.levelMode = false;
+  state.currentLevel = 0;
   state.dragging = null;
   state.controlledId = null;
   state.controlKeys = {};
@@ -5459,7 +5606,19 @@ function checkWinner() {
       : ` Top damage:${topDamage.name} ${Math.round(topDamage.statsDamage)} Kills:${topKills?.name || "-"} ${topKills?.statsKills || 0} Best value:${bestValue?.unit.name || "-"}`
     : "";
   state.battleStats = { topDamage: topDamage?.id, topKills: topKills?.id, bestValue: bestValue?.unit.id };
-  setToast(`${blueAlive ? text.blueWin : text.redWin}${statsText}`);
+  let levelText = "";
+  if (blueAlive && state.levelMode && state.currentLevel > 0) {
+    const nextLevel = Math.min(levelDefinitions.length, state.currentLevel + 1);
+    if (nextLevel > state.unlockedLevel) {
+      state.unlockedLevel = nextLevel;
+      saveUnlockedLevel(state.unlockedLevel);
+      renderLevelSelect();
+      levelText = state.currentLevel === levelDefinitions.length ? ` ${text.levelWin}` : ` ${text.levelUnlocked}: ${nextLevel}`;
+    } else {
+      levelText = ` ${text.levelWin}`;
+    }
+  }
+  setToast(`${blueAlive ? text.blueWin : text.redWin}${levelText}${statsText}`);
 }
 
 function update(dt) {
@@ -5475,9 +5634,9 @@ function update(dt) {
     updateProjectiles(scaledDt);
     updateSlimes(scaledDt);
     updateTornadoes(scaledDt);
-    updateParticles(scaledDt);
     checkWinner();
   }
+  updateParticles(scaledDt);
   state.units = state.units.filter((unit) => !unit.dead || unit.hp > -80);
   updateUi();
 }
@@ -7088,6 +7247,7 @@ function updateUi() {
   sandboxToggle.checked = state.sandbox;
   sandboxToggle.disabled = state.challengeMode;
   if (exitChallengeBtn) exitChallengeBtn.disabled = !state.challengeMode;
+  updateLevelUi();
   if (battlefieldWrap) battlefieldWrap.classList.toggle("item-aiming", state.phase === "battle" && Boolean(state.selectedItem));
   if (itemsTitle) itemsTitle.textContent = text.items;
   for (const button of itemButtons) {
@@ -7354,6 +7514,8 @@ randomBtn.addEventListener("click", randomFormation);
 exportFormationBtn?.addEventListener("click", exportFormation);
 importFormationBtn?.addEventListener("click", importFormation);
 exitChallengeBtn?.addEventListener("click", exitChallengeMode);
+loadLevelBtn?.addEventListener("click", () => loadLevel(Number(levelSelect?.value) || 1));
+levelSelect?.addEventListener("change", updateLevelUi);
 saveSlotBtns.forEach((button, index) => button?.addEventListener("click", () => saveFormationSlot(index + 1)));
 loadSlotBtns.forEach((button, index) => button?.addEventListener("click", () => loadFormationSlot(index + 1)));
 upgradeSelectedBtn?.addEventListener("click", upgradeSelectedUnitType);
@@ -7562,6 +7724,7 @@ function loop(now) {
 }
 
 renderUnitList();
+renderLevelSelect();
 spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);

@@ -605,6 +605,36 @@ canvas {
   color: var(--muted);
 }
 
+.level-tools {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.level-tools .range-row {
+  margin: 0;
+}
+
+.level-tools select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--ink);
+  background: rgba(10, 16, 26, 0.92);
+}
+
+.level-tools p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 input[type="range"] {
   width: 100%;
   accent-color: var(--gold);
