@@ -143,6 +143,7 @@ const itemTypes = {
   wall: { cost: 220, color: "#9bdcff" },
   lightning: { cost: 240, damage: 70, chains: 5, color: "#bde7ff" },
 };
+const levelBannedItems = new Set(["fireball", "meteor", "lightning"]);
 const UNIT_PACK_2_IDS = new Set([
   "knight",
   "assassin",
@@ -325,6 +326,7 @@ const translations = {
     itemUseHint: "选择道具后点击战场释放",
     itemNeedBattle: "开战后才能使用道具",
     itemNoGold: "金币不够买这个道具",
+    itemLevelLocked: "关卡模式不能使用攻击道具",
     itemCast: "道具已释放",
     itemHit: "喷中友军",
     itemCancel: "取消道具",
@@ -562,6 +564,7 @@ const translations = {
     itemUseHint: "Select an item, then click the battlefield",
     itemNeedBattle: "Items can be used after battle starts",
     itemNoGold: "Not enough gold for this item",
+    itemLevelLocked: "Attack items are locked in Levels",
     itemCast: "Item used",
     itemHit: "Friendly units hit",
     itemCancel: "Cancel Item",
@@ -1845,6 +1848,10 @@ function typeById(id) {
   return unitTypes.find((type) => type.id === id);
 }
 
+function isSandboxActive() {
+  return state.sandbox || document.body.dataset.mode === "sandbox";
+}
+
 function displayType(type) {
   const text = translations[state.language] || translations.zh;
   if (text.unitsMap[type.id]) {
@@ -2231,6 +2238,12 @@ function updateFocusTargets(dt) {
 
 function selectItem(itemId) {
   const text = translations[state.language] || translations.en;
+  if (!isItemAllowedInCurrentMode(itemId)) {
+    state.selectedItem = null;
+    updateUi();
+    setToast(text.itemLevelLocked);
+    return;
+  }
   state.selectedItem = state.selectedItem === itemId ? null : itemId;
   updateUi();
   if (state.selectedItem) {
@@ -2478,7 +2491,7 @@ function bannedUnitsForCurrentLevel() {
 }
 
 function isUnitAllowedInCurrentLevel(type) {
-  if (!type || !state.levelMode || state.sandbox) return true;
+  if (!type || !state.levelMode || isSandboxActive()) return true;
   return !bannedUnitsForCurrentLevel().has(type.id);
 }
 
@@ -3046,6 +3059,10 @@ function itemTeam() {
   return state.selectedItem ? state.placeTeam : state.sandbox ? state.placeTeam : "blue";
 }
 
+function isItemAllowedInCurrentMode(itemId) {
+  return isSandboxActive() || !levelBannedItems.has(itemId);
+}
+
 function canPayForItem(item) {
   return state.sandbox || state.budget >= item.cost;
 }
@@ -3268,6 +3285,12 @@ function castItemAt(itemId, point) {
   const text = translations[state.language] || translations.en;
   const item = itemTypes[itemId];
   if (!item) return;
+  if (!isItemAllowedInCurrentMode(itemId)) {
+    state.selectedItem = null;
+    updateUi();
+    setToast(text.itemLevelLocked);
+    return;
+  }
   if (state.phase !== "battle") {
     setToast(text.itemNeedBattle);
     return;
@@ -7415,10 +7438,11 @@ function updateUi() {
     const item = itemTypes[itemId];
     if (!item) continue;
     const name = text.itemNames[itemId] || itemId;
+    const lockedByLevel = !isItemAllowedInCurrentMode(itemId);
     button.classList.toggle("selected", state.selectedItem === itemId);
-    button.classList.toggle("locked", state.phase !== "battle");
+    button.classList.toggle("locked", state.phase !== "battle" || lockedByLevel);
     button.disabled = false;
-    button.innerHTML = `<b>${name}</b><small>${item.cost} ${text.budget}</small>`;
+    button.innerHTML = `<b>${name}</b><small>${lockedByLevel ? "LOCK" : `${item.cost} ${text.budget}`}</small>`;
   }
   const cancelButton = itemBar?.querySelector("[data-item-cancel]");
   if (cancelButton) {
@@ -7835,6 +7859,12 @@ sandboxToggle.addEventListener("change", () => {
     return;
   }
   state.sandbox = sandboxToggle.checked;
+  if (state.sandbox) {
+    state.challengeMode = false;
+    state.levelMode = false;
+    state.currentLevel = 0;
+    document.body.dataset.mode = "sandbox";
+  }
   state.placeTeam = state.sandbox ? state.placeTeam : "blue";
   if (state.sandbox) {
     setToast("Sandbox on: infinite gold, red and blue placement enabled");
