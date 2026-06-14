@@ -1,7 +1,7 @@
 ﻿const canvas = document.querySelector("#battlefield");
 const ctx = canvas.getContext("2d");
 const tiamatSprite = new Image();
-tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-normal-wobble-1";
+tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-defense-200-1";
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
@@ -4535,7 +4535,7 @@ function hurt(target, amount, source) {
   }
   if (target.skills.tiamatBoss && target.skills.defensePercent > 0 && !isMagicOrPoisonDamage(source)) {
     const defensePercent = tiamatDefensePercent(target);
-    amount *= Math.max(0, 1 - defensePercent / 100);
+    amount = Math.max(0, amount - defensePercent * 2);
     if (defensePercent > 0) {
       state.particles.push({ x: target.x, y: target.y, life: 0.45, color: amount > 0 ? "#ffcf5f" : "#d8d0a8", size: target.radius * (2.3 + defensePercent / 85) });
     }
