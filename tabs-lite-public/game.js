@@ -222,7 +222,7 @@ const levelDefinitions = [
   { number: 16, budget: 13500, name: "Plant Siege", zh: "第十六关：植物火线", enemies: [["gatlingshooter", 3], ["repeater", 6], ["peashooter", 10], ["chomper", 4], ["sunflower", 6]] },
   { number: 17, budget: 15000, name: "Dragon Crown", zh: "第十七关：龙冠军团", enemies: [["adultdragon", 3], ["hydra", 3], ["dragonling", 12], ["phoenixguard", 3]] },
   { number: 18, budget: 16500, name: "Control Nightmare", zh: "第十八关：控制噩梦", enemies: [["unit67", 8], ["voidbinder", 5], ["stormcaller", 4], ["frostmage", 4], ["shield", 10]] },
-  { number: 19, budget: 19000, name: "Two-Headed Doom", zh: "第十九关：双重末日", enemies: [["tiamat", 1], ["giantzombie", 2], ["adultdragon", 2], ["frostgiant", 2], ["voidbinder", 3]] },
+  { number: 19, budget: 19000, name: "Two-Headed Doom", zh: "第十九关：双重末日", enemies: [["adultdragon", 4], ["giantzombie", 2], ["frostgiant", 3], ["hydra", 2], ["voidbinder", 4]] },
   { number: 20, budget: 24000, name: "Final Chaos", zh: "第二十关：终极混沌", enemies: [["tiamat", 1], ["adultdragon", 4], ["giantzombie", 3], ["hydra", 4], ["unit67", 6], ["phoenixguard", 4]] },
 ];
 
@@ -235,11 +235,15 @@ const levelUnitUnlocks = [
 ];
 
 const levelSpecificBans = {
-  12: ["adultdragon"],
-  13: ["adultdragon"],
-  14: ["adultdragon"],
-  15: ["adultdragon"],
-  16: ["adultdragon"],
+  12: ["adultdragon", "peashooter", "repeater", "gatlingshooter", "portalmage"],
+  13: ["adultdragon", "peashooter", "repeater", "gatlingshooter", "portalmage"],
+  14: ["adultdragon", "peashooter", "repeater", "gatlingshooter", "portalmage"],
+  15: ["adultdragon", "peashooter", "repeater", "gatlingshooter", "portalmage"],
+  16: ["adultdragon", "peashooter", "repeater", "gatlingshooter", "portalmage"],
+  17: ["portalmage"],
+  18: ["portalmage"],
+  19: ["portalmage"],
+  20: ["portalmage"],
 };
 
 const INFECTABLE_TYPE_IDS = new Set([
@@ -1162,7 +1166,7 @@ const unitTypes = [
     name: "Adult Dragon",
     tag: "Fire Tyrant",
     glyph: "D",
-    price: 1200,
+    price: 3600,
     hp: 750,
     damage: 58,
     range: 290,
