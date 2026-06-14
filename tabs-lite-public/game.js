@@ -4639,7 +4639,11 @@ function applyDamageAura(unit, dt) {
 
 function spawnRandomUnit(unit) {
   if (!unit.skills.randomSpawn || unit.dead) return;
-  const candidates = unitTypes.filter((type) => !type.id.startsWith("custom-") && type.id !== "portalmage");
+  const blockedSummons = new Set(["portalmage", "tiamat", "adultdragon", "giantzombie", "arrowtower"]);
+  const candidates = unitTypes.filter((type) => {
+    if (type.id.startsWith("custom-") || blockedSummons.has(type.id)) return false;
+    return isUnitAllowedInCurrentLevel(type);
+  });
   if (!candidates.length) return;
   const type = candidates[Math.floor(Math.random() * candidates.length)];
   const angle = Math.random() * Math.PI * 2;
