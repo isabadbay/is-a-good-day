@@ -1,7 +1,7 @@
 ﻿const canvas = document.querySelector("#battlefield");
 const ctx = canvas.getContext("2d");
 const tiamatSprite = new Image();
-tiamatSprite.src = "./assets/tiamat-sprite.png";
+tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-reference-skin-1";
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
@@ -5663,6 +5663,19 @@ function drawUnit(unit) {
   if (unit.typeId === "tiamat" && tiamatSprite.complete && tiamatSprite.naturalWidth > 0) {
     const spriteWidth = unit.radius * 6.7;
     const spriteHeight = spriteWidth * (tiamatSprite.naturalHeight / tiamatSprite.naturalWidth);
+    ctx.fillStyle = "#261032";
+    ctx.beginPath();
+    ctx.moveTo(unit.radius * 0.2, -unit.radius * 0.32);
+    ctx.lineTo(unit.radius * 3.0, -unit.radius * 0.2);
+    ctx.lineTo(unit.radius * 1.2, unit.radius * 0.82);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#8a4aff";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(unit.radius * 0.85, -unit.radius * 0.16);
+    ctx.lineTo(unit.radius * 2.5, unit.radius * 0.18);
+    ctx.stroke();
     ctx.drawImage(tiamatSprite, -spriteWidth / 2, -spriteHeight * 0.56, spriteWidth, spriteHeight);
     ctx.restore();
     if (!unit.dead) {
