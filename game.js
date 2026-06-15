@@ -228,17 +228,17 @@ const levelDefinitions = [
   { number: 17, budget: 15000, name: "Dragon Crown", zh: "第十七关：龙冠军团", enemies: [["adultdragon", 3], ["hydra", 3], ["dragonling", 12], ["phoenixguard", 3]] },
   { number: 18, budget: 16500, name: "Control Nightmare", zh: "第十八关：控制噩梦", enemies: [["unit67", 8], ["voidbinder", 5], ["stormcaller", 4], ["frostmage", 4], ["shield", 10]] },
   { number: 19, budget: 17200, name: "Barricade Trial", zh: "第十九关：路障试炼", map: "barricadeTrial", enemies: [["wallcrusher", 4], ["sharpshooter", 5], ["shield", 8], ["cannon", 3]] },
-  { number: 20, budget: 18500, name: "Pea Maze", zh: "第二十关：豌豆迷宫", map: "peaMaze", enemies: [["peashooter", 5], ["chomper", 2], ["sunflower", 4]] },
-  { number: 21, budget: 19000, name: "Tower Gate", zh: "第二十一关：塔门", map: "towerGate", enemies: [["knight", 6], ["musketeer", 6], ["paladin", 3], ["sharpshooter", 4]] },
-  { number: 22, budget: 20000, name: "Frost Ramparts", zh: "第二十二关：冰霜壁垒", map: "frostRamparts", enemies: [["frostgiant", 3], ["frostmage", 6], ["shield", 12]] },
-  { number: 23, budget: 21100, name: "Zombie Factory", zh: "第二十三关：僵尸工厂", map: "zombieFactory", enemies: [["giantzombie", 2], ["footballzombie", 7], ["bucketzombie", 9], ["zombie", 16]] },
-  { number: 24, budget: 22200, name: "Fire Corridor", zh: "第二十四关：火焰走廊", map: "fireCorridor", enemies: [["flameknight", 7], ["phoenixguard", 4], ["dragonling", 12]] },
-  { number: 25, budget: 23400, name: "Hydra Garden", zh: "第二十五关：九头蛇花园", map: "hydraGarden", enemies: [["hydra", 4], ["poisoner", 6], ["slimebeast", 4], ["plaguewizard", 3]] },
-  { number: 26, budget: 24600, name: "Dragon Barricade", zh: "第二十六关：巨龙防线", map: "dragonBarricade", enemies: [["adultdragon", 3], ["dragonling", 16], ["flameknight", 6]] },
-  { number: 27, budget: 25800, name: "Void Prison", zh: "第二十七关：虚空牢笼", map: "voidPrison", enemies: [["voidbinder", 7], ["unit67", 7], ["stormcaller", 6], ["frostmage", 4]] },
-  { number: 28, budget: 27300, name: "Boss Warmup", zh: "第二十八关：Boss热身", map: "bossWarmup", enemies: [["giantzombie", 3], ["frostgiant", 3], ["adultdragon", 3], ["hydra", 3]] },
-  { number: 29, budget: 28800, name: "Two-Headed Doom", zh: "第二十九关：双重末日", enemies: [["adultdragon", 4], ["giantzombie", 2], ["frostgiant", 3], ["hydra", 2], ["voidbinder", 4]] },
-  { number: 30, budget: 32000, name: "Final Chaos", zh: "第三十关：终极混沌", enemies: [["tiamat", 1], ["adultdragon", 4], ["giantzombie", 3], ["hydra", 4], ["unit67", 6], ["phoenixguard", 4]] },
+  { number: 20, budget: 14500, name: "Pea Maze", zh: "第二十关：豌豆迷宫", map: "peaMaze", enemies: [["peashooter", 5], ["chomper", 2], ["sunflower", 4]] },
+  { number: 21, budget: 15000, name: "Tower Gate", zh: "第二十一关：塔门", map: "towerGate", enemies: [["knight", 6], ["musketeer", 6], ["paladin", 3], ["sharpshooter", 4]] },
+  { number: 22, budget: 15800, name: "Frost Ramparts", zh: "第二十二关：冰霜壁垒", map: "frostRamparts", enemies: [["frostgiant", 3], ["frostmage", 6], ["shield", 12]] },
+  { number: 23, budget: 16600, name: "Zombie Factory", zh: "第二十三关：僵尸工厂", map: "zombieFactory", enemies: [["giantzombie", 2], ["footballzombie", 7], ["bucketzombie", 9], ["zombie", 16]] },
+  { number: 24, budget: 17400, name: "Fire Corridor", zh: "第二十四关：火焰走廊", map: "fireCorridor", enemies: [["flameknight", 7], ["phoenixguard", 4], ["dragonling", 12]] },
+  { number: 25, budget: 18200, name: "Hydra Garden", zh: "第二十五关：九头蛇花园", map: "hydraGarden", enemies: [["hydra", 4], ["poisoner", 6], ["slimebeast", 4], ["plaguewizard", 3]] },
+  { number: 26, budget: 19000, name: "Dragon Barricade", zh: "第二十六关：巨龙防线", map: "dragonBarricade", enemies: [["adultdragon", 3], ["dragonling", 16], ["flameknight", 6]] },
+  { number: 27, budget: 19800, name: "Void Prison", zh: "第二十七关：虚空牢笼", map: "voidPrison", enemies: [["voidbinder", 7], ["unit67", 7], ["stormcaller", 6], ["frostmage", 4]] },
+  { number: 28, budget: 21000, name: "Boss Warmup", zh: "第二十八关：Boss热身", map: "bossWarmup", enemies: [["giantzombie", 3], ["frostgiant", 3], ["adultdragon", 3], ["hydra", 3]] },
+  { number: 29, budget: 22200, name: "Two-Headed Doom", zh: "第二十九关：双重末日", enemies: [["adultdragon", 4], ["giantzombie", 2], ["frostgiant", 3], ["hydra", 2], ["voidbinder", 4]] },
+  { number: 30, budget: 24000, name: "Final Chaos", zh: "第三十关：终极混沌", enemies: [["tiamat", 1], ["adultdragon", 4], ["giantzombie", 3], ["hydra", 4], ["unit67", 6], ["phoenixguard", 4]] },
 ];
 
 const levelTips = {
@@ -247,15 +247,15 @@ const levelTips = {
   3: { en: "Fast enemies rush you. Mix tanks with ranged units.", zh: "敌人会冲脸，前排肉盾加远程更稳。" },
   4: { en: "Armor and guns appear. Spread your units.", zh: "开始有重甲和火枪，兵种别挤在一起。" },
   5: { en: "Poison punishes clumps. Bring burst damage.", zh: "毒液克制抱团，带爆发输出。" },
-  6: { en: "Frozen zombies are slow but sticky. Use range.", zh: "冰冻亡灵慢但难缠，用远程消耗。" },
+  6: { en: "Frozen zombies reduce ranged damage, and some revive once.", zh: "冰冻亡灵会降低远程伤害，部分僵尸会复活一次。" },
   7: { en: "67 locks units down. Use extra bodies or long range.", zh: "67会定身，多放单位或用远程。" },
-  8: { en: "Dragon fire hurts over time. Do not clump.", zh: "龙火有持续伤害，不要扎堆。" },
-  9: { en: "The giant zombie is the wall. Kill support first.", zh: "巨人僵尸很肉，先清小僵尸。" },
+  8: { en: "Dragon enemies resist fire damage. Use physical hits.", zh: "龙类敌人抗火，建议用物理伤害。" },
+  9: { en: "Zombies may revive once. Kill support first.", zh: "僵尸可能复活一次，先清小僵尸。" },
   10: { en: "Storm units punish weak backlines. Use sturdy frontliners.", zh: "风暴军团会切后排，要带硬前排。" },
   11: { en: "Tiamat is a boss. Physical damage works best.", zh: "龙神是Boss，物理伤害最有效。" },
   12: { en: "Hydras and fire units fill the lane. Bring durable melee.", zh: "九头蛇和火焰单位压线，带耐打近战。" },
-  13: { en: "Frost slows your army. Faster units help.", zh: "冰霜会减速，速度快的单位更好用。" },
-  14: { en: "Zombie stampede needs area damage.", zh: "僵尸冲锋适合用范围伤害处理。" },
+  13: { en: "Frost reduces ranged damage. Bring melee too.", zh: "冰霜关会降低远程伤害，也要带近战。" },
+  14: { en: "Zombie stampede revives some units. Area damage matters.", zh: "僵尸冲锋有复活，范围伤害很重要。" },
   15: { en: "Portal mages summon trouble. Rush or disable them.", zh: "传送门法师会召唤，尽快打掉或控制。" },
   16: { en: "Plant lines are fragile if you break through.", zh: "植物火线怕突破，冲进去就好打。" },
   17: { en: "Dragons dominate open fights. Use anti-large damage.", zh: "龙在开阔地很强，用高伤害打大体型。" },
@@ -263,15 +263,15 @@ const levelTips = {
   19: { en: "Walls block direct attacks. Bring wall breakers.", zh: "墙会挡路，建议带拆墙单位。" },
   20: { en: "Enemies hide at the far right behind a maze.", zh: "敌人在最右边迷宫后面，先打通道路。" },
   21: { en: "Towers punish slow pushes. Split your attack.", zh: "塔会惩罚慢推，分散进攻更稳。" },
-  22: { en: "Frost towers and giants slow everything.", zh: "冰塔和冰巨人会大幅拖慢推进。" },
-  23: { en: "Zombies flood the field. Area damage is valuable.", zh: "僵尸很多，范围伤害很值。" },
-  24: { en: "Fire corridor burns clumped armies.", zh: "火焰走廊很克制扎堆阵容。" },
-  25: { en: "Poison and hydras punish long fights.", zh: "毒和九头蛇会拖垮持久战。" },
+  22: { en: "Frost towers and giants reduce ranged damage.", zh: "冰塔和冰巨人会让远程伤害变低。" },
+  23: { en: "Zombie factory revives many zombies. Bring area damage.", zh: "僵尸工厂很多僵尸会复活，带范围伤害。" },
+  24: { en: "Fire corridor enemies resist fire damage.", zh: "火焰走廊敌人抗火。" },
+  25: { en: "Hydras resist fire and poison punishes long fights.", zh: "九头蛇抗火，毒会拖垮持久战。" },
   26: { en: "Dragon barricades need both tanks and burst.", zh: "巨龙防线需要肉盾和爆发一起上。" },
   27: { en: "Void control can stop elite units. Bring backups.", zh: "虚空控制会废掉精英单位，要有备用兵。" },
   28: { en: "This is a boss warmup. Test your strongest army.", zh: "这是Boss热身，试试你的最强阵容。" },
   29: { en: "Two boss lines at once. Kill one side first.", zh: "双重末日两边都强，先集火一边。" },
-  30: { en: "Final boss. Physical damage and clearing minions matter.", zh: "最终Boss，物理伤害和清小怪都很重要。" },
+  30: { en: "Final boss. Gold reward cards do not help here.", zh: "最终Boss，金币奖励卡在这里不生效。" },
 };
 
 const rewardCardPool = [
@@ -348,11 +348,11 @@ const rewardCardPool = [
   {
     id: "cheap_contracts",
     kind: "other",
-    en: ["Cheap Contracts", "+500 starting gold, -15% damage.", "More units, weaker hits."],
-    zh: ["廉价契约", "开局金币 +500，伤害 -15%。", "兵更多，但打人更痛苦。"],
+    en: ["Cheap Contracts", "+300 starting gold, -18% damage.", "More units, weaker hits."],
+    zh: ["廉价契约", "开局金币 +300，伤害 -18%。", "兵更多，但打人更痛苦。"],
     apply: () => {
-      state.rewardMods.startingGoldBonus += 500;
-      state.rewardMods.damageBonus -= 0.15;
+      state.rewardMods.startingGoldBonus += 300;
+      state.rewardMods.damageBonus -= 0.18;
     },
   },
   {
@@ -405,7 +405,7 @@ const levelSpecificBans = {
   17: ["portalmage"],
   18: ["portalmage"],
   19: ["portalmage"],
-  20: ["portalmage"],
+  20: ["peashooter", "repeater", "gatlingshooter", "portalmage"],
   21: ["portalmage"],
   22: ["portalmage"],
   23: ["portalmage"],
@@ -2184,7 +2184,9 @@ function syncBudgetToEnemySize() {
 }
 
 function levelStartingGold(level) {
-  const bonus = clamp(state.rewardMods.startingGoldBonus || 0, -2500, 1500);
+  const bossGoldLocked = state.levelMode && [11, 28, 29, 30].includes(level?.number);
+  if (bossGoldLocked) return Math.max(100, Math.round(level?.budget || 0));
+  const bonus = clamp(state.rewardMods.startingGoldBonus || 0, -2500, 800);
   return Math.max(100, Math.round((level?.budget || 0) + bonus));
 }
 
@@ -2684,7 +2686,7 @@ function addUnit(typeId, team, x, y) {
   const tint = team === "blue" ? type.color : "#ff706c";
   const level = state.upgrades[typeId] || 0;
   const statBoost = 1 + level * 0.18;
-  const enemyLevelBoost = state.levelMode && team === "red" && !state.sandbox ? 1 + Math.max(0, state.currentLevel - 1) * 0.035 : 1;
+  const enemyLevelBoost = state.levelMode && team === "red" && !state.sandbox ? 1 + Math.max(0, state.currentLevel - 1) * 0.07 : 1;
   const rangeBoost = 1 + level * 0.08;
   const speedBoost = 1 + level * 0.08;
   const rewardAttackSpeedBoost = state.levelMode && team === "blue" && !state.sandbox ? Math.max(0.1, 1 + (state.rewardMods.attackSpeedBonus || 0)) : 1;
@@ -2752,6 +2754,8 @@ function addUnit(typeId, team, x, y) {
     berserked: false,
     statsDamage: 0,
     statsKills: 0,
+    reviveChance: 0,
+    levelFireResist: 0,
     color: tint,
     cooldown: Math.random() * 0.4,
     wobble: Math.random() * Math.PI * 2,
@@ -4514,6 +4518,7 @@ function spawnLevelMap(level) {
     v(0.74, 0.5, 0.5, 34, "normal");
     addLevelWall(w * 0.58, h * 0.5, 48, 48, "frostTower", "red");
     addLevelWall(w * 0.67, h * 0.5, 48, 48, "frostTower", "red");
+    addLevelWall(w * 0.82, h * 0.5, 48, 48, "frostTower", "red");
   } else if (level.map === "zombieFactory") {
     v(0.55, 0.5, 0.62, 38, "thick");
     v(0.82, 0.5, 0.62, 38, "thick");
@@ -4526,6 +4531,7 @@ function spawnLevelMap(level) {
     hz(0.62, 0.64, 0.55, 30, "normal");
     addLevelWall(w * 0.52, h * 0.5, 52, 52, "cannonTower", "red");
     addLevelWall(w * 0.75, h * 0.5, 52, 52, "cannonTower", "red");
+    addLevelWall(w * 0.63, h * 0.5, 52, 52, "cannonTower", "red");
   } else if (level.map === "hydraGarden") {
     hz(0.6, 0.24, 0.42, 28, "arrow");
     hz(0.6, 0.76, 0.42, 28, "arrow");
@@ -4550,11 +4556,22 @@ function spawnLevelMap(level) {
     v(0.78, 0.5, 0.6, 36, "thick");
     addLevelWall(w * 0.62, h * 0.35, 52, 52, "cannonTower", "red");
     addLevelWall(w * 0.62, h * 0.65, 52, 52, "cannonTower", "red");
+    addLevelWall(w * 0.72, h * 0.5, 48, 48, "frostTower", "red");
+    addLevelWall(w * 0.52, h * 0.5, 48, 48, "healTower", "red");
   }
 }
 
 function spawnLevelEnemies(level) {
   const entries = level.enemies.flatMap(([typeId, count]) => Array.from({ length: count }, () => typeId));
+  const applySpecialRules = (unit) => {
+    if (!unit) return;
+    if ([6, 9, 14, 23].includes(level.number) && ["zombie", "coneheadzombie", "bucketzombie", "footballzombie"].includes(unit.typeId)) {
+      unit.reviveChance = level.number >= 23 ? 0.4 : 0.25;
+    }
+    if ([8, 11, 12, 17, 24, 25, 26, 28, 29, 30].includes(level.number)) {
+      unit.levelFireResist = Math.max(unit.levelFireResist || 0, 0.5);
+    }
+  };
   if (level.map === "peaMaze") {
     entries.forEach((typeId, index) => {
       if (!typeById(typeId)) return;
@@ -4562,7 +4579,7 @@ function spawnLevelEnemies(level) {
       const row = Math.floor(index / 2);
       const x = canvas.width * (0.91 + col * 0.035);
       const y = canvas.height * 0.17 + row * 64;
-      addUnit(typeId, "red", Math.min(canvas.width - 45, x), Math.min(canvas.height - 70, y));
+      applySpecialRules(addUnit(typeId, "red", Math.min(canvas.width - 45, x), Math.min(canvas.height - 70, y)));
     });
     return;
   }
@@ -4573,7 +4590,7 @@ function spawnLevelEnemies(level) {
     const row = Math.floor(index / 4);
     const x = canvas.width * 0.62 + col * 68 + (row % 2) * 18;
     const y = 90 + row * Math.max(48, Math.min(84, (canvas.height - 180) / rows));
-    addUnit(typeId, "red", Math.min(canvas.width - 70, x), Math.min(canvas.height - 70, y));
+    applySpecialRules(addUnit(typeId, "red", Math.min(canvas.width - 70, x), Math.min(canvas.height - 70, y)));
   });
 }
 
@@ -5374,6 +5391,14 @@ function hurt(target, amount, source) {
     state.particles.push({ x: target.x, y: target.y, life: 0.35, color: "#ffffff" });
     return;
   }
+  if (state.levelMode && !state.sandbox && target.team === "red" && source.isRanged && [6, 13, 22, 27].includes(state.currentLevel)) {
+    amount *= 0.65;
+    state.particles.push({ x: target.x, y: target.y, life: 0.32, color: "#9bdcff", size: target.radius * 1.9 });
+  }
+  if (target.levelFireResist > 0 && isFireDamage(source)) {
+    amount *= Math.max(0, 1 - target.levelFireResist);
+    state.particles.push({ x: target.x, y: target.y, life: 0.36, color: "#ff9f5a", size: target.radius * 2.2 });
+  }
   const shieldReduction = holyShieldReduction(target);
   if (shieldReduction > 0) {
     amount *= 1 - shieldReduction;
@@ -5428,6 +5453,16 @@ function hurt(target, amount, source) {
   if (target.hp <= 0) {
     if (target.infectionTimer > 0 && target.infectionTeam) {
       convertToZombie(target);
+      return;
+    }
+    if (target.reviveChance > 0 && !target.revivedOnce && Math.random() < target.reviveChance) {
+      target.revivedOnce = true;
+      target.hp = Math.max(1, target.maxHp * 0.45);
+      target.poisonTimer = 0;
+      target.burnTimer = 0;
+      target.freezeTimer = 0;
+      target.stasisTimer = 0;
+      state.particles.push({ x: target.x, y: target.y, life: 0.8, startLife: 0.8, color: "#70e071", size: target.radius * 3.2 });
       return;
     }
     target.dead = true;
