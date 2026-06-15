@@ -4211,6 +4211,17 @@ function spawnLevelMap(level) {
 
 function spawnLevelEnemies(level) {
   const entries = level.enemies.flatMap(([typeId, count]) => Array.from({ length: count }, () => typeId));
+  if (level.map === "peaMaze") {
+    entries.forEach((typeId, index) => {
+      if (!typeById(typeId)) return;
+      const col = index % 2;
+      const row = Math.floor(index / 2);
+      const x = canvas.width * (0.91 + col * 0.035);
+      const y = canvas.height * 0.17 + row * 64;
+      addUnit(typeId, "red", Math.min(canvas.width - 45, x), Math.min(canvas.height - 70, y));
+    });
+    return;
+  }
   const rows = Math.max(1, Math.ceil(entries.length / 4));
   entries.forEach((typeId, index) => {
     if (!typeById(typeId)) return;
