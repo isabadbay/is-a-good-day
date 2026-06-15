@@ -228,17 +228,17 @@ const levelDefinitions = [
   { number: 17, budget: 15000, name: "Dragon Crown", zh: "第十七关：龙冠军团", enemies: [["adultdragon", 3], ["hydra", 3], ["dragonling", 12], ["phoenixguard", 3]] },
   { number: 18, budget: 16500, name: "Control Nightmare", zh: "第十八关：控制噩梦", enemies: [["unit67", 8], ["voidbinder", 5], ["stormcaller", 4], ["frostmage", 4], ["shield", 10]] },
   { number: 19, budget: 17200, name: "Barricade Trial", zh: "第十九关：路障试炼", map: "barricadeTrial", enemies: [["wallcrusher", 4], ["sharpshooter", 5], ["shield", 8], ["cannon", 3]] },
-  { number: 20, budget: 14500, name: "Pea Maze", zh: "第二十关：豌豆迷宫", map: "peaMaze", enemies: [["peashooter", 5], ["chomper", 2], ["sunflower", 4]] },
-  { number: 21, budget: 15000, name: "Tower Gate", zh: "第二十一关：塔门", map: "towerGate", enemies: [["knight", 6], ["musketeer", 6], ["paladin", 3], ["sharpshooter", 4]] },
-  { number: 22, budget: 15800, name: "Frost Ramparts", zh: "第二十二关：冰霜壁垒", map: "frostRamparts", enemies: [["frostgiant", 3], ["frostmage", 6], ["shield", 12]] },
-  { number: 23, budget: 16600, name: "Zombie Factory", zh: "第二十三关：僵尸工厂", map: "zombieFactory", enemies: [["giantzombie", 2], ["footballzombie", 7], ["bucketzombie", 9], ["zombie", 16]] },
-  { number: 24, budget: 17400, name: "Fire Corridor", zh: "第二十四关：火焰走廊", map: "fireCorridor", enemies: [["flameknight", 7], ["phoenixguard", 4], ["dragonling", 12]] },
-  { number: 25, budget: 18200, name: "Hydra Garden", zh: "第二十五关：九头蛇花园", map: "hydraGarden", enemies: [["hydra", 4], ["poisoner", 6], ["slimebeast", 4], ["plaguewizard", 3]] },
-  { number: 26, budget: 19000, name: "Dragon Barricade", zh: "第二十六关：巨龙防线", map: "dragonBarricade", enemies: [["adultdragon", 3], ["dragonling", 16], ["flameknight", 6]] },
-  { number: 27, budget: 19800, name: "Void Prison", zh: "第二十七关：虚空牢笼", map: "voidPrison", enemies: [["voidbinder", 7], ["unit67", 7], ["stormcaller", 6], ["frostmage", 4]] },
-  { number: 28, budget: 21000, name: "Boss Warmup", zh: "第二十八关：Boss热身", map: "bossWarmup", enemies: [["giantzombie", 3], ["frostgiant", 3], ["adultdragon", 3], ["hydra", 3]] },
-  { number: 29, budget: 22200, name: "Two-Headed Doom", zh: "第二十九关：双重末日", enemies: [["adultdragon", 4], ["giantzombie", 2], ["frostgiant", 3], ["hydra", 2], ["voidbinder", 4]] },
-  { number: 30, budget: 24000, name: "Final Chaos", zh: "第三十关：终极混沌", enemies: [["tiamat", 1], ["adultdragon", 4], ["giantzombie", 3], ["hydra", 4], ["unit67", 6], ["phoenixguard", 4]] },
+  { number: 20, budget: 9500, name: "Pea Maze", zh: "第二十关：豌豆迷宫", map: "peaMaze", enemies: [["peashooter", 5], ["chomper", 2], ["sunflower", 4]] },
+  { number: 21, budget: 9800, name: "Tower Gate", zh: "第二十一关：塔门", map: "towerGate", enemies: [["knight", 6], ["musketeer", 6], ["paladin", 3], ["sharpshooter", 4]] },
+  { number: 22, budget: 10400, name: "Frost Ramparts", zh: "第二十二关：冰霜壁垒", map: "frostRamparts", enemies: [["frostgiant", 3], ["frostmage", 6], ["shield", 12]] },
+  { number: 23, budget: 11000, name: "Zombie Factory", zh: "第二十三关：僵尸工厂", map: "zombieFactory", enemies: [["giantzombie", 2], ["footballzombie", 7], ["bucketzombie", 9], ["zombie", 16]] },
+  { number: 24, budget: 11600, name: "Fire Corridor", zh: "第二十四关：火焰走廊", map: "fireCorridor", enemies: [["flameknight", 7], ["phoenixguard", 4], ["dragonling", 12]] },
+  { number: 25, budget: 12200, name: "Hydra Garden", zh: "第二十五关：九头蛇花园", map: "hydraGarden", enemies: [["hydra", 4], ["poisoner", 6], ["slimebeast", 4], ["plaguewizard", 3]] },
+  { number: 26, budget: 12800, name: "Dragon Barricade", zh: "第二十六关：巨龙防线", map: "dragonBarricade", enemies: [["adultdragon", 3], ["dragonling", 16], ["flameknight", 6]] },
+  { number: 27, budget: 13400, name: "Void Prison", zh: "第二十七关：虚空牢笼", map: "voidPrison", enemies: [["voidbinder", 7], ["unit67", 7], ["stormcaller", 6], ["frostmage", 4]] },
+  { number: 28, budget: 14000, name: "Boss Warmup", zh: "第二十八关：Boss热身", map: "bossWarmup", enemies: [["giantzombie", 3], ["frostgiant", 3], ["adultdragon", 3], ["hydra", 3]] },
+  { number: 29, budget: 14500, name: "Two-Headed Doom", zh: "第二十九关：双重末日", enemies: [["adultdragon", 4], ["giantzombie", 2], ["frostgiant", 3], ["hydra", 2], ["voidbinder", 4]] },
+  { number: 30, budget: 15000, name: "Final Chaos", zh: "第三十关：终极混沌", enemies: [["tiamat", 1], ["adultdragon", 4], ["giantzombie", 3], ["hydra", 4], ["unit67", 6], ["phoenixguard", 4]] },
 ];
 
 const levelTips = {
@@ -2186,6 +2186,7 @@ function syncBudgetToEnemySize() {
 function levelStartingGold(level) {
   const bossGoldLocked = state.levelMode && [11, 28, 29, 30].includes(level?.number);
   if (bossGoldLocked) return Math.max(100, Math.round(level?.budget || 0));
+  if ((level?.number || 0) >= 20) return Math.max(100, Math.round(level?.budget || 0));
   const bonus = clamp(state.rewardMods.startingGoldBonus || 0, -2500, 800);
   return Math.max(100, Math.round((level?.budget || 0) + bonus));
 }
