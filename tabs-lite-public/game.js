@@ -33,6 +33,10 @@ const enemySlider = document.querySelector("#enemySlider");
 const levelSelect = document.querySelector("#levelSelect");
 const loadLevelBtn = document.querySelector("#loadLevelBtn");
 const levelInfo = document.querySelector("#levelInfo");
+const rewardModal = document.querySelector("#rewardModal");
+const rewardTitle = document.querySelector("#rewardTitle");
+const rewardSubtitle = document.querySelector("#rewardSubtitle");
+const rewardCards = document.querySelector("#rewardCards");
 const speedSlider = document.querySelector("#speedSlider");
 const sandboxToggle = document.querySelector("#sandboxToggle");
 const blueTeamBtn = document.querySelector("#blueTeamBtn");
@@ -225,16 +229,111 @@ const levelDefinitions = [
   { number: 18, budget: 16500, name: "Control Nightmare", zh: "第十八关：控制噩梦", enemies: [["unit67", 8], ["voidbinder", 5], ["stormcaller", 4], ["frostmage", 4], ["shield", 10]] },
   { number: 19, budget: 17200, name: "Barricade Trial", zh: "第十九关：路障试炼", map: "barricadeTrial", enemies: [["wallcrusher", 4], ["sharpshooter", 5], ["shield", 8], ["cannon", 3]] },
   { number: 20, budget: 18500, name: "Pea Maze", zh: "第二十关：豌豆迷宫", map: "peaMaze", enemies: [["peashooter", 5], ["chomper", 2], ["sunflower", 4]] },
-  { number: 21, budget: 19800, name: "Tower Gate", zh: "第二十一关：塔门", map: "towerGate", enemies: [["knight", 6], ["musketeer", 6], ["paladin", 3], ["sharpshooter", 4]] },
-  { number: 22, budget: 21000, name: "Frost Ramparts", zh: "第二十二关：冰霜壁垒", map: "frostRamparts", enemies: [["frostgiant", 4], ["frostmage", 6], ["shield", 12]] },
-  { number: 23, budget: 22200, name: "Zombie Factory", zh: "第二十三关：僵尸工厂", map: "zombieFactory", enemies: [["giantzombie", 2], ["footballzombie", 8], ["bucketzombie", 10], ["zombie", 18]] },
-  { number: 24, budget: 23400, name: "Fire Corridor", zh: "第二十四关：火焰走廊", map: "fireCorridor", enemies: [["flameknight", 8], ["phoenixguard", 5], ["dragonling", 14]] },
-  { number: 25, budget: 24600, name: "Hydra Garden", zh: "第二十五关：九头蛇花园", map: "hydraGarden", enemies: [["hydra", 5], ["poisoner", 6], ["slimebeast", 4], ["plaguewizard", 3]] },
-  { number: 26, budget: 25800, name: "Dragon Barricade", zh: "第二十六关：巨龙防线", map: "dragonBarricade", enemies: [["adultdragon", 4], ["dragonling", 18], ["flameknight", 6]] },
-  { number: 27, budget: 27000, name: "Void Prison", zh: "第二十七关：虚空牢笼", map: "voidPrison", enemies: [["voidbinder", 8], ["unit67", 8], ["stormcaller", 6], ["frostmage", 4]] },
-  { number: 28, budget: 28500, name: "Boss Warmup", zh: "第二十八关：Boss热身", map: "bossWarmup", enemies: [["giantzombie", 3], ["frostgiant", 4], ["adultdragon", 3], ["hydra", 3]] },
-  { number: 29, budget: 30000, name: "Two-Headed Doom", zh: "第二十九关：双重末日", enemies: [["adultdragon", 4], ["giantzombie", 2], ["frostgiant", 3], ["hydra", 2], ["voidbinder", 4]] },
-  { number: 30, budget: 34000, name: "Final Chaos", zh: "第三十关：终极混沌", enemies: [["tiamat", 1], ["adultdragon", 4], ["giantzombie", 3], ["hydra", 4], ["unit67", 6], ["phoenixguard", 4]] },
+  { number: 21, budget: 19000, name: "Tower Gate", zh: "第二十一关：塔门", map: "towerGate", enemies: [["knight", 6], ["musketeer", 6], ["paladin", 3], ["sharpshooter", 4]] },
+  { number: 22, budget: 20000, name: "Frost Ramparts", zh: "第二十二关：冰霜壁垒", map: "frostRamparts", enemies: [["frostgiant", 3], ["frostmage", 6], ["shield", 12]] },
+  { number: 23, budget: 21100, name: "Zombie Factory", zh: "第二十三关：僵尸工厂", map: "zombieFactory", enemies: [["giantzombie", 2], ["footballzombie", 7], ["bucketzombie", 9], ["zombie", 16]] },
+  { number: 24, budget: 22200, name: "Fire Corridor", zh: "第二十四关：火焰走廊", map: "fireCorridor", enemies: [["flameknight", 7], ["phoenixguard", 4], ["dragonling", 12]] },
+  { number: 25, budget: 23400, name: "Hydra Garden", zh: "第二十五关：九头蛇花园", map: "hydraGarden", enemies: [["hydra", 4], ["poisoner", 6], ["slimebeast", 4], ["plaguewizard", 3]] },
+  { number: 26, budget: 24600, name: "Dragon Barricade", zh: "第二十六关：巨龙防线", map: "dragonBarricade", enemies: [["adultdragon", 3], ["dragonling", 16], ["flameknight", 6]] },
+  { number: 27, budget: 25800, name: "Void Prison", zh: "第二十七关：虚空牢笼", map: "voidPrison", enemies: [["voidbinder", 7], ["unit67", 7], ["stormcaller", 6], ["frostmage", 4]] },
+  { number: 28, budget: 27300, name: "Boss Warmup", zh: "第二十八关：Boss热身", map: "bossWarmup", enemies: [["giantzombie", 3], ["frostgiant", 3], ["adultdragon", 3], ["hydra", 3]] },
+  { number: 29, budget: 28800, name: "Two-Headed Doom", zh: "第二十九关：双重末日", enemies: [["adultdragon", 4], ["giantzombie", 2], ["frostgiant", 3], ["hydra", 2], ["voidbinder", 4]] },
+  { number: 30, budget: 32000, name: "Final Chaos", zh: "第三十关：终极混沌", enemies: [["tiamat", 1], ["adultdragon", 4], ["giantzombie", 3], ["hydra", 4], ["unit67", 6], ["phoenixguard", 4]] },
+];
+
+const levelTips = {
+  1: { en: "A simple opener. Cheap melee plus one archer is enough.", zh: "入门关，便宜近战加一个弓箭手就够。" },
+  2: { en: "Shields are slow. Use backline damage.", zh: "盾兵很慢，用后排输出打穿。" },
+  3: { en: "Fast enemies rush you. Mix tanks with ranged units.", zh: "敌人会冲脸，前排肉盾加远程更稳。" },
+  4: { en: "Armor and guns appear. Spread your units.", zh: "开始有重甲和火枪，兵种别挤在一起。" },
+  5: { en: "Poison punishes clumps. Bring burst damage.", zh: "毒液克制抱团，带爆发输出。" },
+  6: { en: "Frozen zombies are slow but sticky. Use range.", zh: "冰冻亡灵慢但难缠，用远程消耗。" },
+  7: { en: "67 locks units down. Use extra bodies or long range.", zh: "67会定身，多放单位或用远程。" },
+  8: { en: "Dragon fire hurts over time. Do not clump.", zh: "龙火有持续伤害，不要扎堆。" },
+  9: { en: "The giant zombie is the wall. Kill support first.", zh: "巨人僵尸很肉，先清小僵尸。" },
+  10: { en: "Storm units punish weak backlines. Use sturdy frontliners.", zh: "风暴军团会切后排，要带硬前排。" },
+  11: { en: "Tiamat is a boss. Physical damage works best.", zh: "龙神是Boss，物理伤害最有效。" },
+  12: { en: "Hydras and fire units fill the lane. Bring durable melee.", zh: "九头蛇和火焰单位压线，带耐打近战。" },
+  13: { en: "Frost slows your army. Faster units help.", zh: "冰霜会减速，速度快的单位更好用。" },
+  14: { en: "Zombie stampede needs area damage.", zh: "僵尸冲锋适合用范围伤害处理。" },
+  15: { en: "Portal mages summon trouble. Rush or disable them.", zh: "传送门法师会召唤，尽快打掉或控制。" },
+  16: { en: "Plant lines are fragile if you break through.", zh: "植物火线怕突破，冲进去就好打。" },
+  17: { en: "Dragons dominate open fights. Use anti-large damage.", zh: "龙在开阔地很强，用高伤害打大体型。" },
+  18: { en: "Control effects are everywhere. Use many cheap units.", zh: "控制很多，用大量便宜单位分摊。" },
+  19: { en: "Walls block direct attacks. Bring wall breakers.", zh: "墙会挡路，建议带拆墙单位。" },
+  20: { en: "Enemies hide at the far right behind a maze.", zh: "敌人在最右边迷宫后面，先打通道路。" },
+  21: { en: "Towers punish slow pushes. Split your attack.", zh: "塔会惩罚慢推，分散进攻更稳。" },
+  22: { en: "Frost towers and giants slow everything.", zh: "冰塔和冰巨人会大幅拖慢推进。" },
+  23: { en: "Zombies flood the field. Area damage is valuable.", zh: "僵尸很多，范围伤害很值。" },
+  24: { en: "Fire corridor burns clumped armies.", zh: "火焰走廊很克制扎堆阵容。" },
+  25: { en: "Poison and hydras punish long fights.", zh: "毒和九头蛇会拖垮持久战。" },
+  26: { en: "Dragon barricades need both tanks and burst.", zh: "巨龙防线需要肉盾和爆发一起上。" },
+  27: { en: "Void control can stop elite units. Bring backups.", zh: "虚空控制会废掉精英单位，要有备用兵。" },
+  28: { en: "This is a boss warmup. Test your strongest army.", zh: "这是Boss热身，试试你的最强阵容。" },
+  29: { en: "Two boss lines at once. Kill one side first.", zh: "双重末日两边都强，先集火一边。" },
+  30: { en: "Final boss. Physical damage and clearing minions matter.", zh: "最终Boss，物理伤害和清小怪都很重要。" },
+};
+
+const rewardCardPool = [
+  {
+    id: "sharp_blades",
+    kind: "damage",
+    en: ["Sharp Blades", "+10% blue unit damage.", "Clean damage upgrade."],
+    zh: ["锋利武器", "蓝队单位伤害 +10%。", "稳定的伤害强化。"],
+    apply: () => {
+      state.rewardMods.damageBonus += 0.1;
+    },
+  },
+  {
+    id: "training_manual",
+    kind: "upgrade",
+    en: ["Training Manual", "+2 upgrade points.", "Use them before later levels."],
+    zh: ["训练手册", "获得 +2 升级点。", "可以用来升级兵种。"],
+    apply: () => {
+      state.upgradePoints += 2;
+      saveUpgradePoints(state.upgradePoints);
+    },
+  },
+  {
+    id: "war_fund",
+    kind: "other",
+    en: ["War Fund", "+700 starting gold in Levels.", "More room to build armies."],
+    zh: ["战争资金", "关卡开局金币 +700。", "能放更多兵或建筑。"],
+    apply: () => {
+      state.rewardMods.startingGoldBonus += 700;
+    },
+  },
+  {
+    id: "glass_cannon",
+    kind: "damage",
+    en: ["Glass Cannon", "+25% damage, -10% max HP.", "High power with a real cost."],
+    zh: ["玻璃大炮", "伤害 +25%，最大血量 -10%。", "更强输出，但更脆。"],
+    apply: () => {
+      state.rewardMods.damageBonus += 0.25;
+      state.rewardMods.hpBonus -= 0.1;
+    },
+  },
+  {
+    id: "heavy_armor",
+    kind: "other",
+    en: ["Heavy Armor", "+18% max HP, -5% damage.", "Safer frontlines."],
+    zh: ["重甲训练", "最大血量 +18%，伤害 -5%。", "前排更稳，但输出低一点。"],
+    apply: () => {
+      state.rewardMods.hpBonus += 0.18;
+      state.rewardMods.damageBonus -= 0.05;
+    },
+  },
+  {
+    id: "paid_research",
+    kind: "upgrade",
+    en: ["Paid Research", "+4 upgrade points, -500 starting gold.", "A powerful upgrade trade."],
+    zh: ["付费研究", "获得 +4 升级点，开局金币 -500。", "强力升级，但少一点钱。"],
+    apply: () => {
+      state.upgradePoints += 4;
+      state.rewardMods.startingGoldBonus -= 500;
+      saveUpgradePoints(state.upgradePoints);
+    },
+  },
 ];
 
 const levelUnitUnlocks = [
@@ -332,6 +431,12 @@ const translations = {
     levelHint: "赢下当前关卡会解锁下一关",
     levelLoaded: "关卡已加载",
     levelWin: "关卡胜利",
+    upgradePoints: "升级点",
+    upgradePointEarned: "获得升级点",
+    upgradeNeedPoint: "升级点不够",
+    alreadyCleared: "已通关",
+    rewardTitle: "选择奖励",
+    rewardSubtitle: "选择一张卡，它会影响后面的关卡。",
     enemySize: "敌军规模",
     speed: "镜头速度",
     erase: "橡皮擦",
@@ -570,6 +675,12 @@ const translations = {
     levelHint: "Win this level to unlock the next one",
     levelLoaded: "Level loaded",
     levelWin: "Level cleared",
+    upgradePoints: "Upgrade Points",
+    upgradePointEarned: "Upgrade point earned",
+    upgradeNeedPoint: "Not enough upgrade points",
+    alreadyCleared: "Cleared",
+    rewardTitle: "Choose a Reward",
+    rewardSubtitle: "Pick one card. It affects later levels.",
     enemySize: "Enemy Size",
     speed: "Camera Speed",
     erase: "Erase",
@@ -803,7 +914,7 @@ function applyLanguage(lang) {
   grassToolBtn.textContent = text.mapGrass;
   highGroundToolBtn.textContent = text.mapHighGround;
   eraseTerrainBtn.textContent = text.mapEraseTerrain;
-  upgradeSelectedBtn.textContent = text.upgrade;
+  upgradeSelectedBtn.textContent = state.levelMode ? `${text.upgrade} (${text.upgradePoints}: ${state.upgradePoints})` : text.upgrade;
   saveSlotBtns.forEach((button, index) => {
     if (button) button.textContent = `${text.saveSlot} ${index + 1}`;
   });
@@ -1825,6 +1936,59 @@ function saveUnlockedLevel(level) {
   }
 }
 
+function readUpgradePoints() {
+  try {
+    return Math.max(0, Number(localStorage.getItem("tabsLiteUpgradePoints")) || 0);
+  } catch {
+    return 0;
+  }
+}
+
+function saveUpgradePoints(points) {
+  try {
+    localStorage.setItem("tabsLiteUpgradePoints", String(Math.max(0, points)));
+  } catch {
+    // Keep playing even if local save fails.
+  }
+}
+
+function readClearedLevels() {
+  try {
+    const raw = JSON.parse(localStorage.getItem("tabsLiteClearedLevels") || "[]");
+    return new Set(Array.isArray(raw) ? raw.map(Number).filter(Boolean) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveClearedLevels(levels) {
+  try {
+    localStorage.setItem("tabsLiteClearedLevels", JSON.stringify([...levels].sort((a, b) => a - b)));
+  } catch {
+    // Keep the session version if local save fails.
+  }
+}
+
+function defaultRewardMods() {
+  return { damageBonus: 0, hpBonus: 0, startingGoldBonus: 0 };
+}
+
+function readRewardMods() {
+  try {
+    return { ...defaultRewardMods(), ...(JSON.parse(localStorage.getItem("tabsLiteRewardMods") || "{}") || {}) };
+  } catch {
+    return defaultRewardMods();
+  }
+}
+
+function saveRewardMods(mods) {
+  try {
+    localStorage.setItem("tabsLiteRewardMods", JSON.stringify(mods));
+  } catch {
+    // Reward still applies for this session.
+  }
+}
+
 const state = {
   phase: "setup",
   selected: unitTypes[0].id,
@@ -1840,6 +2004,10 @@ const state = {
   levelMode: false,
   currentLevel: 0,
   unlockedLevel: readUnlockedLevel(),
+  clearedLevels: readClearedLevels(),
+  upgradePoints: readUpgradePoints(),
+  rewardMods: readRewardMods(),
+  pendingRewardChoices: [],
   language: "en",
   budget: 900,
   units: [],
@@ -1932,6 +2100,10 @@ function syncBudgetToEnemySize() {
   if (state.sandbox) return;
   const baseBudget = state.challengeMode ? state.challengeBudget : totalBudgetForEnemySize();
   state.budget = Math.max(0, baseBudget - blueArmyCost() - wallTotalCost() - terrainTotalCost());
+}
+
+function levelStartingGold(level) {
+  return Math.max(100, Math.round((level?.budget || 0) + (state.rewardMods.startingGoldBonus || 0)));
 }
 
 function worldPoint(event) {
@@ -2428,6 +2600,8 @@ function addUnit(typeId, team, x, y) {
   const rangeBoost = 1 + level * 0.08;
   const speedBoost = 1 + level * 0.08;
   const cooldownBoost = Math.max(0.55, 1 - level * 0.08);
+  const rewardDamageBoost = state.levelMode && team === "blue" && !state.sandbox ? Math.max(0.1, 1 + (state.rewardMods.damageBonus || 0)) : 1;
+  const rewardHpBoost = state.levelMode && team === "blue" && !state.sandbox ? Math.max(0.1, 1 + (state.rewardMods.hpBonus || 0)) : 1;
   const unit = {
     id: state.nextId++,
     team,
@@ -2441,9 +2615,9 @@ function addUnit(typeId, team, x, y) {
     y,
     vx: (Math.random() - 0.5) * 10,
     vy: (Math.random() - 0.5) * 10,
-    hp: Math.round(type.hp * statBoost),
-    maxHp: Math.round(type.hp * statBoost),
-    damage: type.damage * statBoost,
+    hp: Math.round(type.hp * statBoost * rewardHpBoost),
+    maxHp: Math.round(type.hp * statBoost * rewardHpBoost),
+    damage: type.damage * statBoost * rewardDamageBoost,
     range: type.range * rangeBoost,
     burstCount: type.burstCount || 1,
     burstCooldown: type.burstCooldown || 0,
@@ -2521,6 +2695,59 @@ function levelBanMessage(type) {
   return state.language === "zh" ? `这个关卡不能使用 ${name}` : `${name} is locked for this level`;
 }
 
+function upgradePointReward(levelNumber) {
+  return 1 + Math.floor(Math.max(0, levelNumber - 1) / 10);
+}
+
+function rewardText(card) {
+  const pack = state.language === "zh" ? card.zh : card.en;
+  return { title: pack[0], effect: pack[1], cost: pack[2] };
+}
+
+function makeRewardChoices(levelNumber) {
+  const start = levelNumber % rewardCardPool.length;
+  const ordered = rewardCardPool.map((_, index) => rewardCardPool[(start + index) % rewardCardPool.length]);
+  const choices = [];
+  for (const kind of ["damage", "upgrade", "other"]) {
+    const card = ordered.find((entry) => entry.kind === kind && !choices.includes(entry));
+    if (card) choices.push(card);
+  }
+  return choices.slice(0, 3);
+}
+
+function renderRewardModal() {
+  const text = translations[state.language] || translations.en;
+  if (!rewardModal || !rewardCards) return;
+  if (!state.pendingRewardChoices.length) {
+    rewardModal.classList.add("hidden");
+    return;
+  }
+  rewardTitle.textContent = text.rewardTitle;
+  rewardSubtitle.textContent = text.rewardSubtitle;
+  rewardCards.innerHTML = "";
+  state.pendingRewardChoices.forEach((card) => {
+    const info = rewardText(card);
+    const button = document.createElement("button");
+    button.className = "reward-card";
+    button.innerHTML = `<b>${info.title}</b><span>${info.effect}</span><small>${info.cost}</small>`;
+    button.addEventListener("click", () => chooseRewardCard(card.id));
+    rewardCards.appendChild(button);
+  });
+  rewardModal.classList.remove("hidden");
+}
+
+function chooseRewardCard(cardId) {
+  const card = state.pendingRewardChoices.find((entry) => entry.id === cardId);
+  if (!card) return;
+  card.apply();
+  saveRewardMods(state.rewardMods);
+  state.pendingRewardChoices = [];
+  renderRewardModal();
+  updateLevelUi();
+  updateUi();
+  setToast(rewardText(card).title);
+}
+
 function ensureSelectedUnitAllowed() {
   const selectedType = typeById(state.selected);
   if (isUnitAllowedInCurrentLevel(selectedType)) return;
@@ -2540,16 +2767,30 @@ function upgradeSelectedUnitType() {
     setToast(state.language === "zh" ? "已经满级" : "Max level reached");
     return;
   }
-  const cost = Math.ceil(type.price * (0.75 + current * 0.45));
-  if (!state.sandbox && state.budget < cost) {
+  const pointCost = current + 1;
+  if (!state.sandbox && state.levelMode && state.upgradePoints < pointCost) {
+    setToast((translations[state.language] || translations.en).upgradeNeedPoint);
+    return;
+  }
+  const goldCost = Math.ceil(type.price * (0.75 + current * 0.45));
+  if (!state.sandbox && !state.levelMode && state.budget < goldCost) {
     setToast(state.language === "zh" ? "金币不够升级" : "Not enough gold to upgrade");
     return;
   }
-  if (!state.sandbox) state.budget -= cost;
+  if (!state.sandbox && state.levelMode) {
+    state.upgradePoints -= pointCost;
+    saveUpgradePoints(state.upgradePoints);
+  } else if (!state.sandbox) {
+    state.budget -= goldCost;
+  }
   state.upgrades[type.id] = current + 1;
   renderUnitList();
   updateUi();
-  setToast(state.language === "zh" ? `${type.name} 升到 ${current + 1} 级` : `${type.name} upgraded to level ${current + 1}`);
+  if (state.levelMode && !state.sandbox) {
+    setToast(state.language === "zh" ? `${type.name} 升到 ${current + 1} 级，消耗 ${pointCost} 升级点` : `${type.name} upgraded to level ${current + 1}, spent ${pointCost} point(s)`);
+  } else {
+    setToast(state.language === "zh" ? `${type.name} 升到 ${current + 1} 级` : `${type.name} upgraded to level ${current + 1}`);
+  }
 }
 
 function refund(typeId) {
@@ -4089,8 +4330,8 @@ function resetBattlefieldForLevel(level) {
   state.challengeMode = true;
   state.levelMode = true;
   state.currentLevel = level.number;
-  state.challengeBudget = level.budget;
-  state.budget = level.budget;
+  state.challengeBudget = levelStartingGold(level);
+  state.budget = state.challengeBudget;
   state.placeTeam = "blue";
   state.units = [];
   state.projectiles = [];
@@ -4252,10 +4493,13 @@ function updateLevelUi() {
   const levelNumber = Number(levelSelect.value) || state.currentLevel || 1;
   const level = levelDefinitions.find((entry) => entry.number === levelNumber) || levelDefinitions[0];
   const locked = level.number > state.unlockedLevel;
+  const tip = levelTips[level.number]?.[state.language] || levelTips[level.number]?.en || text.levelHint;
+  const cleared = state.clearedLevels.has(level.number) ? ` ${text.alreadyCleared}.` : "";
+  const gold = levelStartingGold(level);
   loadLevelBtn.disabled = locked || state.phase === "battle";
   levelInfo.textContent = locked
     ? `${text.levelLocked}: ${text.levelHint}`
-    : `${levelName(level)} - ${text.levelInfo} ${level.budget}. ${text.levelHint}`;
+    : `${levelName(level)} - ${text.levelInfo} ${gold}. ${tip} ${text.upgradePoints}: ${state.upgradePoints}.${cleared}`;
 }
 
 function loadLevel(levelNumber) {
@@ -4273,7 +4517,7 @@ function loadLevel(levelNumber) {
   renderUnitList();
   renderLevelSelect();
   updateUi();
-  setToast(`${text.levelLoaded}: ${levelName(level)} - ${text.budget} ${level.budget}`);
+  setToast(`${text.levelLoaded}: ${levelName(level)} - ${text.budget} ${state.challengeBudget}`);
 }
 
 function resetGame(keepEnemies = false) {
@@ -5909,13 +6153,24 @@ function checkWinner() {
   let levelText = "";
   if (blueAlive && state.levelMode && state.currentLevel > 0) {
     const nextLevel = Math.min(levelDefinitions.length, state.currentLevel + 1);
+    const firstClear = !state.clearedLevels.has(state.currentLevel);
+    if (firstClear) {
+      const reward = upgradePointReward(state.currentLevel);
+      state.clearedLevels.add(state.currentLevel);
+      saveClearedLevels(state.clearedLevels);
+      state.upgradePoints += reward;
+      saveUpgradePoints(state.upgradePoints);
+      levelText += ` ${text.upgradePointEarned}: +${reward}`;
+      state.pendingRewardChoices = makeRewardChoices(state.currentLevel);
+      renderRewardModal();
+    }
     if (nextLevel > state.unlockedLevel) {
       state.unlockedLevel = nextLevel;
       saveUnlockedLevel(state.unlockedLevel);
       renderLevelSelect();
-      levelText = state.currentLevel === levelDefinitions.length ? ` ${text.levelWin}` : ` ${text.levelUnlocked}: ${nextLevel}`;
+      levelText += state.currentLevel === levelDefinitions.length ? ` ${text.levelWin}` : ` ${text.levelUnlocked}: ${nextLevel}`;
     } else {
-      levelText = ` ${text.levelWin}`;
+      levelText += ` ${text.levelWin}`;
     }
   }
   setToast(`${blueAlive ? text.blueWin : text.redWin}${levelText}${statsText}`);
@@ -7526,6 +7781,7 @@ function updateUi() {
   budgetText.textContent = state.sandbox ? text.infiniteMoney : `${text.budget} ${state.budget}`;
   if (levelBudgetLabel) levelBudgetLabel.textContent = text.budget;
   if (levelBudgetText) levelBudgetText.textContent = state.budget;
+  if (state.pendingRewardChoices.length) renderRewardModal();
   blueCount.textContent = state.units.filter((unit) => unit.team === "blue" && !unit.dead).length;
   redCount.textContent = state.units.filter((unit) => unit.team === "red" && !unit.dead).length;
   const labels = { setup: text.setup, battle: text.fight, paused: text.paused, ended: text.ended };

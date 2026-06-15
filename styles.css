@@ -722,6 +722,78 @@ canvas {
   font-weight: 800;
 }
 
+.reward-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 12, 18, 0.72);
+  padding: 18px;
+}
+
+.reward-modal.hidden {
+  display: none;
+}
+
+.reward-panel {
+  width: min(760px, 100%);
+  border: 1px solid rgba(232, 189, 87, 0.35);
+  border-radius: 8px;
+  background: #151b23;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.45);
+  padding: 18px;
+}
+
+.reward-panel h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+}
+
+.reward-panel p {
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+
+.reward-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.reward-card {
+  display: grid;
+  gap: 8px;
+  min-height: 150px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #202936, #151b23);
+  padding: 14px;
+  text-align: left;
+}
+
+.reward-card:hover {
+  border-color: var(--gold);
+  transform: translateY(-1px);
+}
+
+.reward-card b {
+  color: var(--gold);
+  font-size: 15px;
+}
+
+.reward-card span {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.reward-card small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .range-row {
   display: grid;
   gap: 8px;
