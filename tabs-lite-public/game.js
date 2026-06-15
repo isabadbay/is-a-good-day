@@ -5579,7 +5579,7 @@ function updateUnit(unit, dt) {
     unit.poisonTick -= dt;
     if (unit.poisonTick <= 0) {
       unit.poisonTick += 1;
-      hurt(unit, 20, { x: unit.x - 1, y: unit.y, knockback: 0.4, ignoreDodge: true, damageType: "poison" });
+      hurt(unit, 7, { x: unit.x - 1, y: unit.y, knockback: 0.4, ignoreDodge: true, damageType: "poison" });
       state.particles.push({ x: unit.x, y: unit.y, life: 0.4, color: "#70e071", size: 18 });
     }
   }
