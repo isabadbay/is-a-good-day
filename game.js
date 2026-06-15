@@ -278,10 +278,10 @@ const rewardCardPool = [
   {
     id: "sharp_blades",
     kind: "damage",
-    en: ["Sharp Blades", "+10% blue unit damage.", "Clean damage upgrade."],
-    zh: ["锋利武器", "蓝队单位伤害 +10%。", "稳定的伤害强化。"],
+    en: ["Sharp Blades", "+5% blue unit damage.", "Clean damage upgrade."],
+    zh: ["锋利武器", "蓝队单位伤害 +5%。", "稳定的伤害强化。"],
     apply: () => {
-      state.rewardMods.damageBonus += 0.1;
+      state.rewardMods.damageBonus += 0.05;
     },
   },
   {
@@ -2041,6 +2041,35 @@ function saveRewardMods(mods) {
   }
 }
 
+function readUnitUpgrades() {
+  try {
+    const raw = JSON.parse(localStorage.getItem("tabsLiteUnitUpgrades") || "{}");
+    const upgrades = {};
+    if (!raw || typeof raw !== "object") return upgrades;
+    for (const [typeId, level] of Object.entries(raw)) {
+      if (!typeById(typeId)) continue;
+      upgrades[typeId] = clamp(Math.floor(Number(level) || 0), 0, 3);
+    }
+    return upgrades;
+  } catch {
+    return {};
+  }
+}
+
+function saveUnitUpgrades(upgrades) {
+  try {
+    const clean = {};
+    for (const [typeId, level] of Object.entries(upgrades || {})) {
+      if (!typeById(typeId)) continue;
+      const value = clamp(Math.floor(Number(level) || 0), 0, 3);
+      if (value > 0) clean[typeId] = value;
+    }
+    localStorage.setItem("tabsLiteUnitUpgrades", JSON.stringify(clean));
+  } catch {
+    // Upgrades still work for this session.
+  }
+}
+
 const state = {
   phase: "setup",
   selected: unitTypes[0].id,
@@ -2069,7 +2098,7 @@ const state = {
   tornadoes: [],
   walls: [],
   terrains: [],
-  upgrades: {},
+  upgrades: readUnitUpgrades(),
   battleStats: null,
   commands: { blue: null, red: null },
   focusTargets: { blue: null, red: null },
@@ -2750,9 +2779,15 @@ function currentLevelHasDragonEnemy() {
   return Boolean(level?.enemies?.some(([typeId]) => ["dragonling", "adultdragon", "hydra", "tiamat"].includes(typeId)));
 }
 
+function currentLevelHasTiamatEnemy() {
+  const level = levelDefinitions.find((entry) => entry.number === state.currentLevel);
+  return Boolean(level?.enemies?.some(([typeId]) => typeId === "tiamat"));
+}
+
 function isUnitAllowedInCurrentLevel(type) {
   if (!type || !state.levelMode || isSandboxActive()) return true;
   if (type.id === "adultdragon" && !currentLevelHasDragonEnemy()) return false;
+  if (type.id === "tiamat" && currentLevelHasTiamatEnemy()) return true;
   return !bannedUnitsForCurrentLevel().has(type.id);
 }
 
@@ -2851,6 +2886,7 @@ function upgradeSelectedUnitType() {
     state.budget -= goldCost;
   }
   state.upgrades[type.id] = current + 1;
+  saveUnitUpgrades(state.upgrades);
   renderUnitList();
   updateUi();
   if (state.levelMode && !state.sandbox) {
