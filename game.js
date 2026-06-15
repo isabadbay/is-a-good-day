@@ -297,10 +297,11 @@ const rewardCardPool = [
   {
     id: "war_fund",
     kind: "other",
-    en: ["War Fund", "+700 starting gold in Levels.", "More room to build armies."],
-    zh: ["战争资金", "关卡开局金币 +700。", "能放更多兵或建筑。"],
+    en: ["War Fund", "+250 starting gold, -5% max HP.", "Money now has a real cost."],
+    zh: ["战争资金", "开局金币 +250，最大血量 -5%。", "钱不再是白送的。"],
     apply: () => {
-      state.rewardMods.startingGoldBonus += 700;
+      state.rewardMods.startingGoldBonus += 250;
+      state.rewardMods.hpBonus -= 0.05;
     },
   },
   {
@@ -326,12 +327,63 @@ const rewardCardPool = [
   {
     id: "paid_research",
     kind: "upgrade",
-    en: ["Paid Research", "+4 upgrade points, -500 starting gold.", "A powerful upgrade trade."],
-    zh: ["付费研究", "获得 +4 升级点，开局金币 -500。", "强力升级，但少一点钱。"],
+    en: ["Paid Research", "+4 upgrade points, -1200 starting gold.", "A powerful upgrade trade."],
+    zh: ["付费研究", "获得 +4 升级点，开局金币 -1200。", "强力升级，但少很多钱。"],
     apply: () => {
       state.upgradePoints += 4;
-      state.rewardMods.startingGoldBonus -= 500;
+      state.rewardMods.startingGoldBonus -= 1200;
       saveUpgradePoints(state.upgradePoints);
+    },
+  },
+  {
+    id: "quick_training",
+    kind: "damage",
+    en: ["Quick Training", "+12% attack speed, -6% damage.", "Good for slow heavy units."],
+    zh: ["快速训练", "攻击速度 +12%，伤害 -6%。", "适合慢速重兵。"],
+    apply: () => {
+      state.rewardMods.attackSpeedBonus += 0.12;
+      state.rewardMods.damageBonus -= 0.06;
+    },
+  },
+  {
+    id: "cheap_contracts",
+    kind: "other",
+    en: ["Cheap Contracts", "+500 starting gold, -15% damage.", "More units, weaker hits."],
+    zh: ["廉价契约", "开局金币 +500，伤害 -15%。", "兵更多，但打人更痛苦。"],
+    apply: () => {
+      state.rewardMods.startingGoldBonus += 500;
+      state.rewardMods.damageBonus -= 0.15;
+    },
+  },
+  {
+    id: "blood_research",
+    kind: "upgrade",
+    en: ["Blood Research", "+6 upgrade points, -18% max HP.", "Huge growth, dangerous army."],
+    zh: ["血色研究", "获得 +6 升级点，最大血量 -18%。", "成长很高，但部队很脆。"],
+    apply: () => {
+      state.upgradePoints += 6;
+      state.rewardMods.hpBonus -= 0.18;
+      saveUpgradePoints(state.upgradePoints);
+    },
+  },
+  {
+    id: "siege_drill",
+    kind: "other",
+    en: ["Siege Drill", "+25% damage to walls, -5% unit damage.", "Better for maze levels."],
+    zh: ["攻城训练", "对墙伤害 +25%，单位伤害 -5%。", "迷宫关更好用。"],
+    apply: () => {
+      state.rewardMods.wallDamageBonus += 0.25;
+      state.rewardMods.damageBonus -= 0.05;
+    },
+  },
+  {
+    id: "elite_focus",
+    kind: "damage",
+    en: ["Elite Focus", "+18% damage, -450 starting gold.", "Fewer units, stronger hits."],
+    zh: ["精英专注", "伤害 +18%，开局金币 -450。", "兵少一点，但输出更高。"],
+    apply: () => {
+      state.rewardMods.damageBonus += 0.18;
+      state.rewardMods.startingGoldBonus -= 450;
     },
   },
 ];
@@ -1970,7 +2022,7 @@ function saveClearedLevels(levels) {
 }
 
 function defaultRewardMods() {
-  return { damageBonus: 0, hpBonus: 0, startingGoldBonus: 0 };
+  return { damageBonus: 0, hpBonus: 0, startingGoldBonus: 0, attackSpeedBonus: 0, wallDamageBonus: 0 };
 }
 
 function readRewardMods() {
@@ -2103,7 +2155,8 @@ function syncBudgetToEnemySize() {
 }
 
 function levelStartingGold(level) {
-  return Math.max(100, Math.round((level?.budget || 0) + (state.rewardMods.startingGoldBonus || 0)));
+  const bonus = clamp(state.rewardMods.startingGoldBonus || 0, -2500, 1500);
+  return Math.max(100, Math.round((level?.budget || 0) + bonus));
 }
 
 function worldPoint(event) {
@@ -2270,6 +2323,11 @@ function damageWall(wall, damage, x = wall.x, y = wall.y) {
   wall.hp -= damage;
   state.particles.push({ x, y, life: 0.45, startLife: 0.45, color: "#d8d0a8", size: 26 });
   state.walls = state.walls.filter((candidate) => (candidate.hp ?? wallMaxHp(candidate)) > 0);
+}
+
+function unitWallDamage(unit, damage) {
+  const bonus = state.levelMode && unit?.team === "blue" && !state.sandbox ? 1 + (state.rewardMods.wallDamageBonus || 0) : 1;
+  return damage * bonus;
 }
 
 function canUnitDamageWall(unit, wall) {
@@ -2597,9 +2655,11 @@ function addUnit(typeId, team, x, y) {
   const tint = team === "blue" ? type.color : "#ff706c";
   const level = state.upgrades[typeId] || 0;
   const statBoost = 1 + level * 0.18;
+  const enemyLevelBoost = state.levelMode && team === "red" && !state.sandbox ? 1 + Math.max(0, state.currentLevel - 1) * 0.035 : 1;
   const rangeBoost = 1 + level * 0.08;
   const speedBoost = 1 + level * 0.08;
-  const cooldownBoost = Math.max(0.55, 1 - level * 0.08);
+  const rewardAttackSpeedBoost = state.levelMode && team === "blue" && !state.sandbox ? Math.max(0.1, 1 + (state.rewardMods.attackSpeedBonus || 0)) : 1;
+  const cooldownBoost = Math.max(0.55, 1 - level * 0.08) / rewardAttackSpeedBoost;
   const rewardDamageBoost = state.levelMode && team === "blue" && !state.sandbox ? Math.max(0.1, 1 + (state.rewardMods.damageBonus || 0)) : 1;
   const rewardHpBoost = state.levelMode && team === "blue" && !state.sandbox ? Math.max(0.1, 1 + (state.rewardMods.hpBonus || 0)) : 1;
   const unit = {
@@ -2615,9 +2675,9 @@ function addUnit(typeId, team, x, y) {
     y,
     vx: (Math.random() - 0.5) * 10,
     vy: (Math.random() - 0.5) * 10,
-    hp: Math.round(type.hp * statBoost * rewardHpBoost),
-    maxHp: Math.round(type.hp * statBoost * rewardHpBoost),
-    damage: type.damage * statBoost * rewardDamageBoost,
+    hp: Math.round(type.hp * statBoost * rewardHpBoost * enemyLevelBoost),
+    maxHp: Math.round(type.hp * statBoost * rewardHpBoost * enemyLevelBoost),
+    damage: type.damage * statBoost * rewardDamageBoost * enemyLevelBoost,
     range: type.range * rangeBoost,
     burstCount: type.burstCount || 1,
     burstCooldown: type.burstCooldown || 0,
@@ -2682,7 +2742,7 @@ function spendFor(type) {
 function bannedUnitsForCurrentLevel() {
   if (!state.levelMode || state.currentLevel <= 0) return new Set();
   const rule = levelUnitUnlocks.find((entry) => state.currentLevel <= entry.maxLevel) || levelUnitUnlocks[levelUnitUnlocks.length - 1];
-  return new Set([...(rule.banned || []), ...(levelSpecificBans[state.currentLevel] || [])]);
+  return new Set([...(rule.banned || []), "portalmage", ...(levelSpecificBans[state.currentLevel] || [])]);
 }
 
 function currentLevelHasDragonEnemy() {
@@ -5372,7 +5432,7 @@ function attack(unit, target, mode = null) {
           targetY: target.y,
           team: unit.team,
           ownerId: unit.id,
-          damage: damageFor(unit, active.damage),
+          damage: unitWallDamage(unit, damageFor(unit, active.damage)),
           speed: active.projectileSpeed,
           splash: active.splash || 0,
           radius: active.weapon === "cannon" ? 7 : 4,
@@ -5383,7 +5443,7 @@ function attack(unit, target, mode = null) {
       return;
     }
     for (let i = 0; i < burstCount; i += 1) {
-      damageWall(target.wall, damageFor(unit, active.damage * (0.85 + Math.random() * 0.3)), target.x, target.y);
+      damageWall(target.wall, unitWallDamage(unit, damageFor(unit, active.damage * (0.85 + Math.random() * 0.3))), target.x, target.y);
     }
     applyAreaAttack(unit, target.x, target.y);
     const angle = Math.atan2(target.y - unit.y, target.x - unit.x);
