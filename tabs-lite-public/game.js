@@ -223,16 +223,26 @@ const levelDefinitions = [
   { number: 16, budget: 13500, name: "Plant Siege", zh: "第十六关：植物火线", enemies: [["gatlingshooter", 3], ["repeater", 6], ["peashooter", 10], ["chomper", 4], ["sunflower", 6]] },
   { number: 17, budget: 15000, name: "Dragon Crown", zh: "第十七关：龙冠军团", enemies: [["adultdragon", 3], ["hydra", 3], ["dragonling", 12], ["phoenixguard", 3]] },
   { number: 18, budget: 16500, name: "Control Nightmare", zh: "第十八关：控制噩梦", enemies: [["unit67", 8], ["voidbinder", 5], ["stormcaller", 4], ["frostmage", 4], ["shield", 10]] },
-  { number: 19, budget: 19000, name: "Two-Headed Doom", zh: "第十九关：双重末日", enemies: [["adultdragon", 4], ["giantzombie", 2], ["frostgiant", 3], ["hydra", 2], ["voidbinder", 4]] },
-  { number: 20, budget: 24000, name: "Final Chaos", zh: "第二十关：终极混沌", enemies: [["tiamat", 1], ["adultdragon", 4], ["giantzombie", 3], ["hydra", 4], ["unit67", 6], ["phoenixguard", 4]] },
+  { number: 19, budget: 17200, name: "Barricade Trial", zh: "第十九关：路障试炼", map: "barricadeTrial", enemies: [["wallcrusher", 4], ["sharpshooter", 5], ["shield", 8], ["cannon", 3]] },
+  { number: 20, budget: 18500, name: "Pea Maze", zh: "第二十关：豌豆迷宫", map: "peaMaze", enemies: [["peashooter", 5], ["chomper", 2], ["sunflower", 4]] },
+  { number: 21, budget: 19800, name: "Tower Gate", zh: "第二十一关：塔门", map: "towerGate", enemies: [["knight", 6], ["musketeer", 6], ["paladin", 3], ["sharpshooter", 4]] },
+  { number: 22, budget: 21000, name: "Frost Ramparts", zh: "第二十二关：冰霜壁垒", map: "frostRamparts", enemies: [["frostgiant", 4], ["frostmage", 6], ["shield", 12]] },
+  { number: 23, budget: 22200, name: "Zombie Factory", zh: "第二十三关：僵尸工厂", map: "zombieFactory", enemies: [["giantzombie", 2], ["footballzombie", 8], ["bucketzombie", 10], ["zombie", 18]] },
+  { number: 24, budget: 23400, name: "Fire Corridor", zh: "第二十四关：火焰走廊", map: "fireCorridor", enemies: [["flameknight", 8], ["phoenixguard", 5], ["dragonling", 14]] },
+  { number: 25, budget: 24600, name: "Hydra Garden", zh: "第二十五关：九头蛇花园", map: "hydraGarden", enemies: [["hydra", 5], ["poisoner", 6], ["slimebeast", 4], ["plaguewizard", 3]] },
+  { number: 26, budget: 25800, name: "Dragon Barricade", zh: "第二十六关：巨龙防线", map: "dragonBarricade", enemies: [["adultdragon", 4], ["dragonling", 18], ["flameknight", 6]] },
+  { number: 27, budget: 27000, name: "Void Prison", zh: "第二十七关：虚空牢笼", map: "voidPrison", enemies: [["voidbinder", 8], ["unit67", 8], ["stormcaller", 6], ["frostmage", 4]] },
+  { number: 28, budget: 28500, name: "Boss Warmup", zh: "第二十八关：Boss热身", map: "bossWarmup", enemies: [["giantzombie", 3], ["frostgiant", 4], ["adultdragon", 3], ["hydra", 3]] },
+  { number: 29, budget: 30000, name: "Two-Headed Doom", zh: "第二十九关：双重末日", enemies: [["adultdragon", 4], ["giantzombie", 2], ["frostgiant", 3], ["hydra", 2], ["voidbinder", 4]] },
+  { number: 30, budget: 34000, name: "Final Chaos", zh: "第三十关：终极混沌", enemies: [["tiamat", 1], ["adultdragon", 4], ["giantzombie", 3], ["hydra", 4], ["unit67", 6], ["phoenixguard", 4]] },
 ];
 
 const levelUnitUnlocks = [
   { maxLevel: 3, banned: ["dragonling", "adultdragon", "tiamat", "frostgiant", "giantzombie", "gatlingshooter", "chomper"] },
   { maxLevel: 7, banned: ["dragonling", "adultdragon", "tiamat", "giantzombie", "gatlingshooter"] },
   { maxLevel: 9, banned: ["adultdragon", "tiamat", "giantzombie"] },
-  { maxLevel: 19, banned: ["tiamat"] },
-  { maxLevel: 20, banned: [] },
+  { maxLevel: 29, banned: ["tiamat"] },
+  { maxLevel: 30, banned: [] },
 ];
 
 const levelSpecificBans = {
@@ -245,6 +255,16 @@ const levelSpecificBans = {
   18: ["portalmage"],
   19: ["portalmage"],
   20: ["portalmage"],
+  21: ["portalmage"],
+  22: ["portalmage"],
+  23: ["portalmage"],
+  24: ["portalmage"],
+  25: ["portalmage"],
+  26: ["portalmage"],
+  27: ["portalmage"],
+  28: ["portalmage"],
+  29: ["portalmage"],
+  30: ["portalmage"],
 };
 
 const INFECTABLE_TYPE_IDS = new Set([
@@ -2082,6 +2102,7 @@ function damageWall(wall, damage, x = wall.x, y = wall.y) {
 
 function canUnitDamageWall(unit, wall) {
   if (!unit || unit.canAttackWalls === false) return false;
+  if (wall.team && wall.team === unit.team) return false;
   return !(buildingTypes[wall.type] && wall.team === unit.team);
 }
 
@@ -4094,6 +4115,100 @@ function resetBattlefieldForLevel(level) {
   ensureSelectedUnitAllowed();
 }
 
+function addLevelWall(x, y, w, h, type = "normal", team = "red") {
+  const config = buildingTypes[type];
+  const wall = config
+    ? { x, y, w: config.w, h: config.h, type, team, cooldown: Math.random() * (config.cooldown || 1) }
+    : { x, y, w, h, type, team };
+  wall.maxHp = wallMaxHp(wall);
+  wall.hp = wall.maxHp;
+  wall.challengeImported = true;
+  state.walls.push(wall);
+  return wall;
+}
+
+function spawnLevelMap(level) {
+  if (!level.map) return;
+  const w = canvas.width;
+  const h = canvas.height;
+  const v = (x, y, height, width = 34, type = "normal") => addLevelWall(w * x, h * y, width, h * height, type, "red");
+  const hz = (x, y, width, height = 30, type = "normal") => addLevelWall(w * x, h * y, w * width, height, type, "red");
+  if (level.map === "peaMaze") {
+    hz(0.5, 0.07, 0.75, 34, "thick");
+    hz(0.5, 0.17, 0.48, 30, "normal");
+    hz(0.5, 0.26, 0.22, 28, "normal");
+    hz(0.5, 0.70, 0.17, 34, "normal");
+    hz(0.5, 0.82, 0.36, 34, "normal");
+    hz(0.5, 0.94, 0.62, 36, "thick");
+    v(0.08, 0.5, 0.78, 32, "thick");
+    v(0.20, 0.52, 0.62, 32, "normal");
+    v(0.33, 0.56, 0.46, 30, "normal");
+    v(0.62, 0.56, 0.46, 30, "normal");
+    v(0.75, 0.52, 0.62, 32, "normal");
+    v(0.88, 0.5, 0.78, 32, "thick");
+    v(0.96, 0.5, 0.88, 32, "thick");
+    addLevelWall(w * 0.18, h * 0.28, 52, 52, "frostTower", "red");
+    addLevelWall(w * 0.82, h * 0.28, 52, 52, "cannonTower", "red");
+  } else if (level.map === "barricadeTrial") {
+    hz(0.6, 0.32, 0.54, 30, "normal");
+    hz(0.6, 0.62, 0.54, 30, "normal");
+    v(0.45, 0.47, 0.34, 34, "thick");
+    v(0.73, 0.47, 0.34, 34, "thick");
+    addLevelWall(w * 0.58, h * 0.47, 52, 52, "cannonTower", "red");
+  } else if (level.map === "towerGate") {
+    v(0.52, 0.5, 0.72, 36, "thick");
+    v(0.72, 0.5, 0.72, 36, "thick");
+    hz(0.62, 0.22, 0.36, 30, "normal");
+    hz(0.62, 0.78, 0.36, 30, "normal");
+    addLevelWall(w * 0.61, h * 0.36, 42, 42, "arrowTower", "red");
+    addLevelWall(w * 0.61, h * 0.64, 42, 42, "arrowTower", "red");
+    addLevelWall(w * 0.78, h * 0.5, 52, 52, "cannonTower", "red");
+  } else if (level.map === "frostRamparts") {
+    hz(0.58, 0.25, 0.45, 32, "arrow");
+    hz(0.58, 0.75, 0.45, 32, "arrow");
+    v(0.42, 0.5, 0.5, 34, "normal");
+    v(0.74, 0.5, 0.5, 34, "normal");
+    addLevelWall(w * 0.58, h * 0.5, 48, 48, "frostTower", "red");
+    addLevelWall(w * 0.67, h * 0.5, 48, 48, "frostTower", "red");
+  } else if (level.map === "zombieFactory") {
+    v(0.55, 0.5, 0.62, 38, "thick");
+    v(0.82, 0.5, 0.62, 38, "thick");
+    hz(0.68, 0.18, 0.42, 34, "thick");
+    hz(0.68, 0.82, 0.42, 34, "thick");
+    addLevelWall(w * 0.69, h * 0.38, 56, 46, "goldMine", "red");
+    addLevelWall(w * 0.69, h * 0.62, 56, 46, "goldMine", "red");
+  } else if (level.map === "fireCorridor") {
+    hz(0.62, 0.36, 0.55, 30, "normal");
+    hz(0.62, 0.64, 0.55, 30, "normal");
+    addLevelWall(w * 0.52, h * 0.5, 52, 52, "cannonTower", "red");
+    addLevelWall(w * 0.75, h * 0.5, 52, 52, "cannonTower", "red");
+  } else if (level.map === "hydraGarden") {
+    hz(0.6, 0.24, 0.42, 28, "arrow");
+    hz(0.6, 0.76, 0.42, 28, "arrow");
+    v(0.48, 0.5, 0.56, 30, "normal");
+    v(0.74, 0.5, 0.56, 30, "normal");
+    addLevelWall(w * 0.61, h * 0.5, 48, 48, "healTower", "red");
+  } else if (level.map === "dragonBarricade") {
+    hz(0.62, 0.2, 0.56, 36, "thick");
+    hz(0.62, 0.8, 0.56, 36, "thick");
+    v(0.44, 0.5, 0.62, 34, "arrow");
+    v(0.82, 0.5, 0.62, 34, "arrow");
+  } else if (level.map === "voidPrison") {
+    hz(0.62, 0.28, 0.48, 30, "normal");
+    hz(0.62, 0.72, 0.48, 30, "normal");
+    v(0.5, 0.5, 0.5, 30, "normal");
+    v(0.74, 0.5, 0.5, 30, "normal");
+    addLevelWall(w * 0.62, h * 0.5, 48, 48, "frostTower", "red");
+  } else if (level.map === "bossWarmup") {
+    hz(0.62, 0.18, 0.5, 34, "thick");
+    hz(0.62, 0.82, 0.5, 34, "thick");
+    v(0.46, 0.5, 0.6, 36, "thick");
+    v(0.78, 0.5, 0.6, 36, "thick");
+    addLevelWall(w * 0.62, h * 0.35, 52, 52, "cannonTower", "red");
+    addLevelWall(w * 0.62, h * 0.65, 52, 52, "cannonTower", "red");
+  }
+}
+
 function spawnLevelEnemies(level) {
   const entries = level.enemies.flatMap(([typeId, count]) => Array.from({ length: count }, () => typeId));
   const rows = Math.max(1, Math.ceil(entries.length / 4));
@@ -4141,6 +4256,7 @@ function loadLevel(levelNumber) {
     return;
   }
   resetBattlefieldForLevel(level);
+  spawnLevelMap(level);
   spawnLevelEnemies(level);
   syncBudgetToEnemySize();
   renderUnitList();
