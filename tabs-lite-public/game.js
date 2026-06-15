@@ -2685,8 +2685,14 @@ function bannedUnitsForCurrentLevel() {
   return new Set([...(rule.banned || []), ...(levelSpecificBans[state.currentLevel] || [])]);
 }
 
+function currentLevelHasDragonEnemy() {
+  const level = levelDefinitions.find((entry) => entry.number === state.currentLevel);
+  return Boolean(level?.enemies?.some(([typeId]) => ["dragonling", "adultdragon", "hydra", "tiamat"].includes(typeId)));
+}
+
 function isUnitAllowedInCurrentLevel(type) {
   if (!type || !state.levelMode || isSandboxActive()) return true;
+  if (type.id === "adultdragon" && !currentLevelHasDragonEnemy()) return false;
   return !bannedUnitsForCurrentLevel().has(type.id);
 }
 
@@ -2729,8 +2735,9 @@ function renderRewardModal() {
     const info = rewardText(card);
     const button = document.createElement("button");
     button.className = "reward-card";
+    button.type = "button";
+    button.dataset.rewardId = card.id;
     button.innerHTML = `<b>${info.title}</b><span>${info.effect}</span><small>${info.cost}</small>`;
-    button.addEventListener("click", () => chooseRewardCard(card.id));
     rewardCards.appendChild(button);
   });
   rewardModal.classList.remove("hidden");
@@ -2739,10 +2746,10 @@ function renderRewardModal() {
 function chooseRewardCard(cardId) {
   const card = state.pendingRewardChoices.find((entry) => entry.id === cardId);
   if (!card) return;
+  state.pendingRewardChoices = [];
+  if (rewardModal) rewardModal.classList.add("hidden");
   card.apply();
   saveRewardMods(state.rewardMods);
-  state.pendingRewardChoices = [];
-  renderRewardModal();
   updateLevelUi();
   updateUi();
   setToast(rewardText(card).title);
@@ -8219,6 +8226,15 @@ if (itemBar) {
     event.preventDefault();
     button.blur();
     selectItem(button.dataset.item);
+  });
+}
+if (rewardCards) {
+  rewardCards.addEventListener("pointerdown", (event) => {
+    const button = event.target.closest("[data-reward-id]");
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    chooseRewardCard(button.dataset.rewardId);
   });
 }
 eraseBtn.addEventListener("click", () => {

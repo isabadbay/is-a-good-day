@@ -725,7 +725,7 @@ canvas {
 .reward-modal {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: 100;
   display: grid;
   place-items: center;
   background: rgba(8, 12, 18, 0.72);
@@ -759,6 +759,7 @@ canvas {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+  touch-action: manipulation;
 }
 
 .reward-card {
@@ -770,6 +771,8 @@ canvas {
   background: linear-gradient(180deg, #202936, #151b23);
   padding: 14px;
   text-align: left;
+  user-select: none;
+  cursor: pointer;
 }
 
 .reward-card:hover {
