@@ -2468,27 +2468,27 @@ function wallAvoidancePoint(unit, target) {
   }
   if (!blocker) return directTarget;
 
-  const margin = unit.radius + (isUnbreakableWall(blocker) ? 68 : 38);
+  const margin = unit.radius + (isUnbreakableWall(blocker) ? 28 : 34);
   const left = blocker.x - blocker.w / 2 - margin;
   const right = blocker.x + blocker.w / 2 + margin;
   const top = blocker.y - blocker.h / 2 - margin;
   const bottom = blocker.y + blocker.h / 2 + margin;
+  const nearX = unit.x < blocker.x ? left : right;
+  const farX = unit.x < blocker.x ? right : left;
+  const nearY = unit.y < blocker.y ? top : bottom;
+  const farY = unit.y < blocker.y ? bottom : top;
   const candidates = blocker.w >= blocker.h
     ? [
-        { x: unit.x, y: top },
-        { x: unit.x, y: bottom },
-        { x: left, y: top },
-        { x: right, y: top },
-        { x: left, y: bottom },
-        { x: right, y: bottom },
+        { x: left, y: nearY },
+        { x: right, y: nearY },
+        { x: left, y: farY },
+        { x: right, y: farY },
       ]
     : [
-        { x: left, y: unit.y },
-        { x: right, y: unit.y },
-        { x: left, y: top },
-        { x: left, y: bottom },
-        { x: right, y: top },
-        { x: right, y: bottom },
+        { x: nearX, y: top },
+        { x: nearX, y: bottom },
+        { x: farX, y: top },
+        { x: farX, y: bottom },
       ];
 
   let best = directTarget;
@@ -2496,8 +2496,9 @@ function wallAvoidancePoint(unit, target) {
   for (const candidate of candidates) {
     const x = clamp(candidate.x, unit.radius, canvas.width - unit.radius);
     const y = clamp(candidate.y, unit.radius, canvas.height - unit.radius);
-    const stillBlocked = segmentHitsWall(unit.x, unit.y, x, y, blocker, unit.radius + 6);
-    const score = Math.hypot(unit.x - x, unit.y - y) + Math.hypot(directTarget.x - x, directTarget.y - y) + (stillBlocked ? 9000 : 0);
+    const stillBlocked = segmentHitsWall(unit.x, unit.y, x, y, blocker, unit.radius + 4);
+    const targetBlocked = segmentHitsWall(x, y, directTarget.x, directTarget.y, blocker, unit.radius + 4);
+    const score = Math.hypot(unit.x - x, unit.y - y) + Math.hypot(directTarget.x - x, directTarget.y - y) + (stillBlocked ? 12000 : 0) + (targetBlocked ? 1200 : 0);
     if (score < bestScore) {
       best = { x, y };
       bestScore = score;
@@ -8508,6 +8509,7 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
 
 
 

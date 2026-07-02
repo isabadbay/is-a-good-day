@@ -53,6 +53,7 @@ const formationCode = document.querySelector("#formationCode");
 const wallToolBtn = document.querySelector("#wallToolBtn");
 const thickWallToolBtn = document.querySelector("#thickWallToolBtn");
 const arrowWallToolBtn = document.querySelector("#arrowWallToolBtn");
+const unbreakableWallToolBtn = document.querySelector("#unbreakableWallToolBtn");
 const waterToolBtn = document.querySelector("#waterToolBtn");
 const fireTerrainToolBtn = document.querySelector("#fireTerrainToolBtn");
 const grassToolBtn = document.querySelector("#grassToolBtn");
@@ -217,28 +218,28 @@ const levelDefinitions = [
   { number: 6, budget: 2900, name: "Frozen Dead", zh: "第六关：冰冻亡灵", enemies: [["zombie", 8], ["coneheadzombie", 4], ["frostmage", 2], ["necromancer", 1]] },
   { number: 7, budget: 3400, name: "67 Lockdown", zh: "第七关：67封锁", enemies: [["unit67", 5], ["shield", 5], ["sharpshooter", 2], ["voidbinder", 1]] },
   { number: 8, budget: 4300, name: "Dragon Nest", zh: "第八关：龙巢", enemies: [["dragonling", 8], ["adultdragon", 1], ["flameknight", 2], ["sharpshooter", 2]] },
-  { number: 9, budget: 5600, name: "Zombie Wall", zh: "第九关：僵尸墙", enemies: [["zombie", 10], ["coneheadzombie", 5], ["bucketzombie", 3], ["footballzombie", 2], ["giantzombie", 1]] },
-  { number: 10, budget: 8000, name: "Storm Legion", zh: "第十关：风暴军团", enemies: [["frostgiant", 2], ["stormlancer", 4], ["phoenixguard", 2], ["adultdragon", 2], ["voidbinder", 2]] },
-  { number: 11, budget: 15000, name: "Tiamat", zh: "第十一关：龙神提亚马特", enemies: [["tiamat", 1], ["adultdragon", 2], ["dragonling", 6]] },
-  { number: 12, budget: 9000, name: "Hydra Burn", zh: "第十二关：九头火阵", enemies: [["hydra", 4], ["flameknight", 4], ["phoenixguard", 2], ["dragonling", 8]] },
-  { number: 13, budget: 9800, name: "Frozen Fortress", zh: "第十三关：冰霜堡垒", enemies: [["frostgiant", 4], ["frostmage", 4], ["shield", 8], ["sharpshooter", 3]] },
-  { number: 14, budget: 11000, name: "Zombie Stampede", zh: "第十四关：僵尸冲锋", enemies: [["giantzombie", 2], ["footballzombie", 6], ["bucketzombie", 8], ["zombie", 16]] },
-  { number: 15, budget: 12000, name: "Portal Disaster", zh: "第十五关：传送灾难", enemies: [["portalmage", 4], ["voidbinder", 4], ["unit67", 4], ["stormcaller", 4], ["sharpshooter", 3]] },
-  { number: 16, budget: 13500, name: "Plant Siege", zh: "第十六关：植物火线", enemies: [["gatlingshooter", 3], ["repeater", 6], ["peashooter", 10], ["chomper", 4], ["sunflower", 6]] },
-  { number: 17, budget: 15000, name: "Dragon Crown", zh: "第十七关：龙冠军团", enemies: [["adultdragon", 3], ["hydra", 3], ["dragonling", 12], ["phoenixguard", 3]] },
-  { number: 18, budget: 16500, name: "Control Nightmare", zh: "第十八关：控制噩梦", enemies: [["unit67", 8], ["voidbinder", 5], ["stormcaller", 4], ["frostmage", 4], ["shield", 10]] },
-  { number: 19, budget: 17200, name: "Barricade Trial", zh: "第十九关：路障试炼", map: "barricadeTrial", enemies: [["wallcrusher", 4], ["sharpshooter", 5], ["shield", 8], ["cannon", 3]] },
-  { number: 20, budget: 9500, name: "Pea Maze", zh: "第二十关：豌豆迷宫", map: "peaMaze", enemies: [["peashooter", 5], ["chomper", 2], ["sunflower", 4]] },
-  { number: 21, budget: 9800, name: "Tower Gate", zh: "第二十一关：塔门", map: "towerGate", enemies: [["knight", 6], ["musketeer", 6], ["paladin", 3], ["sharpshooter", 4]] },
-  { number: 22, budget: 10400, name: "Frost Ramparts", zh: "第二十二关：冰霜壁垒", map: "frostRamparts", enemies: [["frostgiant", 3], ["frostmage", 6], ["shield", 12]] },
-  { number: 23, budget: 11000, name: "Zombie Factory", zh: "第二十三关：僵尸工厂", map: "zombieFactory", enemies: [["giantzombie", 2], ["footballzombie", 7], ["bucketzombie", 9], ["zombie", 16]] },
-  { number: 24, budget: 11600, name: "Fire Corridor", zh: "第二十四关：火焰走廊", map: "fireCorridor", enemies: [["flameknight", 7], ["phoenixguard", 4], ["dragonling", 12]] },
-  { number: 25, budget: 12200, name: "Hydra Garden", zh: "第二十五关：九头蛇花园", map: "hydraGarden", enemies: [["hydra", 4], ["poisoner", 6], ["slimebeast", 4], ["plaguewizard", 3]] },
-  { number: 26, budget: 12800, name: "Dragon Barricade", zh: "第二十六关：巨龙防线", map: "dragonBarricade", enemies: [["adultdragon", 3], ["dragonling", 16], ["flameknight", 6]] },
-  { number: 27, budget: 13400, name: "Void Prison", zh: "第二十七关：虚空牢笼", map: "voidPrison", enemies: [["voidbinder", 7], ["unit67", 7], ["stormcaller", 6], ["frostmage", 4]] },
-  { number: 28, budget: 14000, name: "Boss Warmup", zh: "第二十八关：Boss热身", map: "bossWarmup", enemies: [["giantzombie", 3], ["frostgiant", 3], ["adultdragon", 3], ["hydra", 3]] },
-  { number: 29, budget: 14500, name: "Two-Headed Doom", zh: "第二十九关：双重末日", enemies: [["adultdragon", 4], ["giantzombie", 2], ["frostgiant", 3], ["hydra", 2], ["voidbinder", 4]] },
-  { number: 30, budget: 15000, name: "Final Chaos", zh: "第三十关：终极混沌", enemies: [["tiamat", 1], ["adultdragon", 4], ["giantzombie", 3], ["hydra", 4], ["unit67", 6], ["phoenixguard", 4]] },
+  { number: 9, budget: 5000, name: "Zombie Wall", zh: "第九关：僵尸墙", enemies: [["zombie", 10], ["coneheadzombie", 5], ["bucketzombie", 3], ["footballzombie", 2], ["giantzombie", 1]] },
+  { number: 10, budget: 5600, name: "Storm Legion", zh: "第十关：风暴军团", enemies: [["frostgiant", 2], ["stormlancer", 4], ["phoenixguard", 2], ["adultdragon", 2], ["voidbinder", 2]] },
+  { number: 11, budget: 6500, name: "Tiamat", zh: "第十一关：龙神提亚马特", enemies: [["tiamat", 1], ["adultdragon", 2], ["dragonling", 6]] },
+  { number: 12, budget: 6000, name: "Hydra Burn", zh: "第十二关：九头火阵", enemies: [["hydra", 4], ["flameknight", 4], ["phoenixguard", 2], ["dragonling", 8]] },
+  { number: 13, budget: 6400, name: "Frozen Fortress", zh: "第十三关：冰霜堡垒", enemies: [["frostgiant", 4], ["frostmage", 4], ["shield", 8], ["sharpshooter", 3]] },
+  { number: 14, budget: 6800, name: "Zombie Stampede", zh: "第十四关：僵尸冲锋", enemies: [["giantzombie", 2], ["footballzombie", 6], ["bucketzombie", 8], ["zombie", 16]] },
+  { number: 15, budget: 7100, name: "Portal Disaster", zh: "第十五关：传送灾难", enemies: [["portalmage", 4], ["voidbinder", 4], ["unit67", 4], ["stormcaller", 4], ["sharpshooter", 3]] },
+  { number: 16, budget: 7400, name: "Plant Siege", zh: "第十六关：植物火线", enemies: [["gatlingshooter", 3], ["repeater", 6], ["peashooter", 10], ["chomper", 4], ["sunflower", 6]] },
+  { number: 17, budget: 7700, name: "Dragon Crown", zh: "第十七关：龙冠军团", enemies: [["adultdragon", 3], ["hydra", 3], ["dragonling", 12], ["phoenixguard", 3]] },
+  { number: 18, budget: 8000, name: "Control Nightmare", zh: "第十八关：控制噩梦", enemies: [["unit67", 8], ["voidbinder", 5], ["stormcaller", 4], ["frostmage", 4], ["shield", 10]] },
+  { number: 19, budget: 8300, name: "Barricade Trial", zh: "第十九关：路障试炼", map: "barricadeTrial", enemies: [["wallcrusher", 4], ["sharpshooter", 5], ["shield", 8], ["cannon", 3]] },
+  { number: 20, budget: 6500, name: "Pea Maze", zh: "第二十关：豌豆迷宫", map: "peaMaze", enemies: [["peashooter", 5], ["chomper", 2], ["sunflower", 4]] },
+  { number: 21, budget: 6800, name: "Tower Gate", zh: "第二十一关：塔门", map: "towerGate", enemies: [["knight", 6], ["musketeer", 6], ["paladin", 3], ["sharpshooter", 4]] },
+  { number: 22, budget: 7100, name: "Frost Ramparts", zh: "第二十二关：冰霜壁垒", map: "frostRamparts", enemies: [["frostgiant", 3], ["frostmage", 6], ["shield", 12]] },
+  { number: 23, budget: 7400, name: "Zombie Factory", zh: "第二十三关：僵尸工厂", map: "zombieFactory", enemies: [["giantzombie", 2], ["footballzombie", 7], ["bucketzombie", 9], ["zombie", 16]] },
+  { number: 24, budget: 7700, name: "Fire Corridor", zh: "第二十四关：火焰走廊", map: "fireCorridor", enemies: [["flameknight", 7], ["phoenixguard", 4], ["dragonling", 12]] },
+  { number: 25, budget: 8000, name: "Hydra Garden", zh: "第二十五关：九头蛇花园", map: "hydraGarden", enemies: [["hydra", 4], ["poisoner", 6], ["slimebeast", 4], ["plaguewizard", 3]] },
+  { number: 26, budget: 8300, name: "Dragon Barricade", zh: "第二十六关：巨龙防线", map: "dragonBarricade", enemies: [["adultdragon", 3], ["dragonling", 16], ["flameknight", 6]] },
+  { number: 27, budget: 8600, name: "Void Prison", zh: "第二十七关：虚空牢笼", map: "voidPrison", enemies: [["voidbinder", 7], ["unit67", 7], ["stormcaller", 6], ["frostmage", 4]] },
+  { number: 28, budget: 8900, name: "Boss Warmup", zh: "第二十八关：Boss热身", map: "bossWarmup", enemies: [["giantzombie", 3], ["frostgiant", 3], ["adultdragon", 3], ["hydra", 3]] },
+  { number: 29, budget: 9200, name: "Two-Headed Doom", zh: "第二十九关：双重末日", enemies: [["adultdragon", 4], ["giantzombie", 2], ["frostgiant", 3], ["hydra", 2], ["voidbinder", 4]] },
+  { number: 30, budget: 9500, name: "Final Chaos", zh: "第三十关：终极混沌", enemies: [["tiamat", 1], ["adultdragon", 4], ["giantzombie", 3], ["hydra", 4], ["unit67", 6], ["phoenixguard", 4]] },
 ];
 
 const levelTips = {
@@ -513,6 +514,7 @@ const translations = {
     mapWall: "墙",
     mapThickWall: "厚墙",
     mapArrowWall: "透射墙",
+    mapUnbreakableWall: "不可破坏墙",
     mapWater: "水坑",
     mapFireGround: "火地",
     mapGrass: "草丛",
@@ -757,6 +759,7 @@ const translations = {
     mapWall: "Wall",
     mapThickWall: "Thick Wall",
     mapArrowWall: "Arrow Wall",
+    mapUnbreakableWall: "Unbreakable Wall",
     mapWater: "Water",
     mapFireGround: "Fire Ground",
     mapGrass: "Grass",
@@ -961,6 +964,7 @@ function applyLanguage(lang) {
   wallToolBtn.textContent = text.mapWall;
   thickWallToolBtn.textContent = text.mapThickWall;
   arrowWallToolBtn.textContent = text.mapArrowWall;
+  unbreakableWallToolBtn.textContent = text.mapUnbreakableWall;
   waterToolBtn.textContent = text.mapWater;
   fireTerrainToolBtn.textContent = text.mapFireGround;
   grassToolBtn.textContent = text.mapGrass;
@@ -2185,10 +2189,10 @@ function syncBudgetToEnemySize() {
 
 function levelStartingGold(level) {
   const bossGoldLocked = state.levelMode && [11, 28, 29, 30].includes(level?.number);
-  if (bossGoldLocked) return Math.max(100, Math.round(level?.budget || 0));
-  if ((level?.number || 0) >= 20) return Math.max(100, Math.round(level?.budget || 0));
+  if (bossGoldLocked) return clamp(Math.round(level?.budget || 0), 100, 9500);
+  if ((level?.number || 0) >= 20) return clamp(Math.round(level?.budget || 0), 100, 9500);
   const bonus = clamp(state.rewardMods.startingGoldBonus || 0, -2500, 800);
-  return Math.max(100, Math.round((level?.budget || 0) + bonus));
+  return clamp(Math.round((level?.budget || 0) + bonus), 100, 9500);
 }
 
 function worldPoint(event) {
@@ -2205,13 +2209,14 @@ function setToast(message) {
 
 function wallCost(wall) {
   if (buildingTypes[wall.type]) return buildingTypes[wall.type].cost;
-  const thickMultiplier = wall.type === "thick" ? 2.35 : wall.type === "arrow" ? 1.35 : 1;
+  const thickMultiplier = wall.type === "unbreakable" ? 4.2 : wall.type === "thick" ? 2.35 : wall.type === "arrow" ? 1.35 : 1;
   return Math.ceil((40 + Math.max(wall.w, wall.h) * 0.4) * 2 * thickMultiplier);
 }
 
 function wallMaxHp(wall) {
   const length = Math.max(wall.w, wall.h);
   if (buildingTypes[wall.type]) return buildingTypes[wall.type].hp;
+  if (wall.type === "unbreakable") return 1;
   if (wall.type === "thick") return Math.ceil(260 + length * 3.2);
   if (wall.type === "arrow") return Math.ceil(90 + length * 1.15);
   return Math.ceil(120 + length * 1.55);
@@ -2300,13 +2305,14 @@ function addWall(start, end) {
   const length = Math.max(36, horizontal ? Math.abs(dx) : Math.abs(dy));
   const thick = state.mapTool === "thickWall";
   const arrow = state.mapTool === "arrowWall";
-  const thickness = thick ? 48 : arrow ? 22 : 28;
+  const unbreakable = state.mapTool === "unbreakableWall";
+  const thickness = unbreakable ? 34 : thick ? 48 : arrow ? 22 : 28;
   const wall = {
     x: clamp(horizontal ? (start.x + end.x) / 2 : start.x, 30, canvas.width - 30),
     y: clamp(horizontal ? start.y : (start.y + end.y) / 2, 30, canvas.height - 30),
     w: horizontal ? length : thickness,
     h: horizontal ? thickness : length,
-    type: thick ? "thick" : arrow ? "arrow" : "normal",
+    type: unbreakable ? "unbreakable" : thick ? "thick" : arrow ? "arrow" : "normal",
   };
   wall.maxHp = wallMaxHp(wall);
   wall.hp = wall.maxHp;
@@ -2335,8 +2341,13 @@ function eraseWall(point) {
   if (state.walls.length !== before) setToast(state.language === "zh" ? "墙已删除" : "Wall removed");
 }
 
+function isUnbreakableWall(wall) {
+  return wall?.type === "unbreakable";
+}
+
 function damageWallsAt(x, y, radius, damage) {
   for (const wall of state.walls) {
+    if (isUnbreakableWall(wall)) continue;
     wall.maxHp ??= wallMaxHp(wall);
     wall.hp ??= wall.maxHp;
     const closestX = clamp(x, wall.x - wall.w / 2, wall.x + wall.w / 2);
@@ -2350,6 +2361,10 @@ function damageWallsAt(x, y, radius, damage) {
 }
 
 function damageWall(wall, damage, x = wall.x, y = wall.y) {
+  if (isUnbreakableWall(wall)) {
+    state.particles.push({ x, y, life: 0.25, startLife: 0.25, color: "#8ee7ff", size: 18 });
+    return;
+  }
   wall.maxHp ??= wallMaxHp(wall);
   wall.hp ??= wall.maxHp;
   wall.hp -= damage;
@@ -2363,7 +2378,7 @@ function unitWallDamage(unit, damage) {
 }
 
 function canUnitDamageWall(unit, wall) {
-  if (!unit || unit.canAttackWalls === false) return false;
+  if (!unit || unit.canAttackWalls === false || isUnbreakableWall(wall)) return false;
   if (wall.team && wall.team === unit.team) return false;
   return !(buildingTypes[wall.type] && wall.team === unit.team);
 }
@@ -2442,33 +2457,48 @@ function segmentHitsWall(x1, y1, x2, y2, wall, padding = 20) {
 }
 
 function wallAvoidancePoint(unit, target) {
-  const lookX = unit.x + (target.x - unit.x) * 0.42;
-  const lookY = unit.y + (target.y - unit.y) * 0.42;
+  const directTarget = { x: target.x, y: target.y };
   let blocker = null;
   for (const wall of state.walls) {
-    if (segmentHitsWall(unit.x, unit.y, lookX, lookY, wall, unit.radius + 10)) {
+    if (wall.type === "arrow" && unit.projectileSpeed) continue;
+    if (segmentHitsWall(unit.x, unit.y, directTarget.x, directTarget.y, wall, unit.radius + 10)) {
       blocker = wall;
       break;
     }
   }
-  if (!blocker) return target;
-  const margin = unit.radius + 32;
-  const candidates =
-    blocker.w >= blocker.h
-      ? [
-          { x: blocker.x, y: blocker.y - blocker.h / 2 - margin },
-          { x: blocker.x, y: blocker.y + blocker.h / 2 + margin },
-        ]
-      : [
-          { x: blocker.x - blocker.w / 2 - margin, y: blocker.y },
-          { x: blocker.x + blocker.w / 2 + margin, y: blocker.y },
-        ];
-  let best = candidates[0];
+  if (!blocker) return directTarget;
+
+  const margin = unit.radius + (isUnbreakableWall(blocker) ? 28 : 34);
+  const left = blocker.x - blocker.w / 2 - margin;
+  const right = blocker.x + blocker.w / 2 + margin;
+  const top = blocker.y - blocker.h / 2 - margin;
+  const bottom = blocker.y + blocker.h / 2 + margin;
+  const nearX = unit.x < blocker.x ? left : right;
+  const farX = unit.x < blocker.x ? right : left;
+  const nearY = unit.y < blocker.y ? top : bottom;
+  const farY = unit.y < blocker.y ? bottom : top;
+  const candidates = blocker.w >= blocker.h
+    ? [
+        { x: left, y: nearY },
+        { x: right, y: nearY },
+        { x: left, y: farY },
+        { x: right, y: farY },
+      ]
+    : [
+        { x: nearX, y: top },
+        { x: nearX, y: bottom },
+        { x: farX, y: top },
+        { x: farX, y: bottom },
+      ];
+
+  let best = directTarget;
   let bestScore = Infinity;
   for (const candidate of candidates) {
     const x = clamp(candidate.x, unit.radius, canvas.width - unit.radius);
     const y = clamp(candidate.y, unit.radius, canvas.height - unit.radius);
-    const score = Math.hypot(unit.x - x, unit.y - y) + Math.hypot(target.x - x, target.y - y);
+    const stillBlocked = segmentHitsWall(unit.x, unit.y, x, y, blocker, unit.radius + 4);
+    const targetBlocked = segmentHitsWall(x, y, directTarget.x, directTarget.y, blocker, unit.radius + 4);
+    const score = Math.hypot(unit.x - x, unit.y - y) + Math.hypot(directTarget.x - x, directTarget.y - y) + (stillBlocked ? 12000 : 0) + (targetBlocked ? 1200 : 0);
     if (score < bestScore) {
       best = { x, y };
       bestScore = score;
@@ -2476,9 +2506,8 @@ function wallAvoidancePoint(unit, target) {
   }
   return best;
 }
-
 function isWallBuildTool(tool = state.mapTool) {
-  return tool === "wall" || tool === "thickWall" || tool === "arrowWall";
+  return tool === "wall" || tool === "thickWall" || tool === "arrowWall" || tool === "unbreakableWall";
 }
 
 function issueCommand(point) {
@@ -3019,11 +3048,11 @@ function expandNumber(value) {
 }
 
 function wallTypeCode(type) {
-  return type === "thick" ? "t" : type === "arrow" ? "a" : type === "arrowTower" ? "o" : type === "cannonTower" ? "c" : type === "healTower" ? "h" : type === "frostTower" ? "f" : type === "goldMine" ? "g" : "n";
+  return type === "unbreakable" ? "u" : type === "thick" ? "t" : type === "arrow" ? "a" : type === "arrowTower" ? "o" : type === "cannonTower" ? "c" : type === "healTower" ? "h" : type === "frostTower" ? "f" : type === "goldMine" ? "g" : "n";
 }
 
 function wallTypeFromCode(code) {
-  return code === "t" ? "thick" : code === "a" ? "arrow" : code === "o" ? "arrowTower" : code === "c" ? "cannonTower" : code === "h" ? "healTower" : code === "f" ? "frostTower" : code === "g" ? "goldMine" : "normal";
+  return code === "u" ? "unbreakable" : code === "t" ? "thick" : code === "a" ? "arrow" : code === "o" ? "arrowTower" : code === "c" ? "cannonTower" : code === "h" ? "healTower" : code === "f" ? "frostTower" : code === "g" ? "goldMine" : "normal";
 }
 
 function terrainTypeCode(type) {
@@ -3238,7 +3267,7 @@ function restoreLocalFormation(payload) {
       y: clamp(Number(saved.y) || canvas.height / 2, 20, canvas.height - 20),
       w: clamp(Number(saved.w) || 60, 12, canvas.width),
       h: clamp(Number(saved.h) || 28, 12, canvas.height),
-      type: ["normal", "thick", "arrow", ...Object.keys(buildingTypes)].includes(saved.type) ? saved.type : "normal",
+      type: ["normal", "thick", "arrow", "unbreakable", ...Object.keys(buildingTypes)].includes(saved.type) ? saved.type : "normal",
       team: saved.team === "red" ? "red" : "blue",
       cooldown: 0,
     };
@@ -3307,7 +3336,7 @@ function importFormation() {
         y: clamp(Number(saved.y) || canvas.height / 2, 20, canvas.height - 20),
         w: clamp(Number(saved.w) || 60, 12, canvas.width),
         h: clamp(Number(saved.h) || 28, 12, canvas.height),
-        type: ["normal", "thick", "arrow", ...Object.keys(buildingTypes)].includes(saved.type) ? saved.type : "normal",
+        type: ["normal", "thick", "arrow", "unbreakable", ...Object.keys(buildingTypes)].includes(saved.type) ? saved.type : "normal",
         team: buildingTypes[saved.type] ? "red" : saved.team,
         challengeImported: true,
       };
@@ -5814,8 +5843,13 @@ function updateUnit(unit, dt) {
     spawnTornado(unit, target);
     unit.tornadoCooldown = unit.skills.poisonSlime ? 5.2 : 6.4;
   }
-  const angle = Math.atan2(target.y - unit.y, target.x - unit.x);
+  const moveTarget = wallAvoidancePoint(unit, target);
+  const angle = Math.atan2(moveTarget.y - unit.y, moveTarget.x - unit.x);
   const isRanged = Boolean(unit.projectileSpeed);
+  const blockedByUnbreakable = target.kind !== "wall" && state.walls.some((wall) => {
+    if (!isUnbreakableWall(wall)) return false;
+    return segmentHitsWall(unit.x, unit.y, target.x, target.y, wall, unit.radius + 10);
+  });
   const edgeDistance = Math.max(0, distance - unit.radius - target.radius);
   const engagementDistance = isRanged ? distance : edgeDistance;
   const rangeFactor = terrainRangeFactor(unit);
@@ -5823,10 +5857,10 @@ function updateUnit(unit, dt) {
   const second = unit.secondAttack;
   const secondEngagementDistance = second && second.ranged ? distance : edgeDistance;
   const secondAttackDistance = second ? second.range * (second.ranged ? rangeFactor : 1) : 0;
-  const canPrimaryAttack = engagementDistance <= primaryAttackDistance;
-  const canSecondAttack = Boolean(second && secondEngagementDistance <= secondAttackDistance);
+  const canPrimaryAttack = !blockedByUnbreakable && engagementDistance <= primaryAttackDistance;
+  const canSecondAttack = !blockedByUnbreakable && Boolean(second && secondEngagementDistance <= secondAttackDistance);
   const attackDistance = Math.max(primaryAttackDistance, secondAttackDistance);
-  const stopDistance = isRanged ? unit.stopDistance : Math.min(unit.stopDistance, attackDistance);
+  const stopDistance = blockedByUnbreakable ? 0 : isRanged ? unit.stopDistance : Math.min(unit.stopDistance, attackDistance);
   const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.tiamatFrostTimer > 0 ? 0.2 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1) * (unit.tiamatRageSpeedTimer > 0 ? unit.skills.hitSpeedBoost || 10 : 1) * terrainSpeedFactor(unit);
   if (!unit.skills.rooted && engagementDistance > stopDistance) {
     unit.vx += Math.cos(angle) * unit.speed * speedFactor * dt * 2.8;
@@ -6447,10 +6481,10 @@ function drawWalls() {
       ctx.restore();
       continue;
     }
-    ctx.fillStyle = wall.type === "thick" ? "#4b4940" : wall.type === "arrow" ? "rgba(73, 96, 104, 0.62)" : "#5a564b";
+    ctx.fillStyle = wall.type === "unbreakable" ? "#1f2935" : wall.type === "thick" ? "#4b4940" : wall.type === "arrow" ? "rgba(73, 96, 104, 0.62)" : "#5a564b";
     ctx.fillRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h);
-    ctx.strokeStyle = wall.type === "thick" ? "#f0dfae" : wall.type === "arrow" ? "#9bdcff" : "#d8d0a8";
-    ctx.lineWidth = wall.type === "thick" ? 5 : 3;
+    ctx.strokeStyle = wall.type === "unbreakable" ? "#8ee7ff" : wall.type === "thick" ? "#f0dfae" : wall.type === "arrow" ? "#9bdcff" : "#d8d0a8";
+    ctx.lineWidth = wall.type === "unbreakable" ? 6 : wall.type === "thick" ? 5 : 3;
     ctx.strokeRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h);
     ctx.globalAlpha = 0.35;
     ctx.strokeStyle = "#211f1a";
@@ -6518,8 +6552,8 @@ function drawWalls() {
     const horizontal = Math.abs(dx) >= Math.abs(dy);
     const end = horizontal ? { x: state.pointer.x, y: state.wallStart.y } : { x: state.wallStart.x, y: state.pointer.y };
     ctx.save();
-    ctx.strokeStyle = state.mapTool === "thickWall" ? "#d8d0a8" : state.mapTool === "arrowWall" ? "#9bdcff" : "#e8bd57";
-    ctx.lineWidth = state.mapTool === "thickWall" ? 10 : state.mapTool === "arrowWall" ? 4 : 5;
+    ctx.strokeStyle = state.mapTool === "thickWall" ? "#d8d0a8" : state.mapTool === "unbreakableWall" ? "#8ee7ff" : state.mapTool === "arrowWall" ? "#9bdcff" : "#e8bd57";
+    ctx.lineWidth = state.mapTool === "unbreakableWall" ? 7 : state.mapTool === "thickWall" ? 10 : state.mapTool === "arrowWall" ? 4 : 5;
     ctx.setLineDash([10, 8]);
     ctx.beginPath();
     ctx.moveTo(state.wallStart.x, state.wallStart.y);
@@ -7930,6 +7964,7 @@ function updateUi() {
   wallToolBtn.classList.toggle("active", state.mapTool === "wall");
   thickWallToolBtn.classList.toggle("active", state.mapTool === "thickWall");
   arrowWallToolBtn.classList.toggle("active", state.mapTool === "arrowWall");
+  unbreakableWallToolBtn.classList.toggle("active", state.mapTool === "unbreakableWall");
   waterToolBtn.classList.toggle("active", state.mapTool === "water");
   fireTerrainToolBtn.classList.toggle("active", state.mapTool === "fire");
   grassToolBtn.classList.toggle("active", state.mapTool === "grass");
@@ -7941,6 +7976,7 @@ function updateUi() {
   wallToolBtn.disabled = state.phase !== "setup";
   thickWallToolBtn.disabled = state.phase !== "setup";
   arrowWallToolBtn.disabled = state.phase !== "setup";
+  unbreakableWallToolBtn.disabled = state.phase !== "setup";
   waterToolBtn.disabled = state.phase !== "setup";
   fireTerrainToolBtn.disabled = state.phase !== "setup";
   grassToolBtn.disabled = state.phase !== "setup";
@@ -8279,6 +8315,15 @@ arrowWallToolBtn.addEventListener("click", () => {
   updateUi();
   setToast(state.mapTool === "arrowWall" ? (state.language === "zh" ? "点一下起点，再点一下终点放透射墙" : "Click a start point, then an end point for an arrow wall") : (state.language === "zh" ? "透射墙工具关闭" : "Arrow wall tool off"));
 });
+unbreakableWallToolBtn.addEventListener("click", () => {
+  if (state.phase !== "setup") return;
+  state.mapTool = state.mapTool === "unbreakableWall" ? null : "unbreakableWall";
+  state.wallStart = null;
+  state.pointer = null;
+  state.selectedItem = null;
+  updateUi();
+  setToast(state.mapTool === "unbreakableWall" ? (state.language === "zh" ? "点一下起点，再点一下终点放不可破坏墙" : "Click a start point, then an end point for an unbreakable wall") : (state.language === "zh" ? "不可破坏墙工具关闭" : "Unbreakable wall tool off"));
+});
 [
   [waterToolBtn, "water"],
   [fireTerrainToolBtn, "fire"],
@@ -8464,3 +8509,11 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
+
+
+
+
+
+
+
