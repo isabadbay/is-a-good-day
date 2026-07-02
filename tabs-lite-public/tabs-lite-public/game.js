@@ -1,12 +1,20 @@
 ﻿const canvas = document.querySelector("#battlefield");
 const ctx = canvas.getContext("2d");
 const tiamatSprite = new Image();
-tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-tiamat-reference-skin-1";
+tiamatSprite.src = "./assets/tiamat-sprite.png?v=20260614-particles-before-battle-1";
+const homeScreen = document.querySelector("#homeScreen");
+const appShell = document.querySelector("#appShell");
+const sandboxModeBtn = document.querySelector("#sandboxModeBtn");
+const levelsModeBtn = document.querySelector("#levelsModeBtn");
+const homeBtn = document.querySelector("#homeBtn");
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
 const budgetText = document.querySelector("#budgetText");
 const blueCount = document.querySelector("#blueCount");
 const redCount = document.querySelector("#redCount");
+const levelBudgetBox = document.querySelector("#levelBudgetBox");
+const levelBudgetLabel = document.querySelector("#levelBudgetLabel");
+const levelBudgetText = document.querySelector("#levelBudgetText");
 const phaseText = document.querySelector("#phaseText");
 const controlPanel = document.querySelector("#controlPanel");
 const controlTitle = document.querySelector("#controlTitle");
@@ -22,6 +30,13 @@ const resetBtn = document.querySelector("#resetBtn");
 const eraseBtn = document.querySelector("#eraseBtn");
 const randomBtn = document.querySelector("#randomBtn");
 const enemySlider = document.querySelector("#enemySlider");
+const levelSelect = document.querySelector("#levelSelect");
+const loadLevelBtn = document.querySelector("#loadLevelBtn");
+const levelInfo = document.querySelector("#levelInfo");
+const rewardModal = document.querySelector("#rewardModal");
+const rewardTitle = document.querySelector("#rewardTitle");
+const rewardSubtitle = document.querySelector("#rewardSubtitle");
+const rewardCards = document.querySelector("#rewardCards");
 const speedSlider = document.querySelector("#speedSlider");
 const sandboxToggle = document.querySelector("#sandboxToggle");
 const blueTeamBtn = document.querySelector("#blueTeamBtn");
@@ -38,6 +53,7 @@ const formationCode = document.querySelector("#formationCode");
 const wallToolBtn = document.querySelector("#wallToolBtn");
 const thickWallToolBtn = document.querySelector("#thickWallToolBtn");
 const arrowWallToolBtn = document.querySelector("#arrowWallToolBtn");
+const unbreakableWallToolBtn = document.querySelector("#unbreakableWallToolBtn");
 const waterToolBtn = document.querySelector("#waterToolBtn");
 const fireTerrainToolBtn = document.querySelector("#fireTerrainToolBtn");
 const grassToolBtn = document.querySelector("#grassToolBtn");
@@ -132,6 +148,7 @@ const itemTypes = {
   wall: { cost: 220, color: "#9bdcff" },
   lightning: { cost: 240, damage: 70, chains: 5, color: "#bde7ff" },
 };
+const levelBannedItems = new Set(["fireball", "meteor", "lightning"]);
 const UNIT_PACK_2_IDS = new Set([
   "knight",
   "assassin",
@@ -192,6 +209,216 @@ const terrainTypes = {
   high: { name: "High Ground", zh: "高地", cost: 120, radius: 72 },
 };
 
+const levelDefinitions = [
+  { number: 1, budget: 500, name: "First Clash", zh: "第一关：小冲突", enemies: [["clubber", 5], ["archer", 1]] },
+  { number: 2, budget: 800, name: "Shield Line", zh: "第二关：盾墙", enemies: [["shield", 4], ["spear", 4], ["archer", 2]] },
+  { number: 3, budget: 1100, name: "Fast Raiders", zh: "第三关：突袭队", enemies: [["berserker", 4], ["assassin", 2], ["crossbow", 3]] },
+  { number: 4, budget: 1500, name: "Heavy Camp", zh: "第四关：重甲营地", enemies: [["knight", 3], ["hammer", 3], ["musketeer", 3], ["wolf", 2]] },
+  { number: 5, budget: 2100, name: "Poison Field", zh: "第五关：毒液战场", enemies: [["poisoner", 3], ["slimebeast", 2], ["plaguewizard", 1], ["giant", 1]] },
+  { number: 6, budget: 2900, name: "Frozen Dead", zh: "第六关：冰冻亡灵", enemies: [["zombie", 8], ["coneheadzombie", 4], ["frostmage", 2], ["necromancer", 1]] },
+  { number: 7, budget: 3400, name: "67 Lockdown", zh: "第七关：67封锁", enemies: [["unit67", 5], ["shield", 5], ["sharpshooter", 2], ["voidbinder", 1]] },
+  { number: 8, budget: 4300, name: "Dragon Nest", zh: "第八关：龙巢", enemies: [["dragonling", 8], ["adultdragon", 1], ["flameknight", 2], ["sharpshooter", 2]] },
+  { number: 9, budget: 5000, name: "Zombie Wall", zh: "第九关：僵尸墙", enemies: [["zombie", 10], ["coneheadzombie", 5], ["bucketzombie", 3], ["footballzombie", 2], ["giantzombie", 1]] },
+  { number: 10, budget: 5600, name: "Storm Legion", zh: "第十关：风暴军团", enemies: [["frostgiant", 2], ["stormlancer", 4], ["phoenixguard", 2], ["adultdragon", 2], ["voidbinder", 2]] },
+  { number: 11, budget: 6500, name: "Tiamat", zh: "第十一关：龙神提亚马特", enemies: [["tiamat", 1], ["adultdragon", 2], ["dragonling", 6]] },
+  { number: 12, budget: 6000, name: "Hydra Burn", zh: "第十二关：九头火阵", enemies: [["hydra", 4], ["flameknight", 4], ["phoenixguard", 2], ["dragonling", 8]] },
+  { number: 13, budget: 6400, name: "Frozen Fortress", zh: "第十三关：冰霜堡垒", enemies: [["frostgiant", 4], ["frostmage", 4], ["shield", 8], ["sharpshooter", 3]] },
+  { number: 14, budget: 6800, name: "Zombie Stampede", zh: "第十四关：僵尸冲锋", enemies: [["giantzombie", 2], ["footballzombie", 6], ["bucketzombie", 8], ["zombie", 16]] },
+  { number: 15, budget: 7100, name: "Portal Disaster", zh: "第十五关：传送灾难", enemies: [["portalmage", 4], ["voidbinder", 4], ["unit67", 4], ["stormcaller", 4], ["sharpshooter", 3]] },
+  { number: 16, budget: 7400, name: "Plant Siege", zh: "第十六关：植物火线", enemies: [["gatlingshooter", 3], ["repeater", 6], ["peashooter", 10], ["chomper", 4], ["sunflower", 6]] },
+  { number: 17, budget: 7700, name: "Dragon Crown", zh: "第十七关：龙冠军团", enemies: [["adultdragon", 3], ["hydra", 3], ["dragonling", 12], ["phoenixguard", 3]] },
+  { number: 18, budget: 8000, name: "Control Nightmare", zh: "第十八关：控制噩梦", enemies: [["unit67", 8], ["voidbinder", 5], ["stormcaller", 4], ["frostmage", 4], ["shield", 10]] },
+  { number: 19, budget: 8300, name: "Barricade Trial", zh: "第十九关：路障试炼", map: "barricadeTrial", enemies: [["wallcrusher", 4], ["sharpshooter", 5], ["shield", 8], ["cannon", 3]] },
+  { number: 20, budget: 6500, name: "Pea Maze", zh: "第二十关：豌豆迷宫", map: "peaMaze", enemies: [["peashooter", 5], ["chomper", 2], ["sunflower", 4]] },
+  { number: 21, budget: 6800, name: "Tower Gate", zh: "第二十一关：塔门", map: "towerGate", enemies: [["knight", 6], ["musketeer", 6], ["paladin", 3], ["sharpshooter", 4]] },
+  { number: 22, budget: 7100, name: "Frost Ramparts", zh: "第二十二关：冰霜壁垒", map: "frostRamparts", enemies: [["frostgiant", 3], ["frostmage", 6], ["shield", 12]] },
+  { number: 23, budget: 7400, name: "Zombie Factory", zh: "第二十三关：僵尸工厂", map: "zombieFactory", enemies: [["giantzombie", 2], ["footballzombie", 7], ["bucketzombie", 9], ["zombie", 16]] },
+  { number: 24, budget: 7700, name: "Fire Corridor", zh: "第二十四关：火焰走廊", map: "fireCorridor", enemies: [["flameknight", 7], ["phoenixguard", 4], ["dragonling", 12]] },
+  { number: 25, budget: 8000, name: "Hydra Garden", zh: "第二十五关：九头蛇花园", map: "hydraGarden", enemies: [["hydra", 4], ["poisoner", 6], ["slimebeast", 4], ["plaguewizard", 3]] },
+  { number: 26, budget: 8300, name: "Dragon Barricade", zh: "第二十六关：巨龙防线", map: "dragonBarricade", enemies: [["adultdragon", 3], ["dragonling", 16], ["flameknight", 6]] },
+  { number: 27, budget: 8600, name: "Void Prison", zh: "第二十七关：虚空牢笼", map: "voidPrison", enemies: [["voidbinder", 7], ["unit67", 7], ["stormcaller", 6], ["frostmage", 4]] },
+  { number: 28, budget: 8900, name: "Boss Warmup", zh: "第二十八关：Boss热身", map: "bossWarmup", enemies: [["giantzombie", 3], ["frostgiant", 3], ["adultdragon", 3], ["hydra", 3]] },
+  { number: 29, budget: 9200, name: "Two-Headed Doom", zh: "第二十九关：双重末日", enemies: [["adultdragon", 4], ["giantzombie", 2], ["frostgiant", 3], ["hydra", 2], ["voidbinder", 4]] },
+  { number: 30, budget: 9500, name: "Final Chaos", zh: "第三十关：终极混沌", enemies: [["tiamat", 1], ["adultdragon", 4], ["giantzombie", 3], ["hydra", 4], ["unit67", 6], ["phoenixguard", 4]] },
+];
+
+const levelTips = {
+  1: { en: "A simple opener. Cheap melee plus one archer is enough.", zh: "入门关，便宜近战加一个弓箭手就够。" },
+  2: { en: "Shields are slow. Use backline damage.", zh: "盾兵很慢，用后排输出打穿。" },
+  3: { en: "Fast enemies rush you. Mix tanks with ranged units.", zh: "敌人会冲脸，前排肉盾加远程更稳。" },
+  4: { en: "Armor and guns appear. Spread your units.", zh: "开始有重甲和火枪，兵种别挤在一起。" },
+  5: { en: "Poison punishes clumps. Bring burst damage.", zh: "毒液克制抱团，带爆发输出。" },
+  6: { en: "Frozen zombies reduce ranged damage, and some revive once.", zh: "冰冻亡灵会降低远程伤害，部分僵尸会复活一次。" },
+  7: { en: "67 locks units down. Use extra bodies or long range.", zh: "67会定身，多放单位或用远程。" },
+  8: { en: "Dragon enemies resist fire damage. Use physical hits.", zh: "龙类敌人抗火，建议用物理伤害。" },
+  9: { en: "Zombies may revive once. Kill support first.", zh: "僵尸可能复活一次，先清小僵尸。" },
+  10: { en: "Storm units punish weak backlines. Use sturdy frontliners.", zh: "风暴军团会切后排，要带硬前排。" },
+  11: { en: "Tiamat is a boss. Physical damage works best.", zh: "龙神是Boss，物理伤害最有效。" },
+  12: { en: "Hydras and fire units fill the lane. Bring durable melee.", zh: "九头蛇和火焰单位压线，带耐打近战。" },
+  13: { en: "Frost reduces ranged damage. Bring melee too.", zh: "冰霜关会降低远程伤害，也要带近战。" },
+  14: { en: "Zombie stampede revives some units. Area damage matters.", zh: "僵尸冲锋有复活，范围伤害很重要。" },
+  15: { en: "Portal mages summon trouble. Rush or disable them.", zh: "传送门法师会召唤，尽快打掉或控制。" },
+  16: { en: "Plant lines are fragile if you break through.", zh: "植物火线怕突破，冲进去就好打。" },
+  17: { en: "Dragons dominate open fights. Use anti-large damage.", zh: "龙在开阔地很强，用高伤害打大体型。" },
+  18: { en: "Control effects are everywhere. Use many cheap units.", zh: "控制很多，用大量便宜单位分摊。" },
+  19: { en: "Walls block direct attacks. Bring wall breakers.", zh: "墙会挡路，建议带拆墙单位。" },
+  20: { en: "Enemies hide at the far right behind a maze.", zh: "敌人在最右边迷宫后面，先打通道路。" },
+  21: { en: "Towers punish slow pushes. Split your attack.", zh: "塔会惩罚慢推，分散进攻更稳。" },
+  22: { en: "Frost towers and giants reduce ranged damage.", zh: "冰塔和冰巨人会让远程伤害变低。" },
+  23: { en: "Zombie factory revives many zombies. Bring area damage.", zh: "僵尸工厂很多僵尸会复活，带范围伤害。" },
+  24: { en: "Fire corridor enemies resist fire damage.", zh: "火焰走廊敌人抗火。" },
+  25: { en: "Hydras resist fire and poison punishes long fights.", zh: "九头蛇抗火，毒会拖垮持久战。" },
+  26: { en: "Dragon barricades need both tanks and burst.", zh: "巨龙防线需要肉盾和爆发一起上。" },
+  27: { en: "Void control can stop elite units. Bring backups.", zh: "虚空控制会废掉精英单位，要有备用兵。" },
+  28: { en: "This is a boss warmup. Test your strongest army.", zh: "这是Boss热身，试试你的最强阵容。" },
+  29: { en: "Two boss lines at once. Kill one side first.", zh: "双重末日两边都强，先集火一边。" },
+  30: { en: "Final boss. Gold reward cards do not help here.", zh: "最终Boss，金币奖励卡在这里不生效。" },
+};
+
+const rewardCardPool = [
+  {
+    id: "sharp_blades",
+    kind: "damage",
+    en: ["Sharp Blades", "+5% blue unit damage.", "Clean damage upgrade."],
+    zh: ["锋利武器", "蓝队单位伤害 +5%。", "稳定的伤害强化。"],
+    apply: () => {
+      state.rewardMods.damageBonus += 0.05;
+    },
+  },
+  {
+    id: "training_manual",
+    kind: "upgrade",
+    en: ["Training Manual", "+2 upgrade points.", "Use them before later levels."],
+    zh: ["训练手册", "获得 +2 升级点。", "可以用来升级兵种。"],
+    apply: () => {
+      state.upgradePoints += 2;
+      saveUpgradePoints(state.upgradePoints);
+    },
+  },
+  {
+    id: "war_fund",
+    kind: "other",
+    en: ["War Fund", "+250 starting gold, -5% max HP.", "Money now has a real cost."],
+    zh: ["战争资金", "开局金币 +250，最大血量 -5%。", "钱不再是白送的。"],
+    apply: () => {
+      state.rewardMods.startingGoldBonus += 250;
+      state.rewardMods.hpBonus -= 0.05;
+    },
+  },
+  {
+    id: "glass_cannon",
+    kind: "damage",
+    en: ["Glass Cannon", "+25% damage, -10% max HP.", "High power with a real cost."],
+    zh: ["玻璃大炮", "伤害 +25%，最大血量 -10%。", "更强输出，但更脆。"],
+    apply: () => {
+      state.rewardMods.damageBonus += 0.25;
+      state.rewardMods.hpBonus -= 0.1;
+    },
+  },
+  {
+    id: "heavy_armor",
+    kind: "other",
+    en: ["Heavy Armor", "+18% max HP, -5% damage.", "Safer frontlines."],
+    zh: ["重甲训练", "最大血量 +18%，伤害 -5%。", "前排更稳，但输出低一点。"],
+    apply: () => {
+      state.rewardMods.hpBonus += 0.18;
+      state.rewardMods.damageBonus -= 0.05;
+    },
+  },
+  {
+    id: "paid_research",
+    kind: "upgrade",
+    en: ["Paid Research", "+4 upgrade points, -1200 starting gold.", "A powerful upgrade trade."],
+    zh: ["付费研究", "获得 +4 升级点，开局金币 -1200。", "强力升级，但少很多钱。"],
+    apply: () => {
+      state.upgradePoints += 4;
+      state.rewardMods.startingGoldBonus -= 1200;
+      saveUpgradePoints(state.upgradePoints);
+    },
+  },
+  {
+    id: "quick_training",
+    kind: "damage",
+    en: ["Quick Training", "+12% attack speed, -6% damage.", "Good for slow heavy units."],
+    zh: ["快速训练", "攻击速度 +12%，伤害 -6%。", "适合慢速重兵。"],
+    apply: () => {
+      state.rewardMods.attackSpeedBonus += 0.12;
+      state.rewardMods.damageBonus -= 0.06;
+    },
+  },
+  {
+    id: "cheap_contracts",
+    kind: "other",
+    en: ["Cheap Contracts", "+300 starting gold, -18% damage.", "More units, weaker hits."],
+    zh: ["廉价契约", "开局金币 +300，伤害 -18%。", "兵更多，但打人更痛苦。"],
+    apply: () => {
+      state.rewardMods.startingGoldBonus += 300;
+      state.rewardMods.damageBonus -= 0.18;
+    },
+  },
+  {
+    id: "blood_research",
+    kind: "upgrade",
+    en: ["Blood Research", "+6 upgrade points, -18% max HP.", "Huge growth, dangerous army."],
+    zh: ["血色研究", "获得 +6 升级点，最大血量 -18%。", "成长很高，但部队很脆。"],
+    apply: () => {
+      state.upgradePoints += 6;
+      state.rewardMods.hpBonus -= 0.18;
+      saveUpgradePoints(state.upgradePoints);
+    },
+  },
+  {
+    id: "siege_drill",
+    kind: "other",
+    en: ["Siege Drill", "+25% damage to walls, -5% unit damage.", "Better for maze levels."],
+    zh: ["攻城训练", "对墙伤害 +25%，单位伤害 -5%。", "迷宫关更好用。"],
+    apply: () => {
+      state.rewardMods.wallDamageBonus += 0.25;
+      state.rewardMods.damageBonus -= 0.05;
+    },
+  },
+  {
+    id: "elite_focus",
+    kind: "damage",
+    en: ["Elite Focus", "+18% damage, -450 starting gold.", "Fewer units, stronger hits."],
+    zh: ["精英专注", "伤害 +18%，开局金币 -450。", "兵少一点，但输出更高。"],
+    apply: () => {
+      state.rewardMods.damageBonus += 0.18;
+      state.rewardMods.startingGoldBonus -= 450;
+    },
+  },
+];
+
+const levelUnitUnlocks = [
+  { maxLevel: 3, banned: ["dragonling", "adultdragon", "tiamat", "frostgiant", "giantzombie", "gatlingshooter", "chomper"] },
+  { maxLevel: 7, banned: ["dragonling", "adultdragon", "tiamat", "giantzombie", "gatlingshooter"] },
+  { maxLevel: 9, banned: ["adultdragon", "tiamat", "giantzombie"] },
+  { maxLevel: 29, banned: ["tiamat"] },
+  { maxLevel: 30, banned: [] },
+];
+
+const levelSpecificBans = {
+  12: ["adultdragon", "peashooter", "repeater", "gatlingshooter", "portalmage"],
+  13: ["adultdragon", "peashooter", "repeater", "gatlingshooter", "portalmage"],
+  14: ["adultdragon", "peashooter", "repeater", "gatlingshooter", "portalmage"],
+  15: ["adultdragon", "peashooter", "repeater", "gatlingshooter", "portalmage"],
+  16: ["adultdragon", "peashooter", "repeater", "gatlingshooter", "portalmage"],
+  17: ["portalmage"],
+  18: ["portalmage"],
+  19: ["portalmage"],
+  20: ["peashooter", "repeater", "gatlingshooter", "portalmage"],
+  21: ["portalmage"],
+  22: ["portalmage"],
+  23: ["portalmage"],
+  24: ["portalmage"],
+  25: ["portalmage"],
+  26: ["portalmage"],
+  27: ["portalmage"],
+  28: ["portalmage"],
+  29: ["portalmage"],
+  30: ["portalmage"],
+};
+
 const INFECTABLE_TYPE_IDS = new Set([
   "clubber",
   "shield",
@@ -215,6 +442,12 @@ const INFECTABLE_TYPE_IDS = new Set([
 const translations = {
   zh: {
     subtitle: "布阵、开战、看小人乱斗",
+    home: "主页",
+    homeSubtitle: "选择模式",
+    sandboxModeTitle: "沙盒",
+    sandboxModeDesc: "无限金币，可以放红队和蓝队，测试自定义兵种、建筑和Boss。",
+    levelsModeTitle: "关卡",
+    levelsModeDesc: "用有限金币挑战固定敌军，赢了就解锁下一关。",
     start: "开战",
     pause: "暂停",
     reset: "重置",
@@ -243,6 +476,20 @@ const translations = {
     controlSelected: "正在操控",
     noControlTarget: "没有可操控兵种",
     noSpecialReady: "没有可用特殊技能",
+    level: "关卡",
+    loadLevel: "加载关卡",
+    levelLocked: "还没解锁",
+    levelUnlocked: "已解锁下一关",
+    levelInfo: "金币",
+    levelHint: "赢下当前关卡会解锁下一关",
+    levelLoaded: "关卡已加载",
+    levelWin: "关卡胜利",
+    upgradePoints: "升级点",
+    upgradePointEarned: "获得升级点",
+    upgradeNeedPoint: "升级点不够",
+    alreadyCleared: "已通关",
+    rewardTitle: "选择奖励",
+    rewardSubtitle: "选择一张卡，它会影响后面的关卡。",
     enemySize: "敌军规模",
     speed: "镜头速度",
     erase: "橡皮擦",
@@ -257,6 +504,7 @@ const translations = {
     itemUseHint: "选择道具后点击战场释放",
     itemNeedBattle: "开战后才能使用道具",
     itemNoGold: "金币不够买这个道具",
+    itemLevelLocked: "关卡模式不能使用攻击道具",
     itemCast: "道具已释放",
     itemHit: "喷中友军",
     itemCancel: "取消道具",
@@ -266,6 +514,7 @@ const translations = {
     mapWall: "墙",
     mapThickWall: "厚墙",
     mapArrowWall: "透射墙",
+    mapUnbreakableWall: "不可破坏墙",
     mapWater: "水坑",
     mapFireGround: "火地",
     mapGrass: "草丛",
@@ -438,6 +687,12 @@ const translations = {
   },
   en: {
     subtitle: "Place units, start battle, watch chaos",
+    home: "Home",
+    homeSubtitle: "Choose a mode",
+    sandboxModeTitle: "Sandbox",
+    sandboxModeDesc: "Infinite gold, place red and blue units, and test custom units, buildings, and bosses.",
+    levelsModeTitle: "Levels",
+    levelsModeDesc: "Use limited gold against fixed enemy levels and unlock the next challenge.",
     start: "Start",
     pause: "Pause",
     reset: "Reset",
@@ -466,6 +721,20 @@ const translations = {
     controlSelected: "Controlling",
     noControlTarget: "No controllable unit",
     noSpecialReady: "No special skill ready",
+    level: "Level",
+    loadLevel: "Load Level",
+    levelLocked: "Locked",
+    levelUnlocked: "Next level unlocked",
+    levelInfo: "Gold",
+    levelHint: "Win this level to unlock the next one",
+    levelLoaded: "Level loaded",
+    levelWin: "Level cleared",
+    upgradePoints: "Upgrade Points",
+    upgradePointEarned: "Upgrade point earned",
+    upgradeNeedPoint: "Not enough upgrade points",
+    alreadyCleared: "Cleared",
+    rewardTitle: "Choose a Reward",
+    rewardSubtitle: "Pick one card. It affects later levels.",
     enemySize: "Enemy Size",
     speed: "Camera Speed",
     erase: "Erase",
@@ -480,6 +749,7 @@ const translations = {
     itemUseHint: "Select an item, then click the battlefield",
     itemNeedBattle: "Items can be used after battle starts",
     itemNoGold: "Not enough gold for this item",
+    itemLevelLocked: "Attack items are locked in Levels",
     itemCast: "Item used",
     itemHit: "Friendly units hit",
     itemCancel: "Cancel Item",
@@ -489,6 +759,7 @@ const translations = {
     mapWall: "Wall",
     mapThickWall: "Thick Wall",
     mapArrowWall: "Arrow Wall",
+    mapUnbreakableWall: "Unbreakable Wall",
     mapWater: "Water",
     mapFireGround: "Fire Ground",
     mapGrass: "Grass",
@@ -669,6 +940,12 @@ function applyLanguage(lang) {
     if (node) node.textContent = value;
   };
   setText(".brand p", text.subtitle);
+  setText("#homeSubtitle", text.homeSubtitle);
+  setText("#sandboxModeTitle", text.sandboxModeTitle);
+  setText("#sandboxModeDesc", text.sandboxModeDesc);
+  setText("#levelsModeTitle", text.levelsModeTitle);
+  setText("#levelsModeDesc", text.levelsModeDesc);
+  if (homeBtn) homeBtn.textContent = text.home;
   startBtn.textContent = text.start;
   pauseBtn.textContent = text.pause;
   resetBtn.textContent = text.reset;
@@ -687,12 +964,13 @@ function applyLanguage(lang) {
   wallToolBtn.textContent = text.mapWall;
   thickWallToolBtn.textContent = text.mapThickWall;
   arrowWallToolBtn.textContent = text.mapArrowWall;
+  unbreakableWallToolBtn.textContent = text.mapUnbreakableWall;
   waterToolBtn.textContent = text.mapWater;
   fireTerrainToolBtn.textContent = text.mapFireGround;
   grassToolBtn.textContent = text.mapGrass;
   highGroundToolBtn.textContent = text.mapHighGround;
   eraseTerrainBtn.textContent = text.mapEraseTerrain;
-  upgradeSelectedBtn.textContent = text.upgrade;
+  upgradeSelectedBtn.textContent = state.levelMode ? `${text.upgrade} (${text.upgradePoints}: ${state.upgradePoints})` : text.upgrade;
   saveSlotBtns.forEach((button, index) => {
     if (button) button.textContent = `${text.saveSlot} ${index + 1}`;
   });
@@ -710,12 +988,14 @@ function applyLanguage(lang) {
   if (controlBuildNextBtn) controlBuildNextBtn.textContent = text.controlPickBuild;
   if (controlBuildPlaceBtn) controlBuildPlaceBtn.textContent = text.controlBuild;
   if (controlDemolishBtn) controlDemolishBtn.textContent = text.controlDemolish;
-  const rangeRows = document.querySelectorAll(".range-row");
-  if (rangeRows[0]) rangeRows[0].childNodes[0].textContent = text.enemySize;
-  if (rangeRows[1]) rangeRows[1].childNodes[0].textContent = text.speed;
+  setText("#levelLabelText", text.level);
+  if (loadLevelBtn) loadLevelBtn.textContent = text.loadLevel;
+  setText("#enemySizeLabelText", text.enemySize);
+  setText("#cameraSpeedLabelText", text.speed);
   if (state.selected !== "erase") eraseBtn.textContent = text.erase;
   randomBtn.textContent = text.random;
   applyFormLanguage(text);
+  renderLevelSelect();
   renderUnitList();
   updateUi();
 }
@@ -753,6 +1033,19 @@ function syncLanguage() {
   if (languageSelect.value !== state.language) {
     applyLanguage(languageSelect.value);
   }
+}
+
+function showHome() {
+  homeScreen?.classList.remove("home-hidden");
+  appShell?.classList.add("app-hidden");
+  document.body.dataset.mode = "home";
+}
+
+function showGame() {
+  homeScreen?.classList.add("home-hidden");
+  appShell?.classList.remove("app-hidden");
+  resizeCanvas();
+  updateUi();
 }
 
 const unitTypes = [
@@ -1043,9 +1336,9 @@ const unitTypes = [
     name: "Dragonling",
     tag: "Fire",
     glyph: "Y",
-    price: 420,
+    price: 620,
     hp: 120,
-    damage: 27,
+    damage: 22,
     range: 235,
     stopDistance: 165,
     speed: 44,
@@ -1053,9 +1346,9 @@ const unitTypes = [
     cooldown: 1.05,
     projectileSpeed: 420,
     weapon: "bow",
-    areaAttack: { range: 45, damage: 16 },
+    areaAttack: { range: 36, damage: 9 },
     secondAttack: { weapon: "club", range: 38, damage: 22, ranged: false, projectileSpeed: 0, splash: 0, cooldown: 0.72 },
-    skills: { fireBreath: true, fireball: true },
+    skills: { fireBreath: true, fireball: true, fireDuration: 2.2, fireRange: 72, fireballDamage: 30 },
     color: "#f47b55",
   },
   {
@@ -1063,7 +1356,7 @@ const unitTypes = [
     name: "Adult Dragon",
     tag: "Fire Tyrant",
     glyph: "D",
-    price: 1200,
+    price: 3600,
     hp: 750,
     damage: 58,
     range: 290,
@@ -1107,7 +1400,7 @@ const unitTypes = [
     damage: 170,
     range: 135,
     stopDistance: 90,
-    speed: 112,
+    speed: 800,
     radius: 56,
     cooldown: 0.78,
     projectileSpeed: 0,
@@ -1121,7 +1414,7 @@ const unitTypes = [
       fireBreath: true,
       fireball: false,
       fireballDamage: 160,
-      fireRange: 230,
+      fireRange: 330,
       fireDuration: 7,
       damageAura: true,
       damageAuraRange: 160,
@@ -1133,6 +1426,7 @@ const unitTypes = [
       defenseLossHp: 100,
       hitSpeedBoost: 10,
       knockbackImmune: true,
+      forceKnockback: true,
       berserkHp: 3000,
       berserkDamage: 0.85,
       berserkHeal: 420,
@@ -1681,6 +1975,105 @@ const unitTypes = [
 
 let customUnitCounter = 1;
 
+function readUnlockedLevel() {
+  try {
+    const saved = Number(localStorage.getItem("tabsLiteUnlockedLevel"));
+    return Math.min(levelDefinitions.length, Math.max(1, Number.isFinite(saved) ? saved : 1));
+  } catch {
+    return 1;
+  }
+}
+
+function saveUnlockedLevel(level) {
+  try {
+    localStorage.setItem("tabsLiteUnlockedLevel", String(level));
+  } catch {
+    // Local save can fail in private browser modes. The level still works for this session.
+  }
+}
+
+function readUpgradePoints() {
+  try {
+    return Math.max(0, Number(localStorage.getItem("tabsLiteUpgradePoints")) || 0);
+  } catch {
+    return 0;
+  }
+}
+
+function saveUpgradePoints(points) {
+  try {
+    localStorage.setItem("tabsLiteUpgradePoints", String(Math.max(0, points)));
+  } catch {
+    // Keep playing even if local save fails.
+  }
+}
+
+function readClearedLevels() {
+  try {
+    const raw = JSON.parse(localStorage.getItem("tabsLiteClearedLevels") || "[]");
+    return new Set(Array.isArray(raw) ? raw.map(Number).filter(Boolean) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveClearedLevels(levels) {
+  try {
+    localStorage.setItem("tabsLiteClearedLevels", JSON.stringify([...levels].sort((a, b) => a - b)));
+  } catch {
+    // Keep the session version if local save fails.
+  }
+}
+
+function defaultRewardMods() {
+  return { damageBonus: 0, hpBonus: 0, startingGoldBonus: 0, attackSpeedBonus: 0, wallDamageBonus: 0 };
+}
+
+function readRewardMods() {
+  try {
+    return { ...defaultRewardMods(), ...(JSON.parse(localStorage.getItem("tabsLiteRewardMods") || "{}") || {}) };
+  } catch {
+    return defaultRewardMods();
+  }
+}
+
+function saveRewardMods(mods) {
+  try {
+    localStorage.setItem("tabsLiteRewardMods", JSON.stringify(mods));
+  } catch {
+    // Reward still applies for this session.
+  }
+}
+
+function readUnitUpgrades() {
+  try {
+    const raw = JSON.parse(localStorage.getItem("tabsLiteUnitUpgrades") || "{}");
+    const upgrades = {};
+    if (!raw || typeof raw !== "object") return upgrades;
+    for (const [typeId, level] of Object.entries(raw)) {
+      if (!typeById(typeId)) continue;
+      upgrades[typeId] = clamp(Math.floor(Number(level) || 0), 0, 3);
+    }
+    return upgrades;
+  } catch {
+    return {};
+  }
+}
+
+function saveUnitUpgrades(upgrades) {
+  try {
+    const clean = {};
+    for (const [typeId, level] of Object.entries(upgrades || {})) {
+      if (!typeById(typeId)) continue;
+      const value = clamp(Math.floor(Number(level) || 0), 0, 3);
+      if (value > 0) clean[typeId] = value;
+    }
+    localStorage.setItem("tabsLiteUnitUpgrades", JSON.stringify(clean));
+  } catch {
+    // Upgrades still work for this session.
+  }
+}
+
 const state = {
   phase: "setup",
   selected: unitTypes[0].id,
@@ -1693,6 +2086,13 @@ const state = {
   plantMode: false,
   challengeMode: false,
   challengeBudget: 0,
+  levelMode: false,
+  currentLevel: 0,
+  unlockedLevel: readUnlockedLevel(),
+  clearedLevels: readClearedLevels(),
+  upgradePoints: readUpgradePoints(),
+  rewardMods: readRewardMods(),
+  pendingRewardChoices: [],
   language: "en",
   budget: 900,
   units: [],
@@ -1702,7 +2102,7 @@ const state = {
   tornadoes: [],
   walls: [],
   terrains: [],
-  upgrades: {},
+  upgrades: readUnitUpgrades(),
   battleStats: null,
   commands: { blue: null, red: null },
   focusTargets: { blue: null, red: null },
@@ -1719,6 +2119,10 @@ const state = {
 
 function typeById(id) {
   return unitTypes.find((type) => type.id === id);
+}
+
+function isSandboxActive() {
+  return state.sandbox || document.body.dataset.mode === "sandbox";
 }
 
 function displayType(type) {
@@ -1783,6 +2187,14 @@ function syncBudgetToEnemySize() {
   state.budget = Math.max(0, baseBudget - blueArmyCost() - wallTotalCost() - terrainTotalCost());
 }
 
+function levelStartingGold(level) {
+  const bossGoldLocked = state.levelMode && [11, 28, 29, 30].includes(level?.number);
+  if (bossGoldLocked) return clamp(Math.round(level?.budget || 0), 100, 9500);
+  if ((level?.number || 0) >= 20) return clamp(Math.round(level?.budget || 0), 100, 9500);
+  const bonus = clamp(state.rewardMods.startingGoldBonus || 0, -2500, 800);
+  return clamp(Math.round((level?.budget || 0) + bonus), 100, 9500);
+}
+
 function worldPoint(event) {
   const rect = canvas.getBoundingClientRect();
   return {
@@ -1797,13 +2209,14 @@ function setToast(message) {
 
 function wallCost(wall) {
   if (buildingTypes[wall.type]) return buildingTypes[wall.type].cost;
-  const thickMultiplier = wall.type === "thick" ? 2.35 : wall.type === "arrow" ? 1.35 : 1;
+  const thickMultiplier = wall.type === "unbreakable" ? 4.2 : wall.type === "thick" ? 2.35 : wall.type === "arrow" ? 1.35 : 1;
   return Math.ceil((40 + Math.max(wall.w, wall.h) * 0.4) * 2 * thickMultiplier);
 }
 
 function wallMaxHp(wall) {
   const length = Math.max(wall.w, wall.h);
   if (buildingTypes[wall.type]) return buildingTypes[wall.type].hp;
+  if (wall.type === "unbreakable") return 1;
   if (wall.type === "thick") return Math.ceil(260 + length * 3.2);
   if (wall.type === "arrow") return Math.ceil(90 + length * 1.15);
   return Math.ceil(120 + length * 1.55);
@@ -1892,13 +2305,14 @@ function addWall(start, end) {
   const length = Math.max(36, horizontal ? Math.abs(dx) : Math.abs(dy));
   const thick = state.mapTool === "thickWall";
   const arrow = state.mapTool === "arrowWall";
-  const thickness = thick ? 48 : arrow ? 22 : 28;
+  const unbreakable = state.mapTool === "unbreakableWall";
+  const thickness = unbreakable ? 34 : thick ? 48 : arrow ? 22 : 28;
   const wall = {
     x: clamp(horizontal ? (start.x + end.x) / 2 : start.x, 30, canvas.width - 30),
     y: clamp(horizontal ? start.y : (start.y + end.y) / 2, 30, canvas.height - 30),
     w: horizontal ? length : thickness,
     h: horizontal ? thickness : length,
-    type: thick ? "thick" : arrow ? "arrow" : "normal",
+    type: unbreakable ? "unbreakable" : thick ? "thick" : arrow ? "arrow" : "normal",
   };
   wall.maxHp = wallMaxHp(wall);
   wall.hp = wall.maxHp;
@@ -1927,8 +2341,13 @@ function eraseWall(point) {
   if (state.walls.length !== before) setToast(state.language === "zh" ? "墙已删除" : "Wall removed");
 }
 
+function isUnbreakableWall(wall) {
+  return wall?.type === "unbreakable";
+}
+
 function damageWallsAt(x, y, radius, damage) {
   for (const wall of state.walls) {
+    if (isUnbreakableWall(wall)) continue;
     wall.maxHp ??= wallMaxHp(wall);
     wall.hp ??= wall.maxHp;
     const closestX = clamp(x, wall.x - wall.w / 2, wall.x + wall.w / 2);
@@ -1942,6 +2361,10 @@ function damageWallsAt(x, y, radius, damage) {
 }
 
 function damageWall(wall, damage, x = wall.x, y = wall.y) {
+  if (isUnbreakableWall(wall)) {
+    state.particles.push({ x, y, life: 0.25, startLife: 0.25, color: "#8ee7ff", size: 18 });
+    return;
+  }
   wall.maxHp ??= wallMaxHp(wall);
   wall.hp ??= wall.maxHp;
   wall.hp -= damage;
@@ -1949,8 +2372,14 @@ function damageWall(wall, damage, x = wall.x, y = wall.y) {
   state.walls = state.walls.filter((candidate) => (candidate.hp ?? wallMaxHp(candidate)) > 0);
 }
 
+function unitWallDamage(unit, damage) {
+  const bonus = state.levelMode && unit?.team === "blue" && !state.sandbox ? 1 + (state.rewardMods.wallDamageBonus || 0) : 1;
+  return damage * bonus;
+}
+
 function canUnitDamageWall(unit, wall) {
-  if (!unit || unit.canAttackWalls === false) return false;
+  if (!unit || unit.canAttackWalls === false || isUnbreakableWall(wall)) return false;
+  if (wall.team && wall.team === unit.team) return false;
   return !(buildingTypes[wall.type] && wall.team === unit.team);
 }
 
@@ -2028,33 +2457,47 @@ function segmentHitsWall(x1, y1, x2, y2, wall, padding = 20) {
 }
 
 function wallAvoidancePoint(unit, target) {
-  const lookX = unit.x + (target.x - unit.x) * 0.42;
-  const lookY = unit.y + (target.y - unit.y) * 0.42;
+  const directTarget = { x: target.x, y: target.y };
   let blocker = null;
   for (const wall of state.walls) {
-    if (segmentHitsWall(unit.x, unit.y, lookX, lookY, wall, unit.radius + 10)) {
+    if (wall.type === "arrow" && unit.projectileSpeed) continue;
+    if (segmentHitsWall(unit.x, unit.y, directTarget.x, directTarget.y, wall, unit.radius + 10)) {
       blocker = wall;
       break;
     }
   }
-  if (!blocker) return target;
-  const margin = unit.radius + 32;
-  const candidates =
-    blocker.w >= blocker.h
-      ? [
-          { x: blocker.x, y: blocker.y - blocker.h / 2 - margin },
-          { x: blocker.x, y: blocker.y + blocker.h / 2 + margin },
-        ]
-      : [
-          { x: blocker.x - blocker.w / 2 - margin, y: blocker.y },
-          { x: blocker.x + blocker.w / 2 + margin, y: blocker.y },
-        ];
-  let best = candidates[0];
+  if (!blocker) return directTarget;
+
+  const margin = unit.radius + (isUnbreakableWall(blocker) ? 68 : 38);
+  const left = blocker.x - blocker.w / 2 - margin;
+  const right = blocker.x + blocker.w / 2 + margin;
+  const top = blocker.y - blocker.h / 2 - margin;
+  const bottom = blocker.y + blocker.h / 2 + margin;
+  const candidates = blocker.w >= blocker.h
+    ? [
+        { x: unit.x, y: top },
+        { x: unit.x, y: bottom },
+        { x: left, y: top },
+        { x: right, y: top },
+        { x: left, y: bottom },
+        { x: right, y: bottom },
+      ]
+    : [
+        { x: left, y: unit.y },
+        { x: right, y: unit.y },
+        { x: left, y: top },
+        { x: left, y: bottom },
+        { x: right, y: top },
+        { x: right, y: bottom },
+      ];
+
+  let best = directTarget;
   let bestScore = Infinity;
   for (const candidate of candidates) {
     const x = clamp(candidate.x, unit.radius, canvas.width - unit.radius);
     const y = clamp(candidate.y, unit.radius, canvas.height - unit.radius);
-    const score = Math.hypot(unit.x - x, unit.y - y) + Math.hypot(target.x - x, target.y - y);
+    const stillBlocked = segmentHitsWall(unit.x, unit.y, x, y, blocker, unit.radius + 6);
+    const score = Math.hypot(unit.x - x, unit.y - y) + Math.hypot(directTarget.x - x, directTarget.y - y) + (stillBlocked ? 9000 : 0);
     if (score < bestScore) {
       best = { x, y };
       bestScore = score;
@@ -2062,9 +2505,8 @@ function wallAvoidancePoint(unit, target) {
   }
   return best;
 }
-
 function isWallBuildTool(tool = state.mapTool) {
-  return tool === "wall" || tool === "thickWall" || tool === "arrowWall";
+  return tool === "wall" || tool === "thickWall" || tool === "arrowWall" || tool === "unbreakableWall";
 }
 
 function issueCommand(point) {
@@ -2107,6 +2549,12 @@ function updateFocusTargets(dt) {
 
 function selectItem(itemId) {
   const text = translations[state.language] || translations.en;
+  if (!isItemAllowedInCurrentMode(itemId)) {
+    state.selectedItem = null;
+    updateUi();
+    setToast(text.itemLevelLocked);
+    return;
+  }
   state.selectedItem = state.selectedItem === itemId ? null : itemId;
   updateUi();
   if (state.selectedItem) {
@@ -2267,9 +2715,13 @@ function addUnit(typeId, team, x, y) {
   const tint = team === "blue" ? type.color : "#ff706c";
   const level = state.upgrades[typeId] || 0;
   const statBoost = 1 + level * 0.18;
+  const enemyLevelBoost = state.levelMode && team === "red" && !state.sandbox ? 1 + Math.max(0, state.currentLevel - 1) * 0.07 : 1;
   const rangeBoost = 1 + level * 0.08;
   const speedBoost = 1 + level * 0.08;
-  const cooldownBoost = Math.max(0.55, 1 - level * 0.08);
+  const rewardAttackSpeedBoost = state.levelMode && team === "blue" && !state.sandbox ? Math.max(0.1, 1 + (state.rewardMods.attackSpeedBonus || 0)) : 1;
+  const cooldownBoost = Math.max(0.55, 1 - level * 0.08) / rewardAttackSpeedBoost;
+  const rewardDamageBoost = state.levelMode && team === "blue" && !state.sandbox ? Math.max(0.1, 1 + (state.rewardMods.damageBonus || 0)) : 1;
+  const rewardHpBoost = state.levelMode && team === "blue" && !state.sandbox ? Math.max(0.1, 1 + (state.rewardMods.hpBonus || 0)) : 1;
   const unit = {
     id: state.nextId++,
     team,
@@ -2283,9 +2735,9 @@ function addUnit(typeId, team, x, y) {
     y,
     vx: (Math.random() - 0.5) * 10,
     vy: (Math.random() - 0.5) * 10,
-    hp: Math.round(type.hp * statBoost),
-    maxHp: Math.round(type.hp * statBoost),
-    damage: type.damage * statBoost,
+    hp: Math.round(type.hp * statBoost * rewardHpBoost * enemyLevelBoost),
+    maxHp: Math.round(type.hp * statBoost * rewardHpBoost * enemyLevelBoost),
+    damage: type.damage * statBoost * rewardDamageBoost * enemyLevelBoost,
     range: type.range * rangeBoost,
     burstCount: type.burstCount || 1,
     burstCooldown: type.burstCooldown || 0,
@@ -2331,12 +2783,15 @@ function addUnit(typeId, team, x, y) {
     berserked: false,
     statsDamage: 0,
     statsKills: 0,
+    reviveChance: 0,
+    levelFireResist: 0,
     color: tint,
     cooldown: Math.random() * 0.4,
     wobble: Math.random() * Math.PI * 2,
     dead: false,
   };
   state.units.push(unit);
+  if (typeId === "tiamat") spawnTiamatSummonEffect(unit);
   return unit;
 }
 
@@ -2344,6 +2799,95 @@ function spendFor(type) {
   if (state.sandbox) return;
   state.budget -= type.price;
   updateUi();
+}
+
+function bannedUnitsForCurrentLevel() {
+  if (!state.levelMode || state.currentLevel <= 0) return new Set();
+  const rule = levelUnitUnlocks.find((entry) => state.currentLevel <= entry.maxLevel) || levelUnitUnlocks[levelUnitUnlocks.length - 1];
+  return new Set([...(rule.banned || []), "portalmage", ...(levelSpecificBans[state.currentLevel] || [])]);
+}
+
+function currentLevelHasDragonEnemy() {
+  const level = levelDefinitions.find((entry) => entry.number === state.currentLevel);
+  return Boolean(level?.enemies?.some(([typeId]) => ["dragonling", "adultdragon", "hydra", "tiamat"].includes(typeId)));
+}
+
+function currentLevelHasTiamatEnemy() {
+  const level = levelDefinitions.find((entry) => entry.number === state.currentLevel);
+  return Boolean(level?.enemies?.some(([typeId]) => typeId === "tiamat"));
+}
+
+function isUnitAllowedInCurrentLevel(type) {
+  if (!type || !state.levelMode || isSandboxActive()) return true;
+  if (type.id === "adultdragon" && !currentLevelHasDragonEnemy()) return false;
+  if (type.id === "tiamat" && currentLevelHasTiamatEnemy()) return true;
+  return !bannedUnitsForCurrentLevel().has(type.id);
+}
+
+function levelBanMessage(type) {
+  const name = type ? displayType(type).name : "";
+  return state.language === "zh" ? `这个关卡不能使用 ${name}` : `${name} is locked for this level`;
+}
+
+function upgradePointReward(levelNumber) {
+  return 1 + Math.floor(Math.max(0, levelNumber - 1) / 10);
+}
+
+function rewardText(card) {
+  const pack = state.language === "zh" ? card.zh : card.en;
+  return { title: pack[0], effect: pack[1], cost: pack[2] };
+}
+
+function makeRewardChoices(levelNumber) {
+  const start = levelNumber % rewardCardPool.length;
+  const ordered = rewardCardPool.map((_, index) => rewardCardPool[(start + index) % rewardCardPool.length]);
+  const choices = [];
+  for (const kind of ["damage", "upgrade", "other"]) {
+    const card = ordered.find((entry) => entry.kind === kind && !choices.includes(entry));
+    if (card) choices.push(card);
+  }
+  return choices.slice(0, 3);
+}
+
+function renderRewardModal() {
+  const text = translations[state.language] || translations.en;
+  if (!rewardModal || !rewardCards) return;
+  if (!state.pendingRewardChoices.length) {
+    rewardModal.classList.add("hidden");
+    return;
+  }
+  rewardTitle.textContent = text.rewardTitle;
+  rewardSubtitle.textContent = text.rewardSubtitle;
+  rewardCards.innerHTML = "";
+  state.pendingRewardChoices.forEach((card) => {
+    const info = rewardText(card);
+    const button = document.createElement("button");
+    button.className = "reward-card";
+    button.type = "button";
+    button.dataset.rewardId = card.id;
+    button.innerHTML = `<b>${info.title}</b><span>${info.effect}</span><small>${info.cost}</small>`;
+    rewardCards.appendChild(button);
+  });
+  rewardModal.classList.remove("hidden");
+}
+
+function chooseRewardCard(cardId) {
+  const card = state.pendingRewardChoices.find((entry) => entry.id === cardId);
+  if (!card) return;
+  state.pendingRewardChoices = [];
+  if (rewardModal) rewardModal.classList.add("hidden");
+  card.apply();
+  saveRewardMods(state.rewardMods);
+  updateLevelUi();
+  updateUi();
+  setToast(rewardText(card).title);
+}
+
+function ensureSelectedUnitAllowed() {
+  const selectedType = typeById(state.selected);
+  if (isUnitAllowedInCurrentLevel(selectedType)) return;
+  const fallback = unitTypes.find((type) => type.id !== "arrowtower" && isUnitAllowedInCurrentLevel(type));
+  if (fallback) state.selected = fallback.id;
 }
 
 function upgradeSelectedUnitType() {
@@ -2358,16 +2902,31 @@ function upgradeSelectedUnitType() {
     setToast(state.language === "zh" ? "已经满级" : "Max level reached");
     return;
   }
-  const cost = Math.ceil(type.price * (0.75 + current * 0.45));
-  if (!state.sandbox && state.budget < cost) {
+  const pointCost = current + 1;
+  if (!state.sandbox && state.levelMode && state.upgradePoints < pointCost) {
+    setToast((translations[state.language] || translations.en).upgradeNeedPoint);
+    return;
+  }
+  const goldCost = Math.ceil(type.price * (0.75 + current * 0.45));
+  if (!state.sandbox && !state.levelMode && state.budget < goldCost) {
     setToast(state.language === "zh" ? "金币不够升级" : "Not enough gold to upgrade");
     return;
   }
-  if (!state.sandbox) state.budget -= cost;
+  if (!state.sandbox && state.levelMode) {
+    state.upgradePoints -= pointCost;
+    saveUpgradePoints(state.upgradePoints);
+  } else if (!state.sandbox) {
+    state.budget -= goldCost;
+  }
   state.upgrades[type.id] = current + 1;
+  saveUnitUpgrades(state.upgrades);
   renderUnitList();
   updateUi();
-  setToast(state.language === "zh" ? `${type.name} 升到 ${current + 1} 级` : `${type.name} upgraded to level ${current + 1}`);
+  if (state.levelMode && !state.sandbox) {
+    setToast(state.language === "zh" ? `${type.name} 升到 ${current + 1} 级，消耗 ${pointCost} 升级点` : `${type.name} upgraded to level ${current + 1}, spent ${pointCost} point(s)`);
+  } else {
+    setToast(state.language === "zh" ? `${type.name} 升到 ${current + 1} 级` : `${type.name} upgraded to level ${current + 1}`);
+  }
 }
 
 function refund(typeId) {
@@ -2407,6 +2966,10 @@ function placePlayerUnit(point) {
   if (!type) return;
   if (state.challengeMode && type.id === "sunflower") {
     setToast(state.language === "zh" ? "挑战模式不能使用向日葵" : "Sunflowers are disabled in challenge mode");
+    return;
+  }
+  if (!isUnitAllowedInCurrentLevel(type)) {
+    setToast(levelBanMessage(type));
     return;
   }
   const battlePlantPlacement = state.phase === "battle" && state.plantMode && isPlantType(type);
@@ -2484,11 +3047,11 @@ function expandNumber(value) {
 }
 
 function wallTypeCode(type) {
-  return type === "thick" ? "t" : type === "arrow" ? "a" : type === "arrowTower" ? "o" : type === "cannonTower" ? "c" : type === "healTower" ? "h" : type === "frostTower" ? "f" : type === "goldMine" ? "g" : "n";
+  return type === "unbreakable" ? "u" : type === "thick" ? "t" : type === "arrow" ? "a" : type === "arrowTower" ? "o" : type === "cannonTower" ? "c" : type === "healTower" ? "h" : type === "frostTower" ? "f" : type === "goldMine" ? "g" : "n";
 }
 
 function wallTypeFromCode(code) {
-  return code === "t" ? "thick" : code === "a" ? "arrow" : code === "o" ? "arrowTower" : code === "c" ? "cannonTower" : code === "h" ? "healTower" : code === "f" ? "frostTower" : code === "g" ? "goldMine" : "normal";
+  return code === "u" ? "unbreakable" : code === "t" ? "thick" : code === "a" ? "arrow" : code === "o" ? "arrowTower" : code === "c" ? "cannonTower" : code === "h" ? "healTower" : code === "f" ? "frostTower" : code === "g" ? "goldMine" : "normal";
 }
 
 function terrainTypeCode(type) {
@@ -2703,7 +3266,7 @@ function restoreLocalFormation(payload) {
       y: clamp(Number(saved.y) || canvas.height / 2, 20, canvas.height - 20),
       w: clamp(Number(saved.w) || 60, 12, canvas.width),
       h: clamp(Number(saved.h) || 28, 12, canvas.height),
-      type: ["normal", "thick", "arrow", ...Object.keys(buildingTypes)].includes(saved.type) ? saved.type : "normal",
+      type: ["normal", "thick", "arrow", "unbreakable", ...Object.keys(buildingTypes)].includes(saved.type) ? saved.type : "normal",
       team: saved.team === "red" ? "red" : "blue",
       cooldown: 0,
     };
@@ -2772,7 +3335,7 @@ function importFormation() {
         y: clamp(Number(saved.y) || canvas.height / 2, 20, canvas.height - 20),
         w: clamp(Number(saved.w) || 60, 12, canvas.width),
         h: clamp(Number(saved.h) || 28, 12, canvas.height),
-        type: ["normal", "thick", "arrow", ...Object.keys(buildingTypes)].includes(saved.type) ? saved.type : "normal",
+        type: ["normal", "thick", "arrow", "unbreakable", ...Object.keys(buildingTypes)].includes(saved.type) ? saved.type : "normal",
         team: buildingTypes[saved.type] ? "red" : saved.team,
         challengeImported: true,
       };
@@ -2805,6 +3368,27 @@ function importFormation() {
 function exitChallengeMode() {
   resetGame(false);
   setToast((translations[state.language] || translations.en).challengeExited);
+}
+
+function enterSandboxMode() {
+  document.body.dataset.mode = "sandbox";
+  resetGame(false);
+  state.sandbox = true;
+  state.challengeMode = false;
+  state.levelMode = false;
+  state.currentLevel = 0;
+  state.placeTeam = "blue";
+  showGame();
+  updateUi();
+  setToast(state.language === "zh" ? "沙盒模式：无限金币，可以放红队和蓝队" : "Sandbox: infinite gold, red and blue placement enabled");
+}
+
+function enterLevelsMode() {
+  document.body.dataset.mode = "levels";
+  showGame();
+  const selectedLevel = Number(levelSelect?.value) || state.currentLevel || 1;
+  const levelNumber = selectedLevel > state.unlockedLevel ? state.unlockedLevel : selectedLevel;
+  loadLevel(levelNumber);
 }
 
 function poisonUnit(unit, seconds = 5) {
@@ -2873,6 +3457,10 @@ function itemTeam() {
   return state.selectedItem ? state.placeTeam : state.sandbox ? state.placeTeam : "blue";
 }
 
+function isItemAllowedInCurrentMode(itemId) {
+  return isSandboxActive() || !levelBannedItems.has(itemId);
+}
+
 function canPayForItem(item) {
   return state.sandbox || state.budget >= item.cost;
 }
@@ -2885,6 +3473,58 @@ function spendForItem(item) {
 
 function addRingParticle(x, y, color, size = ITEM_RADIUS) {
   state.particles.push({ x, y, life: 0.75, startLife: 0.75, color, size });
+}
+
+function spawnTiamatSummonEffect(unit) {
+  const colors = ["#ff5d2e", "#9bdcff", "#70e071", "#d7ecff", "#8f4cff"];
+  addRingParticle(unit.x, unit.y, "#8f4cff", unit.radius * 5.2);
+  addRingParticle(unit.x, unit.y, "#fff0a8", unit.radius * 3.7);
+  state.particles.push({ x: unit.x, y: unit.y, life: 1.25, startLife: 1.25, color: "#2b112f", size: unit.radius * 5.8 });
+  state.particles.push({ x: unit.x, y: unit.y, life: 0.95, startLife: 0.95, color: "#c48cff", size: unit.radius * 4.4 });
+  for (let i = 0; i < 90; i += 1) {
+    const angle = (Math.PI * 2 * i) / 90 + Math.random() * 0.18;
+    const distance = unit.radius * (0.8 + Math.random() * 4.1);
+    const color = colors[i % colors.length];
+    state.particles.push({
+      x: unit.x + Math.cos(angle) * distance,
+      y: unit.y + Math.sin(angle) * distance,
+      vx: Math.cos(angle) * (45 + Math.random() * 180),
+      vy: Math.sin(angle) * (45 + Math.random() * 180) - 35 - Math.random() * 120,
+      life: 0.55 + Math.random() * 0.75,
+      startLife: 1.25,
+      color,
+      size: 16 + Math.random() * 34,
+    });
+  }
+  for (let i = 0; i < 5; i += 1) {
+    const angle = -Math.PI / 2 + (i - 2) * 0.32;
+    state.particles.push({
+      x: unit.x + Math.cos(angle) * unit.radius * 1.6,
+      y: unit.y + Math.sin(angle) * unit.radius * 1.2,
+      vx: Math.cos(angle) * 120,
+      vy: Math.sin(angle) * 120 - 180,
+      life: 1.05,
+      startLife: 1.05,
+      color: colors[i],
+      size: unit.radius * 1.2,
+    });
+  }
+  for (let i = 0; i < 14; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const inner = unit.radius * (0.65 + Math.random() * 0.9);
+    const outer = unit.radius * (2.8 + Math.random() * 2.8);
+    const mid = unit.radius * (1.5 + Math.random() * 1.7);
+    const x1 = unit.x + Math.cos(angle) * inner;
+    const y1 = unit.y + Math.sin(angle) * inner;
+    const x2 = unit.x + Math.cos(angle + (Math.random() - 0.5) * 0.45) * mid;
+    const y2 = unit.y + Math.sin(angle + (Math.random() - 0.5) * 0.45) * mid;
+    const x3 = unit.x + Math.cos(angle + (Math.random() - 0.5) * 0.75) * outer;
+    const y3 = unit.y + Math.sin(angle + (Math.random() - 0.5) * 0.75) * outer;
+    const color = Math.random() < 0.5 ? "#d7ecff" : colors[i % colors.length];
+    state.particles.push({ x: x1, y: y1, x2, y2, life: 0.18 + Math.random() * 0.18, startLife: 0.36, color, line: true });
+    state.particles.push({ x: x2, y: y2, x2: x3, y2: y3, life: 0.18 + Math.random() * 0.18, startLife: 0.36, color, line: true });
+    state.particles.push({ x: x3, y: y3, life: 0.32, startLife: 0.32, color, size: 18 + Math.random() * 28 });
+  }
 }
 
 function itemCastOrigin(team) {
@@ -3043,6 +3683,12 @@ function castItemAt(itemId, point) {
   const text = translations[state.language] || translations.en;
   const item = itemTypes[itemId];
   if (!item) return;
+  if (!isItemAllowedInCurrentMode(itemId)) {
+    state.selectedItem = null;
+    updateUi();
+    setToast(text.itemLevelLocked);
+    return;
+  }
   if (state.phase !== "battle") {
     setToast(text.itemNeedBattle);
     return;
@@ -3246,7 +3892,7 @@ function castFireBreathAtPoint(unit, point, freeCast = false) {
     const delta = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - angle), Math.cos(Math.atan2(dy, dx) - angle)));
     if (delta <= width) damageWall(wall, Math.max(8, unit.damage * 0.22), closestX, closestY);
   }
-  if (!freeCast) unit.fireBreathCooldown = unit.typeId === "adultdragon" ? 2.6 : 3.4;
+  if (!freeCast) unit.fireBreathCooldown = unit.typeId === "adultdragon" ? 2.6 : unit.typeId === "dragonling" ? 5.2 : 3.4;
 }
 
 function holyShieldReduction(target) {
@@ -3329,9 +3975,9 @@ function empowerDragonMinion(unit, source) {
     ...unit.skills,
     fiveElementBreath: true,
     fiveElementBreathDamage: unit.typeId === "adultdragon" ? 140 : 70,
-    fiveElementBreathRange: unit.typeId === "adultdragon" ? 250 : 175,
+    fiveElementBreathRange: unit.typeId === "adultdragon" ? 330 : 240,
   };
-  unit.fiveElementBreathCooldown = 1.5 + Math.random() * 2;
+  unit.fiveElementBreathCooldown = 0.8 + Math.random() * 1.4;
   unit.summonedByTiamat = true;
   unit.vx += (unit.x - source.x) * 0.8;
   unit.vy += (unit.y - source.y) * 0.8;
@@ -3360,9 +4006,9 @@ function tiamatElementBreath(unit, enemies) {
     { id: "lightning", color: "#d7ecff" },
     { id: "acid", color: "#b8ff5a" },
   ][Math.floor(Math.random() * 5)];
-  const range = element.id === "fire" ? 430 : 360;
-  const width = element.id === "fire" ? 1.05 : 0.86;
-  for (let i = 0; i < 42; i += 1) {
+  const range = element.id === "fire" ? 620 : 540;
+  const width = element.id === "fire" ? 1.18 : 0.98;
+  for (let i = 0; i < 58; i += 1) {
     const spread = (Math.random() - 0.5) * width * 2;
     const distance = Math.random() * range;
     state.particles.push({
@@ -3489,40 +4135,67 @@ function updateTiamatDash(unit, dt) {
   return true;
 }
 
+function updateTiamatMoveCrush(unit, dt) {
+  if (!unit.skills?.tiamatBoss || unit.dead || unit.tiamatDashTimer > 0) return;
+  unit.tiamatCrushCooldowns = unit.tiamatCrushCooldowns || {};
+  for (const id of Object.keys(unit.tiamatCrushCooldowns)) {
+    unit.tiamatCrushCooldowns[id] -= dt;
+    if (unit.tiamatCrushCooldowns[id] <= 0) delete unit.tiamatCrushCooldowns[id];
+  }
+  const movingFast = Math.hypot(unit.vx || 0, unit.vy || 0) > 90 || unit.tiamatRageSpeedTimer > 0;
+  if (!movingFast) return;
+  for (const other of state.units) {
+    if (other.team === unit.team || other.dead || other.airborneTimer > 0) continue;
+    if (unit.tiamatCrushCooldowns[other.id] > 0) continue;
+    if (Math.hypot(other.x - unit.x, other.y - unit.y) > unit.radius + other.radius + 22) continue;
+    unit.tiamatCrushCooldowns[other.id] = 0.6;
+    const damage = 120 + Math.random() * 100;
+    hurt(other, damage, {
+      x: unit.x,
+      y: unit.y,
+      owner: unit,
+      ignoreDodge: true,
+      knockback: 4.8,
+      forceKnockback: true,
+    });
+    state.particles.push({ x: other.x, y: other.y, life: 0.35, startLife: 0.35, color: "#c48cff", size: other.radius * 2.8 });
+  }
+}
+
 function updateTiamatBoss(unit, dt) {
   if (updateTiamatDash(unit, dt)) return true;
   unit.tiamatMudTimer = Math.max(0, (unit.tiamatMudTimer || 0) - dt);
-  unit.tiamatBreathTimer = Math.max(0, (unit.tiamatBreathTimer || 1.2) - dt);
-  unit.tiamatGazeTimer = Math.max(0, (unit.tiamatGazeTimer || 5) - dt);
-  unit.tiamatSummonTimer = Math.max(0, (unit.tiamatSummonTimer || 8) - dt);
-  unit.tiamatElementBreathTimer = Math.max(0, (unit.tiamatElementBreathTimer || 3.5) - dt);
-  unit.tiamatDashCooldown = Math.max(0, (unit.tiamatDashCooldown || 4) - dt);
-  unit.tiamatCataclysmTimer = Math.max(0, (unit.tiamatCataclysmTimer || 9) - dt);
-  unit.tiamatTideTimer = Math.max(0, (unit.tiamatTideTimer || 13) - dt);
-  unit.tiamatBarrierCooldown = Math.max(0, (unit.tiamatBarrierCooldown || 17) - dt);
+  unit.tiamatBreathTimer = Math.max(0, (unit.tiamatBreathTimer || 0.8) - dt);
+  unit.tiamatGazeTimer = Math.max(0, (unit.tiamatGazeTimer || 2.8) - dt);
+  unit.tiamatSummonTimer = Math.max(0, (unit.tiamatSummonTimer || 7) - dt);
+  unit.tiamatElementBreathTimer = Math.max(0, (unit.tiamatElementBreathTimer || 1.7) - dt);
+  unit.tiamatDashCooldown = Math.max(0, (unit.tiamatDashCooldown || 3) - dt);
+  unit.tiamatCataclysmTimer = Math.max(0, (unit.tiamatCataclysmTimer || 8) - dt);
+  unit.tiamatTideTimer = Math.max(0, (unit.tiamatTideTimer || 12) - dt);
+  unit.tiamatBarrierCooldown = Math.max(0, (unit.tiamatBarrierCooldown || 16) - dt);
   unit.tiamatBarrierTimer = Math.max(0, (unit.tiamatBarrierTimer || 0) - dt);
   unit.tiamatTideActive = Math.max(0, (unit.tiamatTideActive || 0) - dt);
   unit.tiamatTideTick = Math.max(0, (unit.tiamatTideTick || 0) - dt);
   if (unit.tiamatMudTimer <= 0) {
     spawnChaosMud(unit.x + (Math.random() - 0.5) * 160, unit.y + (Math.random() - 0.5) * 120, unit.team);
-    unit.tiamatMudTimer = 2;
+    unit.tiamatMudTimer = 1.4;
   }
   const enemies = tiamatEnemies(unit);
   if (!enemies.length) return;
   if (unit.tiamatBarrierCooldown <= 0) {
     unit.tiamatBarrierTimer = unit.hp < unit.maxHp * 0.45 ? 6.5 : 4.8;
-    unit.tiamatBarrierCooldown = unit.hp < unit.maxHp * 0.45 ? 13 : 18;
+    unit.tiamatBarrierCooldown = unit.hp < unit.maxHp * 0.45 ? 12 : 17;
     addRingParticle(unit.x, unit.y, "#fff0a8", 190);
     state.particles.push({ x: unit.x, y: unit.y, life: 1, startLife: 1, color: "#c48cff", size: 210 });
   }
   if (unit.tiamatCataclysmTimer <= 0) {
     tiamatCataclysm(unit, enemies);
-    unit.tiamatCataclysmTimer = unit.hp < unit.maxHp * 0.45 ? 7.5 : 11;
+    unit.tiamatCataclysmTimer = unit.hp < unit.maxHp * 0.45 ? 6.5 : 10;
   }
   if (unit.tiamatTideTimer <= 0) {
     unit.tiamatTideActive = unit.hp < unit.maxHp * 0.45 ? 5.5 : 4;
     unit.tiamatTideTick = 0;
-    unit.tiamatTideTimer = unit.hp < unit.maxHp * 0.45 ? 15 : 19;
+    unit.tiamatTideTimer = unit.hp < unit.maxHp * 0.45 ? 14 : 18;
     spawnChaosMud(unit.x, unit.y, unit.team);
   }
   if (unit.tiamatTideActive > 0 && unit.tiamatTideTick <= 0) {
@@ -3531,11 +4204,11 @@ function updateTiamatBoss(unit, dt) {
   }
   if (unit.tiamatElementBreathTimer <= 0) {
     tiamatElementBreath(unit, enemies);
-    unit.tiamatElementBreathTimer = unit.hp < unit.maxHp * 0.45 ? 4.2 : 5.8;
+    unit.tiamatElementBreathTimer = unit.hp < unit.maxHp * 0.45 ? 2.1 : 3.2;
   }
   if (unit.tiamatDashCooldown <= 0) {
     startTiamatDash(unit, enemies);
-    unit.tiamatDashCooldown = unit.hp < unit.maxHp * 0.45 ? 4.8 : 6.2;
+    unit.tiamatDashCooldown = unit.hp < unit.maxHp * 0.45 ? 3.8 : 5.2;
     return true;
   }
   if (unit.tiamatBreathTimer <= 0) {
@@ -3560,17 +4233,24 @@ function updateTiamatBoss(unit, dt) {
       }
     });
     damageWallsAt(target.x, target.y, 120, 38);
-    unit.tiamatBreathTimer = unit.hp < unit.maxHp * 0.45 ? 2.6 : 3.8;
+    unit.tiamatBreathTimer = unit.hp < unit.maxHp * 0.45 ? 1.6 : 2.8;
   }
   if (unit.tiamatGazeTimer <= 0) {
     const byHp = [...enemies].sort((a, b) => a.hp - b.hp)[0];
     const byDamage = [...enemies].sort((a, b) => (b.statsDamage || 0) - (a.statsDamage || 0))[0];
-    for (const target of Array.from(new Set([byHp, byDamage])).filter(Boolean)) {
+    const randomTarget = enemies[Math.floor(Math.random() * enemies.length)];
+    const meteorTargets = Array.from(new Set([byHp, byDamage, randomTarget])).filter(Boolean);
+    for (let i = 0; i < 15; i += 1) {
+      const target = meteorTargets[i % meteorTargets.length] || enemies[Math.floor(Math.random() * enemies.length)];
+      const spread = 35 + Math.random() * 150;
+      const angle = Math.random() * Math.PI * 2;
+      const targetX = clamp(target.x + Math.cos(angle) * spread, 30, canvas.width - 30);
+      const targetY = clamp(target.y + Math.sin(angle) * spread, 30, canvas.height - 30);
       state.projectiles.push({
-        x: target.x + (Math.random() - 0.5) * 180,
+        x: targetX + (Math.random() - 0.5) * 180,
         y: -30,
-        targetX: target.x,
-        targetY: target.y,
+        targetX,
+        targetY,
         team: unit.team,
         ownerId: unit.id,
         damage: 260,
@@ -3584,31 +4264,33 @@ function updateTiamatBoss(unit, dt) {
         damageType: "fireball",
         life: 2.2,
       });
-      state.particles.push({ x: target.x, y: target.y, life: 0.9, startLife: 0.9, color: "#ff3b4f", size: 90 });
+      state.particles.push({ x: targetX, y: targetY, life: 0.9, startLife: 0.9, color: "#ff3b4f", size: 90 });
     }
-    unit.tiamatGazeTimer = 8;
+    unit.tiamatGazeTimer = unit.hp < unit.maxHp * 0.45 ? 4.2 : 5.4;
   }
   if (unit.tiamatSummonTimer <= 0) {
     for (let i = 0; i < 5; i += 1) summonTiamatDragon(unit, "adultdragon", i, 5, 130);
     for (let i = 0; i < 25; i += 1) summonTiamatDragon(unit, "dragonling", i, 25, 205);
     state.particles.push({ x: unit.x, y: unit.y, life: 1.1, startLife: 1.1, color: "#c48cff", size: 260 });
     addRingParticle(unit.x, unit.y, "#c48cff", 230);
-    unit.tiamatSummonTimer = unit.hp < unit.maxHp * 0.45 ? 8 : 12;
+    unit.tiamatSummonTimer = unit.hp < unit.maxHp * 0.45 ? 7 : 11;
   }
 }
 
 function spawnTornado(unit, target) {
+  const baseRadius = unit.skills.tornadoRange || 82;
+  const poison = Boolean(unit.skills.poisonSlime);
   state.tornadoes.push({
     x: unit.x + (target.x - unit.x) * 0.35,
     y: unit.y + (target.y - unit.y) * 0.35,
     team: unit.team,
     vx: (target.x - unit.x) * 0.32,
     vy: (target.y - unit.y) * 0.32,
-    radius: unit.skills.tornadoRange || 82,
+    radius: poison ? baseRadius * 0.82 : baseRadius,
     damage: unit.skills.tornadoDamage || 6,
     spin: Math.random() < 0.5 ? -1 : 1,
-    life: unit.skills.tornadoDuration || 4.2,
-    poison: Boolean(unit.skills.poisonSlime),
+    life: (unit.skills.tornadoDuration || 4.2) * (poison ? 0.82 : 1),
+    poison,
   });
 }
 
@@ -3773,6 +4455,220 @@ function spawnEnemyArmy() {
   updateUi();
 }
 
+function levelName(level) {
+  return state.language === "zh" ? level.zh : level.name;
+}
+
+function resetBattlefieldForLevel(level) {
+  state.phase = "setup";
+  state.sandbox = false;
+  state.plantMode = false;
+  state.challengeMode = true;
+  state.levelMode = true;
+  state.currentLevel = level.number;
+  state.challengeBudget = levelStartingGold(level);
+  state.budget = state.challengeBudget;
+  state.placeTeam = "blue";
+  state.units = [];
+  state.projectiles = [];
+  state.particles = [];
+  state.slimes = [];
+  state.tornadoes = [];
+  state.walls = [];
+  state.terrains = [];
+  state.battleStats = null;
+  state.commands = { blue: null, red: null };
+  state.focusTargets = { blue: null, red: null };
+  state.controlledId = null;
+  state.controlKeys = {};
+  state.controlSpecialIndex = 0;
+  state.controlBuildMode = false;
+  state.dragging = null;
+  state.wallStart = null;
+  state.pointer = null;
+  state.mapTool = null;
+  state.selectedItem = null;
+  state.winnerShown = false;
+  ensureSelectedUnitAllowed();
+}
+
+function addLevelWall(x, y, w, h, type = "normal", team = "red") {
+  const config = buildingTypes[type];
+  const wall = config
+    ? { x, y, w: config.w, h: config.h, type, team, cooldown: Math.random() * (config.cooldown || 1) }
+    : { x, y, w, h, type, team };
+  wall.maxHp = wallMaxHp(wall);
+  wall.hp = wall.maxHp;
+  wall.challengeImported = true;
+  state.walls.push(wall);
+  return wall;
+}
+
+function spawnLevelMap(level) {
+  if (!level.map) return;
+  const w = canvas.width;
+  const h = canvas.height;
+  const v = (x, y, height, width = 34, type = "normal") => addLevelWall(w * x, h * y, width, h * height, type, "red");
+  const hz = (x, y, width, height = 30, type = "normal") => addLevelWall(w * x, h * y, w * width, height, type, "red");
+  if (level.map === "peaMaze") {
+    hz(0.5, 0.07, 0.75, 34, "thick");
+    hz(0.5, 0.17, 0.48, 30, "normal");
+    hz(0.5, 0.26, 0.22, 28, "normal");
+    hz(0.5, 0.70, 0.17, 34, "normal");
+    hz(0.5, 0.82, 0.36, 34, "normal");
+    hz(0.5, 0.94, 0.62, 36, "thick");
+    v(0.08, 0.5, 0.78, 32, "thick");
+    v(0.20, 0.52, 0.62, 32, "normal");
+    v(0.33, 0.56, 0.46, 30, "normal");
+    v(0.62, 0.56, 0.46, 30, "normal");
+    v(0.75, 0.52, 0.62, 32, "normal");
+    v(0.88, 0.5, 0.78, 32, "thick");
+    v(0.96, 0.5, 0.88, 32, "thick");
+    addLevelWall(w * 0.18, h * 0.28, 52, 52, "frostTower", "red");
+    addLevelWall(w * 0.82, h * 0.28, 52, 52, "cannonTower", "red");
+  } else if (level.map === "barricadeTrial") {
+    hz(0.6, 0.32, 0.54, 30, "normal");
+    hz(0.6, 0.62, 0.54, 30, "normal");
+    v(0.45, 0.47, 0.34, 34, "thick");
+    v(0.73, 0.47, 0.34, 34, "thick");
+    addLevelWall(w * 0.58, h * 0.47, 52, 52, "cannonTower", "red");
+  } else if (level.map === "towerGate") {
+    v(0.52, 0.5, 0.72, 36, "thick");
+    v(0.72, 0.5, 0.72, 36, "thick");
+    hz(0.62, 0.22, 0.36, 30, "normal");
+    hz(0.62, 0.78, 0.36, 30, "normal");
+    addLevelWall(w * 0.61, h * 0.36, 42, 42, "arrowTower", "red");
+    addLevelWall(w * 0.61, h * 0.64, 42, 42, "arrowTower", "red");
+    addLevelWall(w * 0.78, h * 0.5, 52, 52, "cannonTower", "red");
+  } else if (level.map === "frostRamparts") {
+    hz(0.58, 0.25, 0.45, 32, "arrow");
+    hz(0.58, 0.75, 0.45, 32, "arrow");
+    v(0.42, 0.5, 0.5, 34, "normal");
+    v(0.74, 0.5, 0.5, 34, "normal");
+    addLevelWall(w * 0.58, h * 0.5, 48, 48, "frostTower", "red");
+    addLevelWall(w * 0.67, h * 0.5, 48, 48, "frostTower", "red");
+    addLevelWall(w * 0.82, h * 0.5, 48, 48, "frostTower", "red");
+  } else if (level.map === "zombieFactory") {
+    v(0.55, 0.5, 0.62, 38, "thick");
+    v(0.82, 0.5, 0.62, 38, "thick");
+    hz(0.68, 0.18, 0.42, 34, "thick");
+    hz(0.68, 0.82, 0.42, 34, "thick");
+    addLevelWall(w * 0.69, h * 0.38, 56, 46, "goldMine", "red");
+    addLevelWall(w * 0.69, h * 0.62, 56, 46, "goldMine", "red");
+  } else if (level.map === "fireCorridor") {
+    hz(0.62, 0.36, 0.55, 30, "normal");
+    hz(0.62, 0.64, 0.55, 30, "normal");
+    addLevelWall(w * 0.52, h * 0.5, 52, 52, "cannonTower", "red");
+    addLevelWall(w * 0.75, h * 0.5, 52, 52, "cannonTower", "red");
+    addLevelWall(w * 0.63, h * 0.5, 52, 52, "cannonTower", "red");
+  } else if (level.map === "hydraGarden") {
+    hz(0.6, 0.24, 0.42, 28, "arrow");
+    hz(0.6, 0.76, 0.42, 28, "arrow");
+    v(0.48, 0.5, 0.56, 30, "normal");
+    v(0.74, 0.5, 0.56, 30, "normal");
+    addLevelWall(w * 0.61, h * 0.5, 48, 48, "healTower", "red");
+  } else if (level.map === "dragonBarricade") {
+    hz(0.62, 0.2, 0.56, 36, "thick");
+    hz(0.62, 0.8, 0.56, 36, "thick");
+    v(0.44, 0.5, 0.62, 34, "arrow");
+    v(0.82, 0.5, 0.62, 34, "arrow");
+  } else if (level.map === "voidPrison") {
+    hz(0.62, 0.28, 0.48, 30, "normal");
+    hz(0.62, 0.72, 0.48, 30, "normal");
+    v(0.5, 0.5, 0.5, 30, "normal");
+    v(0.74, 0.5, 0.5, 30, "normal");
+    addLevelWall(w * 0.62, h * 0.5, 48, 48, "frostTower", "red");
+  } else if (level.map === "bossWarmup") {
+    hz(0.62, 0.18, 0.5, 34, "thick");
+    hz(0.62, 0.82, 0.5, 34, "thick");
+    v(0.46, 0.5, 0.6, 36, "thick");
+    v(0.78, 0.5, 0.6, 36, "thick");
+    addLevelWall(w * 0.62, h * 0.35, 52, 52, "cannonTower", "red");
+    addLevelWall(w * 0.62, h * 0.65, 52, 52, "cannonTower", "red");
+    addLevelWall(w * 0.72, h * 0.5, 48, 48, "frostTower", "red");
+    addLevelWall(w * 0.52, h * 0.5, 48, 48, "healTower", "red");
+  }
+}
+
+function spawnLevelEnemies(level) {
+  const entries = level.enemies.flatMap(([typeId, count]) => Array.from({ length: count }, () => typeId));
+  const applySpecialRules = (unit) => {
+    if (!unit) return;
+    if ([6, 9, 14, 23].includes(level.number) && ["zombie", "coneheadzombie", "bucketzombie", "footballzombie"].includes(unit.typeId)) {
+      unit.reviveChance = level.number >= 23 ? 0.4 : 0.25;
+    }
+    if ([8, 11, 12, 17, 24, 25, 26, 28, 29, 30].includes(level.number)) {
+      unit.levelFireResist = Math.max(unit.levelFireResist || 0, 0.5);
+    }
+  };
+  if (level.map === "peaMaze") {
+    entries.forEach((typeId, index) => {
+      if (!typeById(typeId)) return;
+      const col = index % 2;
+      const row = Math.floor(index / 2);
+      const x = canvas.width * (0.91 + col * 0.035);
+      const y = canvas.height * 0.17 + row * 64;
+      applySpecialRules(addUnit(typeId, "red", Math.min(canvas.width - 45, x), Math.min(canvas.height - 70, y)));
+    });
+    return;
+  }
+  const rows = Math.max(1, Math.ceil(entries.length / 4));
+  entries.forEach((typeId, index) => {
+    if (!typeById(typeId)) return;
+    const col = index % 4;
+    const row = Math.floor(index / 4);
+    const x = canvas.width * 0.62 + col * 68 + (row % 2) * 18;
+    const y = 90 + row * Math.max(48, Math.min(84, (canvas.height - 180) / rows));
+    applySpecialRules(addUnit(typeId, "red", Math.min(canvas.width - 70, x), Math.min(canvas.height - 70, y)));
+  });
+}
+
+function renderLevelSelect() {
+  if (!levelSelect) return;
+  const selected = Number(levelSelect.value) || state.currentLevel || 1;
+  levelSelect.innerHTML = levelDefinitions
+    .map((level) => {
+      const locked = level.number > state.unlockedLevel;
+      const name = state.language === "zh" ? level.zh : level.name;
+      const label = locked ? `${level.number}. ${name} (${(translations[state.language] || translations.en).levelLocked})` : `${level.number}. ${name}`;
+      return `<option value="${level.number}" ${level.number === selected ? "selected" : ""}>${label}</option>`;
+    })
+    .join("");
+}
+
+function updateLevelUi() {
+  if (!levelSelect || !loadLevelBtn || !levelInfo) return;
+  const text = translations[state.language] || translations.en;
+  const levelNumber = Number(levelSelect.value) || state.currentLevel || 1;
+  const level = levelDefinitions.find((entry) => entry.number === levelNumber) || levelDefinitions[0];
+  const locked = level.number > state.unlockedLevel;
+  const tip = levelTips[level.number]?.[state.language] || levelTips[level.number]?.en || text.levelHint;
+  const cleared = state.clearedLevels.has(level.number) ? ` ${text.alreadyCleared}.` : "";
+  const gold = levelStartingGold(level);
+  loadLevelBtn.disabled = locked || state.phase === "battle";
+  levelInfo.textContent = locked
+    ? `${text.levelLocked}: ${text.levelHint}`
+    : `${levelName(level)} - ${text.levelInfo} ${gold}. ${tip} ${text.upgradePoints}: ${state.upgradePoints}.${cleared}`;
+}
+
+function loadLevel(levelNumber) {
+  const text = translations[state.language] || translations.en;
+  const level = levelDefinitions.find((entry) => entry.number === levelNumber) || levelDefinitions[0];
+  if (level.number > state.unlockedLevel) {
+    setToast(`${text.levelLocked}: ${text.levelHint}`);
+    updateLevelUi();
+    return;
+  }
+  resetBattlefieldForLevel(level);
+  spawnLevelMap(level);
+  spawnLevelEnemies(level);
+  syncBudgetToEnemySize();
+  renderUnitList();
+  renderLevelSelect();
+  updateUi();
+  setToast(`${text.levelLoaded}: ${levelName(level)} - ${text.budget} ${state.challengeBudget}`);
+}
+
 function resetGame(keepEnemies = false) {
   state.phase = "setup";
   state.budget = totalBudgetForEnemySize();
@@ -3789,6 +4685,9 @@ function resetGame(keepEnemies = false) {
   state.plantMode = false;
   state.challengeMode = false;
   state.challengeBudget = 0;
+  state.levelMode = false;
+  state.currentLevel = 0;
+  ensureSelectedUnitAllowed();
   state.dragging = null;
   state.controlledId = null;
   state.controlKeys = {};
@@ -3857,7 +4756,11 @@ function randomFormation() {
   let guard = 0;
   const maxUnits = state.sandbox ? 12 : 20;
   while ((state.sandbox || state.budget >= 80) && guard < maxUnits) {
-    const possible = state.sandbox ? order : order.filter((id) => typeById(id).price <= state.budget);
+    const possible = state.sandbox ? order : order.filter((id) => {
+      const type = typeById(id);
+      return type && type.price <= state.budget && isUnitAllowedInCurrentLevel(type);
+    });
+    if (!possible.length) break;
     const id = possible[Math.floor(Math.random() * possible.length)];
     const type = typeById(id);
     const minX = state.sandbox && team === "red" ? canvas.width * 0.54 : 75;
@@ -4030,7 +4933,9 @@ function controlledRangedAttack(unit, mode) {
   const burstCount = Math.max(1, Math.floor(mode.burstCount || 1));
   unit.cooldown = burstCount > 1 && mode.burstCooldown > 0 ? mode.burstCooldown : mode.cooldown || unit.cooldownTime;
   if (unit.tiamatFrostTimer > 0) unit.cooldown *= 1.5;
-  const baseAngle = controlAimAngle(unit, Math.max(mode.range || unit.range || 280, 280));
+  const shotRange = Math.max(24, mode.range || unit.range || 280);
+  const burnDuration = unit.typeId === "dragonling" ? 1.6 : unit.skills.fireDuration || 5;
+  const baseAngle = controlAimAngle(unit, Math.max(shotRange, 280));
   unit.lastControlAngle = baseAngle;
   if (unit.skills.fireBreath) {
     castFireBreathAtPoint(unit, {
@@ -4058,10 +4963,10 @@ function controlledRangedAttack(unit, mode) {
       passWalls: unit.skills.rooted,
       continueOnTargetDeath: true,
       applyBurn: unit.skills.fireBreath,
-      fireDuration: unit.skills.fireDuration || 5,
+      fireDuration: burnDuration,
       applyFreeze: unit.skills.freezeAttack,
       damageType: unit.skills.fireBreath ? "fire" : unit.skills.freezeAttack ? "ice" : null,
-      life: mode.weapon === "musket" ? 0.9 : 1.8,
+      life: Math.max(0.08, shotRange / Math.max(1, mode.projectileSpeed)),
     });
   }
 }
@@ -4306,7 +5211,11 @@ function applyDamageAura(unit, dt) {
 
 function spawnRandomUnit(unit) {
   if (!unit.skills.randomSpawn || unit.dead) return;
-  const candidates = unitTypes.filter((type) => !type.id.startsWith("custom-") && type.id !== "portalmage");
+  const blockedSummons = new Set(["portalmage", "tiamat", "adultdragon", "giantzombie", "arrowtower"]);
+  const candidates = unitTypes.filter((type) => {
+    if (type.id.startsWith("custom-") || blockedSummons.has(type.id)) return false;
+    return isUnitAllowedInCurrentLevel(type);
+  });
   if (!candidates.length) return;
   const type = candidates[Math.floor(Math.random() * candidates.length)];
   const angle = Math.random() * Math.PI * 2;
@@ -4511,6 +5420,14 @@ function hurt(target, amount, source) {
     state.particles.push({ x: target.x, y: target.y, life: 0.35, color: "#ffffff" });
     return;
   }
+  if (state.levelMode && !state.sandbox && target.team === "red" && source.isRanged && [6, 13, 22, 27].includes(state.currentLevel)) {
+    amount *= 0.65;
+    state.particles.push({ x: target.x, y: target.y, life: 0.32, color: "#9bdcff", size: target.radius * 1.9 });
+  }
+  if (target.levelFireResist > 0 && isFireDamage(source)) {
+    amount *= Math.max(0, 1 - target.levelFireResist);
+    state.particles.push({ x: target.x, y: target.y, life: 0.36, color: "#ff9f5a", size: target.radius * 2.2 });
+  }
   const shieldReduction = holyShieldReduction(target);
   if (shieldReduction > 0) {
     amount *= 1 - shieldReduction;
@@ -4534,7 +5451,7 @@ function hurt(target, amount, source) {
   }
   if (target.skills.tiamatBoss && target.skills.defensePercent > 0 && !isMagicOrPoisonDamage(source)) {
     const defensePercent = tiamatDefensePercent(target);
-    amount *= Math.max(0, 1 - defensePercent / 100);
+    amount = Math.max(0, amount - defensePercent * 2);
     if (defensePercent > 0) {
       state.particles.push({ x: target.x, y: target.y, life: 0.45, color: amount > 0 ? "#ffcf5f" : "#d8d0a8", size: target.radius * (2.3 + defensePercent / 85) });
     }
@@ -4557,7 +5474,8 @@ function hurt(target, amount, source) {
   target.hp -= amount;
   updateBerserk(target);
   const angle = Math.atan2(target.y - source.y, target.x - source.x);
-  const knockback = target.skills.knockbackImmune || source.noKnockback ? 0 : source.knockback || 2.3;
+  const forceKnockback = source.forceKnockback || source.skills?.forceKnockback || source.owner?.skills?.forceKnockback;
+  const knockback = (target.skills.knockbackImmune && !forceKnockback) || source.noKnockback ? 0 : source.knockback || 2.3;
   target.vx += Math.cos(angle) * amount * knockback;
   target.vy += Math.sin(angle) * amount * knockback;
   state.particles.push({ x: target.x, y: target.y, life: 0.45, color: target.team === "blue" ? "#78bbff" : "#ff8582" });
@@ -4566,11 +5484,21 @@ function hurt(target, amount, source) {
       convertToZombie(target);
       return;
     }
+    if (target.reviveChance > 0 && !target.revivedOnce && Math.random() < target.reviveChance) {
+      target.revivedOnce = true;
+      target.hp = Math.max(1, target.maxHp * 0.45);
+      target.poisonTimer = 0;
+      target.burnTimer = 0;
+      target.freezeTimer = 0;
+      target.stasisTimer = 0;
+      state.particles.push({ x: target.x, y: target.y, life: 0.8, startLife: 0.8, color: "#70e071", size: target.radius * 3.2 });
+      return;
+    }
     target.dead = true;
     if (killer && killer.statsKills !== undefined && killer !== target) killer.statsKills += 1;
     handleKillEffects(killer, target);
     if (target.skills.explode) explodeUnit(target);
-    if (!target.skills.knockbackImmune) {
+    if (!target.skills.knockbackImmune || forceKnockback) {
       target.vx += Math.cos(angle) * 120;
       target.vy += Math.sin(angle) * 120;
     }
@@ -4604,7 +5532,7 @@ function attack(unit, target, mode = null) {
           targetY: target.y,
           team: unit.team,
           ownerId: unit.id,
-          damage: damageFor(unit, active.damage),
+          damage: unitWallDamage(unit, damageFor(unit, active.damage)),
           speed: active.projectileSpeed,
           splash: active.splash || 0,
           radius: active.weapon === "cannon" ? 7 : 4,
@@ -4615,7 +5543,7 @@ function attack(unit, target, mode = null) {
       return;
     }
     for (let i = 0; i < burstCount; i += 1) {
-      damageWall(target.wall, damageFor(unit, active.damage * (0.85 + Math.random() * 0.3)), target.x, target.y);
+      damageWall(target.wall, unitWallDamage(unit, damageFor(unit, active.damage * (0.85 + Math.random() * 0.3))), target.x, target.y);
     }
     applyAreaAttack(unit, target.x, target.y);
     const angle = Math.atan2(target.y - unit.y, target.x - unit.x);
@@ -4708,14 +5636,14 @@ function updateUnit(unit, dt) {
   unit.randomSpawnCooldown = Math.max(0, unit.randomSpawnCooldown - dt);
   unit.whirlwindCooldown = Math.max(0, unit.whirlwindCooldown - dt);
   unit.buildCooldown = Math.max(0, (unit.buildCooldown || 0) - dt);
-  unit.wobble += dt * (5 + unit.speed / 25);
+  unit.wobble += dt * (unit.typeId === "tiamat" ? 7 : 5 + unit.speed / 25);
   updateBerserk(unit);
   if (!unit.dead && unit.poisonTimer > 0) {
     unit.poisonTimer -= dt;
     unit.poisonTick -= dt;
     if (unit.poisonTick <= 0) {
       unit.poisonTick += 1;
-      hurt(unit, 20, { x: unit.x - 1, y: unit.y, knockback: 0.4, ignoreDodge: true, damageType: "poison" });
+      hurt(unit, 7, { x: unit.x - 1, y: unit.y, knockback: 0.4, ignoreDodge: true, damageType: "poison" });
       state.particles.push({ x: unit.x, y: unit.y, life: 0.4, color: "#70e071", size: 18 });
     }
   }
@@ -4908,14 +5836,19 @@ function updateUnit(unit, dt) {
   }
   if (target.kind !== "wall" && unit.skills.fiveElementBreath && unit.fiveElementBreathCooldown <= 0 && distance <= (unit.skills.fiveElementBreathRange || 180)) {
     dragonFiveElementBreath(unit, target);
-    unit.fiveElementBreathCooldown = unit.typeId === "adultdragon" ? 5.5 : 6.8;
+    unit.fiveElementBreathCooldown = unit.typeId === "adultdragon" ? 4.5 : 5.8;
   }
   if (unit.skills.tornado && unit.tornadoCooldown <= 0) {
     spawnTornado(unit, target);
     unit.tornadoCooldown = unit.skills.poisonSlime ? 5.2 : 6.4;
   }
-  const angle = Math.atan2(target.y - unit.y, target.x - unit.x);
+  const moveTarget = wallAvoidancePoint(unit, target);
+  const angle = Math.atan2(moveTarget.y - unit.y, moveTarget.x - unit.x);
   const isRanged = Boolean(unit.projectileSpeed);
+  const blockedByUnbreakable = target.kind !== "wall" && state.walls.some((wall) => {
+    if (!isUnbreakableWall(wall)) return false;
+    return segmentHitsWall(unit.x, unit.y, target.x, target.y, wall, unit.radius + 10);
+  });
   const edgeDistance = Math.max(0, distance - unit.radius - target.radius);
   const engagementDistance = isRanged ? distance : edgeDistance;
   const rangeFactor = terrainRangeFactor(unit);
@@ -4923,10 +5856,10 @@ function updateUnit(unit, dt) {
   const second = unit.secondAttack;
   const secondEngagementDistance = second && second.ranged ? distance : edgeDistance;
   const secondAttackDistance = second ? second.range * (second.ranged ? rangeFactor : 1) : 0;
-  const canPrimaryAttack = engagementDistance <= primaryAttackDistance;
-  const canSecondAttack = Boolean(second && secondEngagementDistance <= secondAttackDistance);
+  const canPrimaryAttack = !blockedByUnbreakable && engagementDistance <= primaryAttackDistance;
+  const canSecondAttack = !blockedByUnbreakable && Boolean(second && secondEngagementDistance <= secondAttackDistance);
   const attackDistance = Math.max(primaryAttackDistance, secondAttackDistance);
-  const stopDistance = isRanged ? unit.stopDistance : Math.min(unit.stopDistance, attackDistance);
+  const stopDistance = blockedByUnbreakable ? 0 : isRanged ? unit.stopDistance : Math.min(unit.stopDistance, attackDistance);
   const speedFactor = (unit.freezeTimer > 0 ? 0.45 : 1) * (unit.tiamatFrostTimer > 0 ? 0.2 : 1) * (unit.speedPotionTimer > 0 ? 1.55 : 1) * (unit.tiamatRageSpeedTimer > 0 ? unit.skills.hitSpeedBoost || 10 : 1) * terrainSpeedFactor(unit);
   if (!unit.skills.rooted && engagementDistance > stopDistance) {
     unit.vx += Math.cos(angle) * unit.speed * speedFactor * dt * 2.8;
@@ -4955,6 +5888,7 @@ function updateUnit(unit, dt) {
   }
   unit.x = Math.max(unit.radius, Math.min(canvas.width - unit.radius, unit.x));
   unit.y = Math.max(unit.radius, Math.min(canvas.height - unit.radius, unit.y));
+  updateTiamatMoveCrush(unit, dt);
 }
 
 function resolveCrowding() {
@@ -5299,6 +6233,16 @@ function updateSlimes(dt) {
   state.slimes = state.slimes.filter((slime) => slime.life > 0);
 }
 
+function tornadoControlFactor(unit) {
+  let factor = 1;
+  factor *= clamp(22 / Math.max(10, unit.radius || 16), 0.18, 1);
+  factor *= clamp(180 / Math.max(60, unit.maxHp || 100), 0.2, 1);
+  if (unit.skills?.knockbackImmune) factor *= 0.08;
+  if (unit.skills?.tiamatBoss || unit.skills?.zombieBoss) factor *= 0.05;
+  if (unit.maxHp >= 500 || unit.radius >= 32) factor *= 0.45;
+  return clamp(factor, 0.03, 1);
+}
+
 function updateTornadoes(dt) {
   for (const tornado of state.tornadoes) {
     tornado.life -= dt;
@@ -5323,28 +6267,30 @@ function updateTornadoes(dt) {
       const effect = 1 - distance / (tornado.radius + unit.radius);
       const nx = dx / distance;
       const ny = dy / distance;
-      if (!unit.skills.knockbackImmune) {
+      const controlFactor = tornadoControlFactor(unit);
+      if (controlFactor > 0.04) {
         const edgePressure = Math.max(0, distance / tornado.radius - 0.62);
-        const pull = effect * 145 + edgePressure * 540;
-        const orbit = (0.35 + effect * 0.65) * 640 * tornado.spin;
+        const poisonFactor = tornado.poison ? 0.72 : 1;
+        const pull = (effect * 92 + edgePressure * 255) * controlFactor * poisonFactor;
+        const orbit = (0.28 + effect * 0.42) * 360 * tornado.spin * controlFactor * poisonFactor;
         const tx = -ny;
         const ty = nx;
         unit.vx += (dx / distance) * pull * dt;
         unit.vy += (dy / distance) * pull * dt;
         unit.vx += tx * orbit * dt;
         unit.vy += ty * orbit * dt;
-        const containment = 1 - Math.min(0.38, (0.12 + edgePressure * 0.38) * dt * 60);
+        const containment = 1 - Math.min(0.18, (0.045 + edgePressure * 0.18) * controlFactor * dt * 60);
         unit.vx *= containment;
         unit.vy *= containment;
-        const carry = 0.42 + effect * 0.28;
+        const carry = (0.18 + effect * 0.16) * controlFactor;
         unit.vx += tornado.vx * carry * 0.08;
         unit.vy += tornado.vy * carry * 0.08;
         unit.x += tornado.vx * carry * dt;
         unit.y += tornado.vy * carry * dt;
         const innerRadius = tornado.radius * 0.34;
         if (distance < innerRadius) {
-          unit.vx -= nx * 190 * dt;
-          unit.vy -= ny * 190 * dt;
+          unit.vx -= nx * 90 * controlFactor * dt;
+          unit.vy -= ny * 90 * controlFactor * dt;
         }
       }
       hurt(unit, (tornado.damage || 6) * dt, { x: tornado.x, y: tornado.y, knockback: 0.35, damageType: "tornado" });
@@ -5376,7 +6322,30 @@ function checkWinner() {
       : ` Top damage:${topDamage.name} ${Math.round(topDamage.statsDamage)} Kills:${topKills?.name || "-"} ${topKills?.statsKills || 0} Best value:${bestValue?.unit.name || "-"}`
     : "";
   state.battleStats = { topDamage: topDamage?.id, topKills: topKills?.id, bestValue: bestValue?.unit.id };
-  setToast(`${blueAlive ? text.blueWin : text.redWin}${statsText}`);
+  let levelText = "";
+  if (blueAlive && state.levelMode && state.currentLevel > 0) {
+    const nextLevel = Math.min(levelDefinitions.length, state.currentLevel + 1);
+    const firstClear = !state.clearedLevels.has(state.currentLevel);
+    if (firstClear) {
+      const reward = upgradePointReward(state.currentLevel);
+      state.clearedLevels.add(state.currentLevel);
+      saveClearedLevels(state.clearedLevels);
+      state.upgradePoints += reward;
+      saveUpgradePoints(state.upgradePoints);
+      levelText += ` ${text.upgradePointEarned}: +${reward}`;
+      state.pendingRewardChoices = makeRewardChoices(state.currentLevel);
+      renderRewardModal();
+    }
+    if (nextLevel > state.unlockedLevel) {
+      state.unlockedLevel = nextLevel;
+      saveUnlockedLevel(state.unlockedLevel);
+      renderLevelSelect();
+      levelText += state.currentLevel === levelDefinitions.length ? ` ${text.levelWin}` : ` ${text.levelUnlocked}: ${nextLevel}`;
+    } else {
+      levelText += ` ${text.levelWin}`;
+    }
+  }
+  setToast(`${blueAlive ? text.blueWin : text.redWin}${levelText}${statsText}`);
 }
 
 function update(dt) {
@@ -5392,9 +6361,9 @@ function update(dt) {
     updateProjectiles(scaledDt);
     updateSlimes(scaledDt);
     updateTornadoes(scaledDt);
-    updateParticles(scaledDt);
     checkWinner();
   }
+  updateParticles(scaledDt);
   state.units = state.units.filter((unit) => !unit.dead || unit.hp > -80);
   updateUi();
 }
@@ -5511,10 +6480,10 @@ function drawWalls() {
       ctx.restore();
       continue;
     }
-    ctx.fillStyle = wall.type === "thick" ? "#4b4940" : wall.type === "arrow" ? "rgba(73, 96, 104, 0.62)" : "#5a564b";
+    ctx.fillStyle = wall.type === "unbreakable" ? "#1f2935" : wall.type === "thick" ? "#4b4940" : wall.type === "arrow" ? "rgba(73, 96, 104, 0.62)" : "#5a564b";
     ctx.fillRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h);
-    ctx.strokeStyle = wall.type === "thick" ? "#f0dfae" : wall.type === "arrow" ? "#9bdcff" : "#d8d0a8";
-    ctx.lineWidth = wall.type === "thick" ? 5 : 3;
+    ctx.strokeStyle = wall.type === "unbreakable" ? "#8ee7ff" : wall.type === "thick" ? "#f0dfae" : wall.type === "arrow" ? "#9bdcff" : "#d8d0a8";
+    ctx.lineWidth = wall.type === "unbreakable" ? 6 : wall.type === "thick" ? 5 : 3;
     ctx.strokeRect(-wall.w / 2, -wall.h / 2, wall.w, wall.h);
     ctx.globalAlpha = 0.35;
     ctx.strokeStyle = "#211f1a";
@@ -5582,8 +6551,8 @@ function drawWalls() {
     const horizontal = Math.abs(dx) >= Math.abs(dy);
     const end = horizontal ? { x: state.pointer.x, y: state.wallStart.y } : { x: state.wallStart.x, y: state.pointer.y };
     ctx.save();
-    ctx.strokeStyle = state.mapTool === "thickWall" ? "#d8d0a8" : state.mapTool === "arrowWall" ? "#9bdcff" : "#e8bd57";
-    ctx.lineWidth = state.mapTool === "thickWall" ? 10 : state.mapTool === "arrowWall" ? 4 : 5;
+    ctx.strokeStyle = state.mapTool === "thickWall" ? "#d8d0a8" : state.mapTool === "unbreakableWall" ? "#8ee7ff" : state.mapTool === "arrowWall" ? "#9bdcff" : "#e8bd57";
+    ctx.lineWidth = state.mapTool === "unbreakableWall" ? 7 : state.mapTool === "thickWall" ? 10 : state.mapTool === "arrowWall" ? 4 : 5;
     ctx.setLineDash([10, 8]);
     ctx.beginPath();
     ctx.moveTo(state.wallStart.x, state.wallStart.y);
@@ -5663,19 +6632,6 @@ function drawUnit(unit) {
   if (unit.typeId === "tiamat" && tiamatSprite.complete && tiamatSprite.naturalWidth > 0) {
     const spriteWidth = unit.radius * 6.7;
     const spriteHeight = spriteWidth * (tiamatSprite.naturalHeight / tiamatSprite.naturalWidth);
-    ctx.fillStyle = "#261032";
-    ctx.beginPath();
-    ctx.moveTo(unit.radius * 0.2, -unit.radius * 0.32);
-    ctx.lineTo(unit.radius * 3.0, -unit.radius * 0.2);
-    ctx.lineTo(unit.radius * 1.2, unit.radius * 0.82);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = "#8a4aff";
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(unit.radius * 0.85, -unit.radius * 0.16);
-    ctx.lineTo(unit.radius * 2.5, unit.radius * 0.18);
-    ctx.stroke();
     ctx.drawImage(tiamatSprite, -spriteWidth / 2, -spriteHeight * 0.56, spriteWidth, spriteHeight);
     ctx.restore();
     if (!unit.dead) {
@@ -6980,7 +7936,24 @@ function draw() {
 
 function updateUi() {
   const text = translations[state.language] || translations.zh;
+  const levelClean = state.levelMode && !state.sandbox;
+  appShell?.classList.toggle("level-clean", levelClean);
+  document.body.classList.toggle("level-clean", levelClean);
+  if (levelClean) document.body.dataset.mode = "levels";
+  else if (state.sandbox) document.body.dataset.mode = "sandbox";
+  document
+    .querySelectorAll(".level-only-hidden, .roster .panel-title, .roster > .toggle-row, .team-picker, .placement-batch, .share-tools, .map-tools, .enemy-size-row")
+    .forEach((node) => {
+      node.hidden = levelClean;
+    });
+  document.querySelectorAll(".level-tools").forEach((node) => {
+    node.hidden = !levelClean;
+  });
+  if (levelBudgetBox) levelBudgetBox.hidden = !levelClean;
   budgetText.textContent = state.sandbox ? text.infiniteMoney : `${text.budget} ${state.budget}`;
+  if (levelBudgetLabel) levelBudgetLabel.textContent = text.budget;
+  if (levelBudgetText) levelBudgetText.textContent = state.budget;
+  if (state.pendingRewardChoices.length) renderRewardModal();
   blueCount.textContent = state.units.filter((unit) => unit.team === "blue" && !unit.dead).length;
   redCount.textContent = state.units.filter((unit) => unit.team === "red" && !unit.dead).length;
   const labels = { setup: text.setup, battle: text.fight, paused: text.paused, ended: text.ended };
@@ -6990,6 +7963,7 @@ function updateUi() {
   wallToolBtn.classList.toggle("active", state.mapTool === "wall");
   thickWallToolBtn.classList.toggle("active", state.mapTool === "thickWall");
   arrowWallToolBtn.classList.toggle("active", state.mapTool === "arrowWall");
+  unbreakableWallToolBtn.classList.toggle("active", state.mapTool === "unbreakableWall");
   waterToolBtn.classList.toggle("active", state.mapTool === "water");
   fireTerrainToolBtn.classList.toggle("active", state.mapTool === "fire");
   grassToolBtn.classList.toggle("active", state.mapTool === "grass");
@@ -7001,6 +7975,7 @@ function updateUi() {
   wallToolBtn.disabled = state.phase !== "setup";
   thickWallToolBtn.disabled = state.phase !== "setup";
   arrowWallToolBtn.disabled = state.phase !== "setup";
+  unbreakableWallToolBtn.disabled = state.phase !== "setup";
   waterToolBtn.disabled = state.phase !== "setup";
   fireTerrainToolBtn.disabled = state.phase !== "setup";
   grassToolBtn.disabled = state.phase !== "setup";
@@ -7018,6 +7993,7 @@ function updateUi() {
   sandboxToggle.checked = state.sandbox;
   sandboxToggle.disabled = state.challengeMode;
   if (exitChallengeBtn) exitChallengeBtn.disabled = !state.challengeMode;
+  updateLevelUi();
   if (battlefieldWrap) battlefieldWrap.classList.toggle("item-aiming", state.phase === "battle" && Boolean(state.selectedItem));
   if (itemsTitle) itemsTitle.textContent = text.items;
   for (const button of itemButtons) {
@@ -7025,10 +8001,11 @@ function updateUi() {
     const item = itemTypes[itemId];
     if (!item) continue;
     const name = text.itemNames[itemId] || itemId;
+    const lockedByLevel = !isItemAllowedInCurrentMode(itemId);
     button.classList.toggle("selected", state.selectedItem === itemId);
-    button.classList.toggle("locked", state.phase !== "battle");
+    button.classList.toggle("locked", state.phase !== "battle" || lockedByLevel);
     button.disabled = false;
-    button.innerHTML = `<b>${name}</b><small>${item.cost} ${text.budget}</small>`;
+    button.innerHTML = `<b>${name}</b><small>${lockedByLevel ? "LOCK" : `${item.cost} ${text.budget}`}</small>`;
   }
   const cancelButton = itemBar?.querySelector("[data-item-cancel]");
   if (cancelButton) {
@@ -7084,14 +8061,19 @@ function renderUnitList() {
     for (const type of pack.types) {
       const display = displayType(type);
       const level = state.upgrades[type.id] || 0;
+      const lockedForLevel = !isUnitAllowedInCurrentLevel(type);
       const button = document.createElement("button");
-      button.className = `unit-card ${state.selected === type.id ? "selected" : ""}`;
+      button.className = `unit-card ${state.selected === type.id ? "selected" : ""} ${lockedForLevel ? "locked" : ""}`;
       button.innerHTML = `
         <span class="icon">${level ? `${type.glyph}+${level}` : type.glyph}</span>
         <span><b>${display.name}</b><small>${display.tag}</small></span>
-        <span class="price">${type.price}</span>
+        <span class="price">${lockedForLevel ? "LOCK" : type.price}</span>
       `;
       button.addEventListener("click", () => {
+        if (lockedForLevel) {
+          setToast(levelBanMessage(type));
+          return;
+        }
         state.selected = type.id;
         eraseBtn.textContent = text.erase;
         renderUnitList();
@@ -7280,10 +8262,15 @@ window.addEventListener("keyup", (event) => {
 startBtn.addEventListener("click", startBattle);
 pauseBtn.addEventListener("click", pauseBattle);
 resetBtn.addEventListener("click", () => resetGame(false));
+sandboxModeBtn?.addEventListener("click", enterSandboxMode);
+levelsModeBtn?.addEventListener("click", enterLevelsMode);
+homeBtn?.addEventListener("click", showHome);
 randomBtn.addEventListener("click", randomFormation);
 exportFormationBtn?.addEventListener("click", exportFormation);
 importFormationBtn?.addEventListener("click", importFormation);
 exitChallengeBtn?.addEventListener("click", exitChallengeMode);
+loadLevelBtn?.addEventListener("click", () => loadLevel(Number(levelSelect?.value) || 1));
+levelSelect?.addEventListener("change", updateLevelUi);
 saveSlotBtns.forEach((button, index) => button?.addEventListener("click", () => saveFormationSlot(index + 1)));
 loadSlotBtns.forEach((button, index) => button?.addEventListener("click", () => loadFormationSlot(index + 1)));
 upgradeSelectedBtn?.addEventListener("click", upgradeSelectedUnitType);
@@ -7326,6 +8313,15 @@ arrowWallToolBtn.addEventListener("click", () => {
   state.selectedItem = null;
   updateUi();
   setToast(state.mapTool === "arrowWall" ? (state.language === "zh" ? "点一下起点，再点一下终点放透射墙" : "Click a start point, then an end point for an arrow wall") : (state.language === "zh" ? "透射墙工具关闭" : "Arrow wall tool off"));
+});
+unbreakableWallToolBtn.addEventListener("click", () => {
+  if (state.phase !== "setup") return;
+  state.mapTool = state.mapTool === "unbreakableWall" ? null : "unbreakableWall";
+  state.wallStart = null;
+  state.pointer = null;
+  state.selectedItem = null;
+  updateUi();
+  setToast(state.mapTool === "unbreakableWall" ? (state.language === "zh" ? "点一下起点，再点一下终点放不可破坏墙" : "Click a start point, then an end point for an unbreakable wall") : (state.language === "zh" ? "不可破坏墙工具关闭" : "Unbreakable wall tool off"));
 });
 [
   [waterToolBtn, "water"],
@@ -7408,6 +8404,15 @@ if (itemBar) {
     selectItem(button.dataset.item);
   });
 }
+if (rewardCards) {
+  rewardCards.addEventListener("pointerdown", (event) => {
+    const button = event.target.closest("[data-reward-id]");
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    chooseRewardCard(button.dataset.rewardId);
+  });
+}
 eraseBtn.addEventListener("click", () => {
   state.selected = state.selected === "erase" ? unitTypes[0].id : "erase";
   renderUnitList();
@@ -7435,6 +8440,12 @@ sandboxToggle.addEventListener("change", () => {
     return;
   }
   state.sandbox = sandboxToggle.checked;
+  if (state.sandbox) {
+    state.challengeMode = false;
+    state.levelMode = false;
+    state.currentLevel = 0;
+    document.body.dataset.mode = "sandbox";
+  }
   state.placeTeam = state.sandbox ? state.placeTeam : "blue";
   if (state.sandbox) {
     setToast("Sandbox on: infinite gold, red and blue placement enabled");
@@ -7492,7 +8503,15 @@ function loop(now) {
 }
 
 renderUnitList();
+renderLevelSelect();
 spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
+
+
+
+
+
+
