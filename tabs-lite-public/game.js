@@ -200,8 +200,9 @@ const UNIT_PACK_2_IDS = new Set([
 
 const PLANT_TYPE_IDS = new Set(["sunflower", "peashooter", "repeater", "gatlingshooter", "chomper"]);
 const PVZ_GRID = { left: 90, right: 560, top: 72, bottom: 696, cols: 5, rows: 9 };
-const PVZ_START_UNLOCKED_CELLS = 18;
-const PVZ_EMPTY_CELL_COST = 100;
+const PVZ_START_UNLOCKED_CELLS = 9;
+const PVZ_EMPTY_CELL_COST = 150;
+const PVZ_CELLS_PER_PURCHASE = 3;
 const PVZ_ZOMBIES = ["zombie", "coneheadzombie", "bucketzombie", "footballzombie"];
 
 const buildingTypes = {
@@ -6716,19 +6717,24 @@ function drawPvzGrid() {
   if (!isPvzMode()) return;
   const size = pvzCellSize();
   ctx.save();
-  ctx.fillStyle = "rgba(120, 224, 132, 0.12)";
-  for (let row = 0; row < PVZ_GRID.rows; row += 1) {
-    if (row % 2 === 0) ctx.fillRect(PVZ_GRID.left, PVZ_GRID.top + row * size.h, PVZ_GRID.right - PVZ_GRID.left, size.h);
-  }
   for (let row = 0; row < PVZ_GRID.rows; row += 1) {
     for (let col = 0; col < PVZ_GRID.cols; col += 1) {
-      if (pvzCellUnlocked(col, row)) continue;
-      ctx.fillStyle = "rgba(8, 12, 13, 0.58)";
-      ctx.fillRect(PVZ_GRID.left + col * size.w + 3, PVZ_GRID.top + row * size.h + 3, size.w - 6, size.h - 6);
-      ctx.fillStyle = "rgba(255, 244, 173, 0.62)";
-      ctx.font = "700 13px Inter, Arial";
+      const x = PVZ_GRID.left + col * size.w;
+      const y = PVZ_GRID.top + row * size.h;
+      if (pvzCellUnlocked(col, row)) {
+        ctx.fillStyle = row % 2 === 0 ? "rgba(117, 226, 123, 0.24)" : "rgba(86, 193, 103, 0.2)";
+        ctx.fillRect(x + 3, y + 3, size.w - 6, size.h - 6);
+        continue;
+      }
+      ctx.fillStyle = "rgba(3, 6, 7, 0.78)";
+      ctx.fillRect(x + 3, y + 3, size.w - 6, size.h - 6);
+      ctx.strokeStyle = "rgba(255, 105, 105, 0.42)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 8, y + 8, size.w - 16, size.h - 16);
+      ctx.fillStyle = "rgba(255, 244, 173, 0.82)";
+      ctx.font = "800 13px Inter, Arial";
       ctx.textAlign = "center";
-      ctx.fillText(state.language === "zh" ? "未买" : "LOCK", PVZ_GRID.left + (col + 0.5) * size.w, PVZ_GRID.top + (row + 0.55) * size.h);
+      ctx.fillText(state.language === "zh" ? "未买" : "LOCK", x + size.w / 2, y + size.h * 0.56);
     }
   }
   ctx.strokeStyle = "rgba(198, 255, 158, 0.9)";
@@ -8324,8 +8330,9 @@ function updateUi() {
   }
   if (pvzBuySlotBtn) {
     const maxCells = pvzMaxCells();
-    pvzBuySlotBtn.textContent = state.language === "zh" ? `购买空格 ${PVZ_EMPTY_CELL_COST}` : `Buy Empty Cell ${PVZ_EMPTY_CELL_COST}`;
-    pvzBuySlotBtn.disabled = !pvzClean || state.phase === "battle" || (state.pvzUnlockedCells || 0) >= maxCells;
+    const allUnlocked = (state.pvzUnlockedCells || 0) >= maxCells;
+    pvzBuySlotBtn.textContent = allUnlocked ? (state.language === "zh" ? "空格已满" : "All Cells") : (state.language === "zh" ? `购买空格 x${PVZ_CELLS_PER_PURCHASE} ${PVZ_EMPTY_CELL_COST}` : `Buy Cells x${PVZ_CELLS_PER_PURCHASE} ${PVZ_EMPTY_CELL_COST}`);
+    pvzBuySlotBtn.disabled = !pvzClean || allUnlocked;
   }
   if (pvzSlotInfo) {
     const maxCells = pvzMaxCells();
@@ -8548,6 +8555,14 @@ canvas.addEventListener("pointerdown", (event) => {
   }
   if (state.phase !== "setup") return;
   const existing = nearestUnit(point, state.sandbox ? null : "blue");
+  if (isPvzMode()) {
+    if (existing && existing.team === "blue" && isPlantType(typeById(existing.typeId)) && Math.hypot(existing.x - point.x, existing.y - point.y) <= existing.radius + 18) {
+      setToast(state.language === "zh" ? "PvZ 里植物不能拖动，要删除请用铲子" : "Plants cannot be dragged in PvZ. Use the shovel to remove them.");
+      return;
+    }
+    placePlayerUnit(point);
+    return;
+  }
   if (existing) {
     if (state.selected === "erase") {
       removeUnit(existing);
@@ -8561,7 +8576,6 @@ canvas.addEventListener("pointerdown", (event) => {
   if (state.selected === "erase") return;
   placePlayerUnit(point);
 });
-
 canvas.addEventListener("pointermove", (event) => {
   state.pointer = worldPoint(event);
   if (isWallBuildTool() && state.wallStart) return;
@@ -8916,6 +8930,10 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
+
+
+
 
 
 
