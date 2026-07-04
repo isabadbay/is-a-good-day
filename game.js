@@ -9,6 +9,10 @@ const levelsModeBtn = document.querySelector("#levelsModeBtn");
 const pvzModeBtn = document.querySelector("#pvzModeBtn");
 const pvzTools = document.querySelector("#pvzTools");
 const pvzShovelBtn = document.querySelector("#pvzShovelBtn");
+const pvzBuyCountInput = document.querySelector("#pvzBuyCount");
+const pvzBuyCountLabel = document.querySelector("#pvzBuyCountLabel");
+const pvzBuySlotBtn = document.querySelector("#pvzBuySlotBtn");
+const pvzSlotInfo = document.querySelector("#pvzSlotInfo");
 const homeBtn = document.querySelector("#homeBtn");
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
@@ -196,6 +200,8 @@ const UNIT_PACK_2_IDS = new Set([
 
 const PLANT_TYPE_IDS = new Set(["sunflower", "peashooter", "repeater", "gatlingshooter", "chomper"]);
 const PVZ_GRID = { left: 90, right: 560, top: 72, bottom: 696, cols: 5, rows: 9 };
+const PVZ_START_UNLOCKED_CELLS = 18;
+const PVZ_EMPTY_CELL_COST = 100;
 const PVZ_ZOMBIES = ["zombie", "coneheadzombie", "bucketzombie", "footballzombie"];
 
 const buildingTypes = {
@@ -2099,6 +2105,7 @@ const state = {
   pvzWave: 0,
   pvzNextWaveTimer: 0,
   pvzShovel: false,
+  pvzUnlockedCells: PVZ_START_UNLOCKED_CELLS,
   challengeMode: false,
   challengeBudget: 0,
   levelMode: false,
@@ -2139,6 +2146,13 @@ function isPvzMode() {
 function pvzPlantCost(type) {
   return Math.ceil((type?.price || 0) * 9);
 }
+function pvzBuyCountValue() {
+  const raw = Number(pvzBuyCountInput?.value) || 9;
+  const value = Math.max(1, Math.min(15, Math.floor(raw)));
+  if (pvzBuyCountInput && Number(pvzBuyCountInput.value) !== value) pvzBuyCountInput.value = String(value);
+  return value;
+}
+
 
 function pvzCellSize() {
   return {
@@ -2162,6 +2176,37 @@ function pvzCellCenter(col, row) {
     y: PVZ_GRID.top + (row + 0.5) * size.h,
   };
 }
+function pvzCellIndex(col, row) {
+  return col * PVZ_GRID.rows + row;
+}
+
+function pvzMaxCells() {
+  return PVZ_GRID.cols * PVZ_GRID.rows;
+}
+
+function pvzCellUnlocked(col, row) {
+  return pvzCellIndex(col, row) < Math.max(0, Math.min(pvzMaxCells(), state.pvzUnlockedCells || 0));
+}
+
+function buyPvzEmptyCell() {
+  if (!isPvzMode()) return;
+  const maxCells = pvzMaxCells();
+  state.pvzUnlockedCells = Math.max(PVZ_START_UNLOCKED_CELLS, Math.min(maxCells, state.pvzUnlockedCells || PVZ_START_UNLOCKED_CELLS));
+  if (state.pvzUnlockedCells >= maxCells) {
+    setToast(state.language === "zh" ? "所有空格都已经解锁了" : "All cells are already unlocked");
+    updateUi();
+    return;
+  }
+  if (state.budget < PVZ_EMPTY_CELL_COST) {
+    setToast(state.language === "zh" ? `金币不够，需要 ${PVZ_EMPTY_CELL_COST}` : `Not enough gold: need ${PVZ_EMPTY_CELL_COST}`);
+    return;
+  }
+  state.budget -= PVZ_EMPTY_CELL_COST;
+  state.pvzUnlockedCells += 1;
+  setToast(state.language === "zh" ? `购买空格 -${PVZ_EMPTY_CELL_COST}` : `Empty cell bought -${PVZ_EMPTY_CELL_COST}`);
+  updateUi();
+}
+
 
 function pvzCellOccupied(col, row) {
   const center = pvzCellCenter(col, row);
@@ -2201,32 +2246,39 @@ function placePvzPlantBlock(point) {
     setToast(state.language === "zh" ? "只能放在植物格子里" : "Place plants on grid cells only");
     return;
   }
-  const cost = pvzPlantCost(type);
-  if (state.budget < cost) {
-    setToast(state.language === "zh" ? `金币不够，需要 ${cost}` : `Not enough gold: need ${cost}`);
+  const buyCount = pvzBuyCountValue();
+  const spots = [];
+  for (let row = 0; row < PVZ_GRID.rows; row += 1) {
+    for (let col = 0; col < PVZ_GRID.cols; col += 1) {
+      if (!pvzCellUnlocked(col, row)) continue;
+      if (pvzCellOccupied(col, row)) continue;
+      const center = pvzCellCenter(col, row);
+      const dist = Math.abs(col - cell.col) + Math.abs(row - cell.row) + Math.hypot(col - cell.col, row - cell.row) * 0.01;
+      spots.push({ ...center, dist });
+    }
+  }
+  spots.sort((a, b) => a.dist - b.dist || a.y - b.y || a.x - b.x);
+  const chosenSpots = spots.slice(0, buyCount);
+  if (chosenSpots.length <= 0) {
+    setToast(state.language === "zh" ? "附近格子已经满了" : "Nearby cells are full");
+    return;
+  }
+  const unitCost = type.price || 0;
+  const affordable = unitCost <= 0 ? chosenSpots.length : Math.min(chosenSpots.length, Math.floor(state.budget / unitCost));
+  if (affordable <= 0) {
+    setToast(state.language === "zh" ? `金币不够，需要 ${unitCost}` : `Not enough gold: need ${unitCost}`);
     return;
   }
   let placed = 0;
-  for (let dy = -1; dy <= 1; dy += 1) {
-    for (let dx = -1; dx <= 1; dx += 1) {
-      const col = cell.col + dx;
-      const row = cell.row + dy;
-      if (col < 0 || col >= PVZ_GRID.cols || row < 0 || row >= PVZ_GRID.rows) continue;
-      if (pvzCellOccupied(col, row)) continue;
-      const center = pvzCellCenter(col, row);
-      addUnit(type.id, "blue", center.x, center.y);
-      placed += 1;
-    }
+  for (const center of chosenSpots.slice(0, affordable)) {
+    addUnit(type.id, "blue", center.x, center.y);
+    placed += 1;
   }
-  if (placed <= 0) {
-    setToast(state.language === "zh" ? "这 3x3 格已经满了" : "This 3x3 area is already full");
-    return;
-  }
+  const cost = unitCost * placed;
   state.budget -= cost;
   updateUi();
   setToast(state.language === "zh" ? `${type.name} x${placed} -${cost}` : `${type.name} x${placed} -${cost}`);
 }
-
 function resetPvzEndless() {
   state.phase = "setup";
   state.sandbox = false;
@@ -6668,6 +6720,17 @@ function drawPvzGrid() {
   for (let row = 0; row < PVZ_GRID.rows; row += 1) {
     if (row % 2 === 0) ctx.fillRect(PVZ_GRID.left, PVZ_GRID.top + row * size.h, PVZ_GRID.right - PVZ_GRID.left, size.h);
   }
+  for (let row = 0; row < PVZ_GRID.rows; row += 1) {
+    for (let col = 0; col < PVZ_GRID.cols; col += 1) {
+      if (pvzCellUnlocked(col, row)) continue;
+      ctx.fillStyle = "rgba(8, 12, 13, 0.58)";
+      ctx.fillRect(PVZ_GRID.left + col * size.w + 3, PVZ_GRID.top + row * size.h + 3, size.w - 6, size.h - 6);
+      ctx.fillStyle = "rgba(255, 244, 173, 0.62)";
+      ctx.font = "700 13px Inter, Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(state.language === "zh" ? "未买" : "LOCK", PVZ_GRID.left + (col + 0.5) * size.w, PVZ_GRID.top + (row + 0.55) * size.h);
+    }
+  }
   ctx.strokeStyle = "rgba(198, 255, 158, 0.9)";
   ctx.lineWidth = 3;
   for (let col = 0; col <= PVZ_GRID.cols; col += 1) {
@@ -6687,7 +6750,7 @@ function drawPvzGrid() {
   ctx.fillStyle = "rgba(255, 244, 173, 0.92)";
   ctx.font = "700 18px Inter, Arial";
   ctx.textAlign = "center";
-  ctx.fillText(state.language === "zh" ? "植物格子：一次放 3x3" : "Plant grid: place 3x3", (PVZ_GRID.left + PVZ_GRID.right) / 2, PVZ_GRID.top - 18);
+  ctx.fillText(state.language === "zh" ? "植物格子：按数量放置" : "Plant grid: place by count", (PVZ_GRID.left + PVZ_GRID.right) / 2, PVZ_GRID.top - 18);
   ctx.fillText(state.language === "zh" ? "僵尸从这里来" : "Zombies enter here", PVZ_GRID.right + (canvas.width - PVZ_GRID.right) / 2, PVZ_GRID.top - 18);
   ctx.restore();
 }
@@ -8254,6 +8317,21 @@ function updateUi() {
     pvzShovelBtn.classList.toggle("active", pvzClean && state.pvzShovel);
     pvzShovelBtn.textContent = state.language === "zh" ? "铲子" : "Shovel";
   }
+  if (pvzBuyCountLabel) pvzBuyCountLabel.textContent = state.language === "zh" ? "放置植物数量" : "Plant Count";
+  if (pvzBuyCountInput) {
+    pvzBuyCountInput.max = "15";
+    pvzBuyCountValue();
+  }
+  if (pvzBuySlotBtn) {
+    const maxCells = pvzMaxCells();
+    pvzBuySlotBtn.textContent = state.language === "zh" ? `购买空格 ${PVZ_EMPTY_CELL_COST}` : `Buy Empty Cell ${PVZ_EMPTY_CELL_COST}`;
+    pvzBuySlotBtn.disabled = !pvzClean || state.phase === "battle" || (state.pvzUnlockedCells || 0) >= maxCells;
+  }
+  if (pvzSlotInfo) {
+    const maxCells = pvzMaxCells();
+    const unlocked = Math.max(0, Math.min(maxCells, state.pvzUnlockedCells || 0));
+    pvzSlotInfo.textContent = state.language === "zh" ? `已解锁 ${unlocked}/${maxCells}` : `Unlocked ${unlocked}/${maxCells}`;
+  }
   if (levelBudgetBox) levelBudgetBox.hidden = !levelClean;
   budgetText.textContent = state.sandbox ? text.infiniteMoney : isPvzMode() ? `${text.budget} ${state.budget} | ${state.language === "zh" ? "波数" : "Wave"} ${state.pvzWave}` : `${text.budget} ${state.budget}`;
   if (levelBudgetLabel) levelBudgetLabel.textContent = text.budget;
@@ -8585,6 +8663,7 @@ resetBtn.addEventListener("click", () => {
 sandboxModeBtn?.addEventListener("click", enterSandboxMode);
 levelsModeBtn?.addEventListener("click", enterLevelsMode);
 pvzModeBtn?.addEventListener("click", enterPvzMode);
+pvzBuySlotBtn?.addEventListener("click", buyPvzEmptyCell);
 pvzShovelBtn?.addEventListener("click", () => {
   if (!isPvzMode()) return;
   state.pvzShovel = !state.pvzShovel;
@@ -8837,6 +8916,10 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
+
+
+
 
 
 
