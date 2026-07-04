@@ -6,6 +6,7 @@ const homeScreen = document.querySelector("#homeScreen");
 const appShell = document.querySelector("#appShell");
 const sandboxModeBtn = document.querySelector("#sandboxModeBtn");
 const levelsModeBtn = document.querySelector("#levelsModeBtn");
+const pvzModeBtn = document.querySelector("#pvzModeBtn");
 const homeBtn = document.querySelector("#homeBtn");
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
@@ -192,6 +193,8 @@ const UNIT_PACK_2_IDS = new Set([
 ]);
 
 const PLANT_TYPE_IDS = new Set(["sunflower", "peashooter", "repeater", "gatlingshooter", "chomper"]);
+const PVZ_GRID = { left: 90, right: 560, top: 72, bottom: 696, cols: 5, rows: 9 };
+const PVZ_ZOMBIES = ["zombie", "coneheadzombie", "bucketzombie", "footballzombie"];
 
 const buildingTypes = {
   arrowTower: { name: "Arrow Tower", zh: "箭塔", cost: 360, hp: 100, w: 42, h: 42, range: 180, cooldown: 0.2, damage: 10 },
@@ -448,6 +451,8 @@ const translations = {
     sandboxModeDesc: "无限金币，可以放红队和蓝队，测试自定义兵种、建筑和Boss。",
     levelsModeTitle: "关卡",
     levelsModeDesc: "用有限金币挑战固定敌军，赢了就解锁下一关。",
+    pvzModeTitle: "植物无尽",
+    pvzModeDesc: "只能使用植物，按格子一次放 9 个，对抗越来越多的僵尸。",
     start: "开战",
     pause: "暂停",
     reset: "重置",
@@ -693,6 +698,8 @@ const translations = {
     sandboxModeDesc: "Infinite gold, place red and blue units, and test custom units, buildings, and bosses.",
     levelsModeTitle: "Levels",
     levelsModeDesc: "Use limited gold against fixed enemy levels and unlock the next challenge.",
+    pvzModeTitle: "PvZ Endless",
+    pvzModeDesc: "Use plants only, place 9 at a time on grid cells, and survive endless zombie waves.",
     start: "Start",
     pause: "Pause",
     reset: "Reset",
@@ -945,6 +952,8 @@ function applyLanguage(lang) {
   setText("#sandboxModeDesc", text.sandboxModeDesc);
   setText("#levelsModeTitle", text.levelsModeTitle);
   setText("#levelsModeDesc", text.levelsModeDesc);
+  setText("#pvzModeTitle", text.pvzModeTitle);
+  setText("#pvzModeDesc", text.pvzModeDesc);
   if (homeBtn) homeBtn.textContent = text.home;
   startBtn.textContent = text.start;
   pauseBtn.textContent = text.pause;
@@ -2084,6 +2093,9 @@ const state = {
   placeTeam: "blue",
   sandbox: false,
   plantMode: false,
+  pvzMode: false,
+  pvzWave: 0,
+  pvzNextWaveTimer: 0,
   challengeMode: false,
   challengeBudget: 0,
   levelMode: false,
@@ -2117,6 +2129,158 @@ const state = {
   winnerShown: false,
 };
 
+function isPvzMode() {
+  return Boolean(state.pvzMode);
+}
+
+function pvzPlantCost(type) {
+  return Math.ceil((type?.price || 0) * 9);
+}
+
+function pvzCellSize() {
+  return {
+    w: (PVZ_GRID.right - PVZ_GRID.left) / PVZ_GRID.cols,
+    h: (PVZ_GRID.bottom - PVZ_GRID.top) / PVZ_GRID.rows,
+  };
+}
+
+function pvzCellForPoint(point) {
+  const size = pvzCellSize();
+  const col = Math.floor((point.x - PVZ_GRID.left) / size.w);
+  const row = Math.floor((point.y - PVZ_GRID.top) / size.h);
+  if (col < 0 || col >= PVZ_GRID.cols || row < 0 || row >= PVZ_GRID.rows) return null;
+  return { col, row };
+}
+
+function pvzCellCenter(col, row) {
+  const size = pvzCellSize();
+  return {
+    x: PVZ_GRID.left + (col + 0.5) * size.w,
+    y: PVZ_GRID.top + (row + 0.5) * size.h,
+  };
+}
+
+function pvzCellOccupied(col, row) {
+  const center = pvzCellCenter(col, row);
+  return state.units.some((unit) => !unit.dead && unit.team === "blue" && Math.abs(unit.x - center.x) < 24 && Math.abs(unit.y - center.y) < 24);
+}
+
+function placePvzPlantBlock(point) {
+  const type = typeById(state.selected);
+  if (!type || !isPlantType(type)) {
+    setToast(state.language === "zh" ? "植物无尽只能选择植物" : "PvZ Endless only uses plants");
+    return;
+  }
+  const cell = pvzCellForPoint(point);
+  if (!cell) {
+    setToast(state.language === "zh" ? "只能放在植物格子里" : "Place plants on grid cells only");
+    return;
+  }
+  const cost = pvzPlantCost(type);
+  if (state.budget < cost) {
+    setToast(state.language === "zh" ? `金币不够，需要 ${cost}` : `Not enough gold: need ${cost}`);
+    return;
+  }
+  let placed = 0;
+  for (let dy = -1; dy <= 1; dy += 1) {
+    for (let dx = -1; dx <= 1; dx += 1) {
+      const col = cell.col + dx;
+      const row = cell.row + dy;
+      if (col < 0 || col >= PVZ_GRID.cols || row < 0 || row >= PVZ_GRID.rows) continue;
+      if (pvzCellOccupied(col, row)) continue;
+      const center = pvzCellCenter(col, row);
+      addUnit(type.id, "blue", center.x, center.y);
+      placed += 1;
+    }
+  }
+  if (placed <= 0) {
+    setToast(state.language === "zh" ? "这 3x3 格已经满了" : "This 3x3 area is already full");
+    return;
+  }
+  state.budget -= cost;
+  updateUi();
+  setToast(state.language === "zh" ? `${type.name} x${placed} -${cost}` : `${type.name} x${placed} -${cost}`);
+}
+
+function resetPvzEndless() {
+  state.phase = "setup";
+  state.sandbox = false;
+  state.plantMode = true;
+  state.pvzMode = true;
+  state.pvzWave = 0;
+  state.pvzNextWaveTimer = 0;
+  state.challengeMode = false;
+  state.challengeBudget = 0;
+  state.levelMode = false;
+  state.currentLevel = 0;
+  state.placeTeam = "blue";
+  state.selected = PLANT_TYPE_IDS.has(state.selected) ? state.selected : "peashooter";
+  state.budget = 1800;
+  state.units = [];
+  state.projectiles = [];
+  state.particles = [];
+  state.slimes = [];
+  state.tornadoes = [];
+  state.walls = [];
+  state.terrains = [];
+  state.battleStats = null;
+  state.commands = { blue: null, red: null };
+  state.focusTargets = { blue: null, red: null };
+  state.controlledId = null;
+  state.controlKeys = {};
+  state.controlSpecialIndex = 0;
+  state.controlBuildMode = false;
+  state.dragging = null;
+  state.wallStart = null;
+  state.pointer = null;
+  state.mapTool = null;
+  state.selectedItem = null;
+  state.winnerShown = false;
+}
+
+function enterPvzMode() {
+  showGame();
+  document.body.dataset.mode = "pvz";
+  resetPvzEndless();
+  renderUnitList();
+  updateUi();
+  setToast(state.language === "zh" ? "植物无尽：点格子一次购买 9 个植物" : "PvZ Endless: click a grid cell to buy 9 plants");
+}
+
+function spawnPvzWave() {
+  state.pvzWave += 1;
+  const wave = state.pvzWave;
+  const typeId = wave >= 12 && Math.random() < 0.28 ? "giantzombie" : PVZ_ZOMBIES[Math.min(PVZ_ZOMBIES.length - 1, Math.floor((wave - 1) / 3 + Math.random() * 2))];
+  const groups = Math.max(1, Math.floor(1 + wave / 3));
+  const count = Math.min(9 * groups, 9 + wave * 3);
+  const rows = 9;
+  for (let i = 0; i < count; i += 1) {
+    const row = i % rows;
+    const laneOffset = Math.floor(i / rows);
+    const center = pvzCellCenter(PVZ_GRID.cols - 1, row);
+    const unit = addUnit(typeId, "red", canvas.width - 36 - laneOffset * 34, center.y);
+    if (!unit) continue;
+    const scale = 1 + Math.max(0, wave - 1) * 0.08;
+    unit.maxHp *= scale;
+    unit.hp = unit.maxHp;
+    unit.damage *= 1 + Math.max(0, wave - 1) * 0.045;
+    unit.speed *= 1 + Math.min(0.8, wave * 0.018);
+  }
+  state.pvzNextWaveTimer = 4.5;
+  setToast(state.language === "zh" ? `第 ${wave} 波：${count} 个僵尸` : `Wave ${wave}: ${count} zombies`);
+}
+
+function updatePvzEndless(dt) {
+  if (!isPvzMode() || state.phase !== "battle") return;
+  const blueAlive = state.units.some((unit) => unit.team === "blue" && !unit.dead);
+  if (!blueAlive) return;
+  const redAlive = state.units.some((unit) => unit.team === "red" && !unit.dead);
+  if (redAlive) return;
+  state.pvzNextWaveTimer -= dt;
+  if (state.pvzNextWaveTimer <= 0) {
+    spawnPvzWave();
+  }
+}
 function typeById(id) {
   return unitTypes.find((type) => type.id === id);
 }
@@ -2963,6 +3127,10 @@ function batchOffsets(count, spacing) {
 }
 
 function placePlayerUnit(point) {
+  if (isPvzMode()) {
+    placePvzPlantBlock(point);
+    return;
+  }
   const type = typeById(state.selected);
   if (!type) return;
   if (state.challengeMode && type.id === "sunflower") {
@@ -3314,6 +3482,9 @@ function importFormation() {
     state.selectedItem = null;
     state.winnerShown = false;
     state.plantMode = false;
+  state.pvzMode = false;
+  state.pvzWave = 0;
+  state.pvzNextWaveTimer = 0;
     state.challengeMode = true;
     state.challengeBudget = 0;
     ensureImportedCustomTypes(payload.customTypes || []);
@@ -4464,6 +4635,9 @@ function resetBattlefieldForLevel(level) {
   state.phase = "setup";
   state.sandbox = false;
   state.plantMode = false;
+  state.pvzMode = false;
+  state.pvzWave = 0;
+  state.pvzNextWaveTimer = 0;
   state.challengeMode = true;
   state.levelMode = true;
   state.currentLevel = level.number;
@@ -4684,6 +4858,9 @@ function resetGame(keepEnemies = false) {
   state.commands = { blue: null, red: null };
   state.focusTargets = { blue: null, red: null };
   state.plantMode = false;
+  state.pvzMode = false;
+  state.pvzWave = 0;
+  state.pvzNextWaveTimer = 0;
   state.challengeMode = false;
   state.challengeBudget = 0;
   state.levelMode = false;
@@ -4784,6 +4961,21 @@ function startBattle() {
     setToast("Place some blue units first");
     return;
   }
+  if (isPvzMode()) {
+    state.commands = { blue: null, red: null };
+    state.focusTargets = { blue: null, red: null };
+    for (const unit of state.units) {
+      unit.statsDamage = 0;
+      unit.statsKills = 0;
+    }
+    state.battleStats = null;
+    state.plantMode = true;
+    state.winnerShown = false;
+    setPhase("battle");
+    if (!state.units.some((unit) => unit.team === "red" && !unit.dead)) spawnPvzWave();
+    setToast(state.language === "zh" ? `植物无尽开始：第 ${state.pvzWave} 波` : `PvZ Endless started: Wave ${state.pvzWave}`);
+    return;
+  }
   if (!state.units.some((unit) => unit.team === "red") && !state.challengeMode) {
     spawnEnemyArmy();
   }
@@ -4800,14 +4992,13 @@ function startBattle() {
   state.battleStats = null;
   state.plantMode =
     !state.challengeMode && (state.selected === "sunflower" || state.units.some((unit) => unit.team === "blue" && unit.typeId === "sunflower"));
-  if (state.plantMode && !state.sandbox) {
+  if (state.plantMode && !state.sandbox && !isPvzMode()) {
     state.budget = 0;
   }
   state.winnerShown = false;
   setPhase("battle");
   setToast(state.plantMode ? "Plant mode: gold starts at 0, sunflowers produce 50 gold every 5s" : "Battle started");
 }
-
 function pauseBattle() {
   if (state.phase === "battle") {
     setPhase("paused");
@@ -6303,6 +6494,15 @@ function updateTornadoes(dt) {
 
 function checkWinner() {
   if (state.phase !== "battle" || state.winnerShown) return;
+  if (isPvzMode()) {
+    const blueAlive = state.units.some((unit) => unit.team === "blue" && !unit.dead);
+    if (!blueAlive) {
+      state.winnerShown = true;
+      setPhase("ended");
+      setToast(state.language === "zh" ? `僵尸胜利！你坚持到第 ${state.pvzWave} 波` : `Zombies win! You reached wave ${state.pvzWave}`);
+    }
+    return;
+  }
   const blueAlive = state.units.some((unit) => unit.team === "blue" && !unit.dead);
   const redAlive = state.units.some((unit) => unit.team === "red" && !unit.dead);
   if (blueAlive && redAlive) return;
@@ -6362,6 +6562,7 @@ function update(dt) {
     updateProjectiles(scaledDt);
     updateSlimes(scaledDt);
     updateTornadoes(scaledDt);
+    updatePvzEndless(scaledDt);
     checkWinner();
   }
   updateParticles(scaledDt);
@@ -6401,6 +6602,32 @@ function drawGround() {
   ctx.globalAlpha = 1;
 }
 
+function drawPvzGrid() {
+  if (!isPvzMode()) return;
+  const size = pvzCellSize();
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = "#63d28a";
+  ctx.fillRect(PVZ_GRID.left, PVZ_GRID.top, PVZ_GRID.right - PVZ_GRID.left, PVZ_GRID.bottom - PVZ_GRID.top);
+  ctx.globalAlpha = 0.75;
+  ctx.strokeStyle = "rgba(183, 240, 138, 0.75)";
+  ctx.lineWidth = 2;
+  for (let col = 0; col <= PVZ_GRID.cols; col += 1) {
+    const x = PVZ_GRID.left + col * size.w;
+    ctx.beginPath();
+    ctx.moveTo(x, PVZ_GRID.top);
+    ctx.lineTo(x, PVZ_GRID.bottom);
+    ctx.stroke();
+  }
+  for (let row = 0; row <= PVZ_GRID.rows; row += 1) {
+    const y = PVZ_GRID.top + row * size.h;
+    ctx.beginPath();
+    ctx.moveTo(PVZ_GRID.left, y);
+    ctx.lineTo(PVZ_GRID.right, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
 function drawTerrains() {
   for (const terrain of state.terrains) {
     const colors = {
@@ -7942,6 +8169,7 @@ function updateUi() {
   document.body.classList.toggle("level-clean", levelClean);
   if (levelClean) document.body.dataset.mode = "levels";
   else if (state.sandbox) document.body.dataset.mode = "sandbox";
+  else if (isPvzMode()) document.body.dataset.mode = "pvz";
   document
     .querySelectorAll(".level-only-hidden, .roster .panel-title, .roster > .toggle-row, .team-picker, .placement-batch, .share-tools, .map-tools, .enemy-size-row")
     .forEach((node) => {
@@ -7950,8 +8178,11 @@ function updateUi() {
   document.querySelectorAll(".level-tools").forEach((node) => {
     node.hidden = !levelClean;
   });
+  document.querySelectorAll(".share-tools, .map-tools, .team-picker, .placement-batch, .roster > .toggle-row, .custom-builder, .enemy-size-row").forEach((node) => {
+    node.hidden = levelClean || isPvzMode();
+  });
   if (levelBudgetBox) levelBudgetBox.hidden = !levelClean;
-  budgetText.textContent = state.sandbox ? text.infiniteMoney : `${text.budget} ${state.budget}`;
+  budgetText.textContent = state.sandbox ? text.infiniteMoney : isPvzMode() ? `${text.budget} ${state.budget} | ${state.language === "zh" ? "波数" : "Wave"} ${state.pvzWave}` : `${text.budget} ${state.budget}`;
   if (levelBudgetLabel) levelBudgetLabel.textContent = text.budget;
   if (levelBudgetText) levelBudgetText.textContent = state.budget;
   if (state.pendingRewardChoices.length) renderRewardModal();
@@ -8043,7 +8274,9 @@ function updateUi() {
 function renderUnitList() {
   unitList.innerHTML = "";
   const text = translations[state.language] || translations.en;
-  const packs = [
+  const packs = isPvzMode()
+    ? [{ title: state.language === "zh" ? "植物" : "Plants", types: unitTypes.filter((type) => PLANT_TYPE_IDS.has(type.id)) }]
+    : [
     {
       title: state.language === "zh" ? "兵种包 1" : "Unit Pack 1",
       types: unitTypes.filter((type) => type.id !== "arrowtower" && !UNIT_PACK_2_IDS.has(type.id) && !type.id.startsWith("custom-")),
@@ -8068,7 +8301,7 @@ function renderUnitList() {
       button.innerHTML = `
         <span class="icon">${level ? `${type.glyph}+${level}` : type.glyph}</span>
         <span><b>${display.name}</b><small>${display.tag}</small></span>
-        <span class="price">${lockedForLevel ? "LOCK" : type.price}</span>
+        <span class="price">${lockedForLevel ? "LOCK" : isPvzMode() ? pvzPlantCost(type) : type.price}</span>
       `;
       button.addEventListener("click", () => {
         if (lockedForLevel) {
@@ -8262,9 +8495,19 @@ window.addEventListener("keyup", (event) => {
 
 startBtn.addEventListener("click", startBattle);
 pauseBtn.addEventListener("click", pauseBattle);
-resetBtn.addEventListener("click", () => resetGame(false));
+resetBtn.addEventListener("click", () => {
+  if (isPvzMode()) {
+    resetPvzEndless();
+    renderUnitList();
+    updateUi();
+    setToast(state.language === "zh" ? "植物无尽已重置" : "PvZ Endless reset");
+    return;
+  }
+  resetGame(false);
+});
 sandboxModeBtn?.addEventListener("click", enterSandboxMode);
 levelsModeBtn?.addEventListener("click", enterLevelsMode);
+pvzModeBtn?.addEventListener("click", enterPvzMode);
 homeBtn?.addEventListener("click", showHome);
 randomBtn.addEventListener("click", randomFormation);
 exportFormationBtn?.addEventListener("click", exportFormation);
@@ -8509,6 +8752,16 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
+
+
+
+
+
+
+
+
+
 
 
 
