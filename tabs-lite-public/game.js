@@ -7,6 +7,8 @@ const appShell = document.querySelector("#appShell");
 const sandboxModeBtn = document.querySelector("#sandboxModeBtn");
 const levelsModeBtn = document.querySelector("#levelsModeBtn");
 const pvzModeBtn = document.querySelector("#pvzModeBtn");
+const pvzTools = document.querySelector("#pvzTools");
+const pvzShovelBtn = document.querySelector("#pvzShovelBtn");
 const homeBtn = document.querySelector("#homeBtn");
 const battlefieldWrap = document.querySelector(".battlefield-wrap");
 const unitList = document.querySelector("#unitList");
@@ -2096,6 +2098,7 @@ const state = {
   pvzMode: false,
   pvzWave: 0,
   pvzNextWaveTimer: 0,
+  pvzShovel: false,
   challengeMode: false,
   challengeBudget: 0,
   levelMode: false,
@@ -2164,6 +2167,28 @@ function pvzCellOccupied(col, row) {
   const center = pvzCellCenter(col, row);
   return state.units.some((unit) => !unit.dead && unit.team === "blue" && Math.abs(unit.x - center.x) < 24 && Math.abs(unit.y - center.y) < 24);
 }
+function pvzPlantAtCell(col, row) {
+  const center = pvzCellCenter(col, row);
+  return state.units.find((unit) => !unit.dead && unit.team === "blue" && isPlantType(typeById(unit.typeId)) && Math.abs(unit.x - center.x) < 30 && Math.abs(unit.y - center.y) < 30);
+}
+
+function shovelPvzPlant(point) {
+  const cell = pvzCellForPoint(point);
+  if (!cell) {
+    setToast(state.language === "zh" ? "铲子只能点植物格子" : "Use the shovel on plant cells");
+    return;
+  }
+  const plant = pvzPlantAtCell(cell.col, cell.row);
+  if (!plant) {
+    setToast(state.language === "zh" ? "这里没有植物" : "No plant here");
+    return;
+  }
+  removeUnit(plant);
+  state.particles.push({ x: plant.x, y: plant.y, life: 0.45, color: "#b7f08a", size: 22 });
+  setToast(state.language === "zh" ? "植物已铲掉" : "Plant removed");
+  updateUi();
+}
+
 
 function placePvzPlantBlock(point) {
   const type = typeById(state.selected);
@@ -2239,14 +2264,14 @@ function resetPvzEndless() {
 }
 
 function enterPvzMode() {
+  resetPvzEndless();
+  document.body.dataset.mode = "pvz";
   showGame();
   document.body.dataset.mode = "pvz";
-  resetPvzEndless();
   renderUnitList();
   updateUi();
   setToast(state.language === "zh" ? "植物无尽：点格子一次购买 9 个植物" : "PvZ Endless: click a grid cell to buy 9 plants");
 }
-
 function spawnPvzWave() {
   state.pvzWave += 1;
   const wave = state.pvzWave;
@@ -8203,11 +8228,13 @@ function draw() {
 function updateUi() {
   const text = translations[state.language] || translations.zh;
   const levelClean = state.levelMode && !state.sandbox;
+  const pvzClean = isPvzMode();
   appShell?.classList.toggle("level-clean", levelClean);
   document.body.classList.toggle("level-clean", levelClean);
-  if (levelClean) document.body.dataset.mode = "levels";
+  document.body.classList.toggle("pvz-clean", pvzClean);
+  if (pvzClean) document.body.dataset.mode = "pvz";
+  else if (levelClean) document.body.dataset.mode = "levels";
   else if (state.sandbox) document.body.dataset.mode = "sandbox";
-  else if (isPvzMode()) document.body.dataset.mode = "pvz";
   document
     .querySelectorAll(".level-only-hidden, .roster .panel-title, .roster > .toggle-row, .team-picker, .placement-batch, .share-tools, .map-tools, .enemy-size-row")
     .forEach((node) => {
@@ -8217,8 +8244,16 @@ function updateUi() {
     node.hidden = !levelClean;
   });
   document.querySelectorAll(".share-tools, .map-tools, .team-picker, .placement-batch, .roster > .toggle-row, .custom-builder, .enemy-size-row").forEach((node) => {
-    node.hidden = levelClean || isPvzMode();
+    node.hidden = levelClean || pvzClean;
   });
+  document.querySelectorAll(".roster .panel-title").forEach((node) => {
+    node.hidden = false;
+  });
+  if (pvzTools) pvzTools.hidden = !pvzClean;
+  if (pvzShovelBtn) {
+    pvzShovelBtn.classList.toggle("active", pvzClean && state.pvzShovel);
+    pvzShovelBtn.textContent = state.language === "zh" ? "铲子" : "Shovel";
+  }
   if (levelBudgetBox) levelBudgetBox.hidden = !levelClean;
   budgetText.textContent = state.sandbox ? text.infiniteMoney : isPvzMode() ? `${text.budget} ${state.budget} | ${state.language === "zh" ? "波数" : "Wave"} ${state.pvzWave}` : `${text.budget} ${state.budget}`;
   if (levelBudgetLabel) levelBudgetLabel.textContent = text.budget;
@@ -8360,6 +8395,10 @@ function renderUnitList() {
 canvas.addEventListener("pointerdown", (event) => {
   const point = worldPoint(event);
   state.pointer = point;
+  if (isPvzMode() && state.pvzShovel && event.button === 0) {
+    shovelPvzPlant(point);
+    return;
+  }
   if (event.button === 2) {
     event.preventDefault();
     const unit = controlledUnit();
@@ -8546,6 +8585,14 @@ resetBtn.addEventListener("click", () => {
 sandboxModeBtn?.addEventListener("click", enterSandboxMode);
 levelsModeBtn?.addEventListener("click", enterLevelsMode);
 pvzModeBtn?.addEventListener("click", enterPvzMode);
+pvzShovelBtn?.addEventListener("click", () => {
+  if (!isPvzMode()) return;
+  state.pvzShovel = !state.pvzShovel;
+  state.selectedItem = null;
+  state.mapTool = null;
+  updateUi();
+  setToast(state.pvzShovel ? (state.language === "zh" ? "铲子开启：点击植物删除" : "Shovel on: click a plant to remove it") : (state.language === "zh" ? "铲子关闭" : "Shovel off"));
+});
 homeBtn?.addEventListener("click", showHome);
 randomBtn.addEventListener("click", randomFormation);
 exportFormationBtn?.addEventListener("click", exportFormation);
@@ -8790,6 +8837,10 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
+
+
+
 
 
 
