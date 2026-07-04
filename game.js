@@ -6571,6 +6571,40 @@ function update(dt) {
 }
 
 function drawGround() {
+  if (isPvzMode()) {
+    ctx.fillStyle = "#24443a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "rgba(66, 137, 92, 0.34)";
+    ctx.fillRect(PVZ_GRID.left, PVZ_GRID.top, PVZ_GRID.right - PVZ_GRID.left, PVZ_GRID.bottom - PVZ_GRID.top);
+    ctx.fillStyle = "rgba(102, 74, 45, 0.42)";
+    ctx.fillRect(PVZ_GRID.right, 0, canvas.width - PVZ_GRID.right, canvas.height);
+    ctx.fillStyle = "rgba(26, 55, 43, 0.46)";
+    ctx.fillRect(0, 0, PVZ_GRID.left, canvas.height);
+    ctx.strokeStyle = "rgba(247, 233, 157, 0.5)";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([10, 10]);
+    ctx.beginPath();
+    ctx.moveTo(PVZ_GRID.right, 0);
+    ctx.lineTo(PVZ_GRID.right, canvas.height);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 0.16;
+    ctx.strokeStyle = "#f4f0e8";
+    for (let x = 64; x < canvas.width; x += 64) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
+      ctx.stroke();
+    }
+    for (let y = 64; y < canvas.height; y += 64) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    return;
+  }
   ctx.fillStyle = "#394331";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "rgba(77, 163, 255, 0.14)";
@@ -6601,17 +6635,16 @@ function drawGround() {
   }
   ctx.globalAlpha = 1;
 }
-
 function drawPvzGrid() {
   if (!isPvzMode()) return;
   const size = pvzCellSize();
   ctx.save();
-  ctx.globalAlpha = 0.18;
-  ctx.fillStyle = "#63d28a";
-  ctx.fillRect(PVZ_GRID.left, PVZ_GRID.top, PVZ_GRID.right - PVZ_GRID.left, PVZ_GRID.bottom - PVZ_GRID.top);
-  ctx.globalAlpha = 0.75;
-  ctx.strokeStyle = "rgba(183, 240, 138, 0.75)";
-  ctx.lineWidth = 2;
+  ctx.fillStyle = "rgba(120, 224, 132, 0.12)";
+  for (let row = 0; row < PVZ_GRID.rows; row += 1) {
+    if (row % 2 === 0) ctx.fillRect(PVZ_GRID.left, PVZ_GRID.top + row * size.h, PVZ_GRID.right - PVZ_GRID.left, size.h);
+  }
+  ctx.strokeStyle = "rgba(198, 255, 158, 0.9)";
+  ctx.lineWidth = 3;
   for (let col = 0; col <= PVZ_GRID.cols; col += 1) {
     const x = PVZ_GRID.left + col * size.w;
     ctx.beginPath();
@@ -6626,6 +6659,11 @@ function drawPvzGrid() {
     ctx.lineTo(PVZ_GRID.right, y);
     ctx.stroke();
   }
+  ctx.fillStyle = "rgba(255, 244, 173, 0.92)";
+  ctx.font = "700 18px Inter, Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(state.language === "zh" ? "植物格子：一次放 3x3" : "Plant grid: place 3x3", (PVZ_GRID.left + PVZ_GRID.right) / 2, PVZ_GRID.top - 18);
+  ctx.fillText(state.language === "zh" ? "僵尸从这里来" : "Zombies enter here", PVZ_GRID.right + (canvas.width - PVZ_GRID.right) / 2, PVZ_GRID.top - 18);
   ctx.restore();
 }
 function drawTerrains() {
@@ -8752,6 +8790,7 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
 
 
 
