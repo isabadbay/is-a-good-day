@@ -733,6 +733,7 @@ const translations = {
       footballzombie: ["橄榄球僵尸", "高速重甲"],
       giantzombie: ["巨人僵尸", "Boss感染"],
       sunflower: ["向日葵", "产金币"],
+      nutwall: ["坚果墙", "高血防线"],
       peashooter: ["豌豆射手", "固定远程"],
       repeater: ["双发射手", "双发豌豆"],
       gatlingshooter: ["机枪射手", "狂暴扫射"],
@@ -980,6 +981,7 @@ const translations = {
       footballzombie: ["Football Zombie", "Fast Heavy"],
       giantzombie: ["Giant Zombie", "Boss Infection"],
       sunflower: ["Sunflower", "Gold Producer"],
+      nutwall: ["Wall-nut", "High HP Wall"],
       peashooter: ["Peashooter", "Rooted Ranged"],
       repeater: ["Repeater", "Double Pea"],
       gatlingshooter: ["Gatling Shooter", "Fan Barrage"],
@@ -1969,7 +1971,8 @@ const unitTypes = [
     canAttackWalls: false,
     skills: { rooted: true, wallNut: true },
     color: "#b88945",
-  },  {
+  },
+  {
     id: "peashooter",
     name: "Peashooter",
     tag: "Rooted Ranged",
@@ -9072,6 +9075,8 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
+
 
 
 
