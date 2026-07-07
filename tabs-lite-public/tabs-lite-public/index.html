@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>TABS Lite</title>
-    <link rel="stylesheet" href="./styles.css?v=20260704-pvz-endless-1" />
+    <link rel="stylesheet" href="./styles.css?v=20260707-pvz-rewards-nutwall-1" />
   </head>
   <body>
     <section id="homeScreen" class="home-screen" aria-label="Mode select">
@@ -103,6 +103,15 @@
             <button id="focusToolBtn">Focus</button>
             <button id="eraseWallBtn">Erase Wall</button>
             <button id="clearWallsBtn">Clear Walls</button>
+          </div>
+          <div id="pvzTools" class="pvz-tools" hidden>
+            <button id="pvzShovelBtn" type="button">Shovel</button>
+            <label class="pvz-buy-count">
+              <span id="pvzBuyCountLabel">Plant Count</span>
+              <input id="pvzBuyCount" type="number" min="1" max="15" value="9" />
+            </label>
+            <button id="pvzBuySlotBtn" type="button">Buy Empty Cell</button>
+            <small id="pvzSlotInfo" class="pvz-slot-info">Unlocked 18/45</small>
           </div>
           <div id="unitList" class="unit-list"></div>
 
@@ -489,9 +498,22 @@
       </div>
     </section>
 
-    <script src="./game.js?v=20260704-pvz-endless-1"></script>
+    <script src="./game.js?v=20260707-pvz-rewards-nutwall-1"></script>
   </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

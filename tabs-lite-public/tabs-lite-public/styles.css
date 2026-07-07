@@ -915,3 +915,71 @@ input[type="range"] {
     grid-template-columns: 1fr;
   }
 }
+
+[hidden] {
+  display: none !important;
+}
+
+body[data-mode="pvz"] .level-only-hidden,
+body[data-mode="pvz"] .team-picker,
+body[data-mode="pvz"] .placement-batch,
+body[data-mode="pvz"] .share-tools,
+body[data-mode="pvz"] .map-tools,
+body[data-mode="pvz"] .custom-builder,
+body[data-mode="pvz"] .enemy-size-row {
+  display: none !important;
+}
+
+body[data-mode="pvz"] .roster .panel-title {
+  display: flex !important;
+}
+
+.pvz-tools {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+
+.pvz-tools button {
+  border: 1px solid rgba(236, 241, 220, 0.22);
+  background: rgba(31, 45, 40, 0.88);
+  color: #eef4dd;
+  border-radius: 8px;
+  min-height: 38px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pvz-tools button.active {
+  background: #f4d35e;
+  border-color: #fff1a8;
+  color: #233126;
+  box-shadow: 0 0 0 2px rgba(244, 211, 94, 0.22);
+}
+
+.pvz-buy-count {
+  display: grid;
+  grid-template-columns: 1fr 72px;
+  align-items: center;
+  gap: 8px;
+  color: #eef4dd;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pvz-buy-count input {
+  width: 100%;
+  border: 1px solid rgba(236, 241, 220, 0.22);
+  background: rgba(11, 18, 22, 0.68);
+  color: #eef4dd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-weight: 800;
+}
+
+.pvz-slot-info {
+  color: rgba(238, 244, 221, 0.78);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
