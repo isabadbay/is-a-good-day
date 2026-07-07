@@ -198,7 +198,7 @@ const UNIT_PACK_2_IDS = new Set([
   "chomper",
 ]);
 
-const PLANT_TYPE_IDS = new Set(["sunflower", "peashooter", "repeater", "gatlingshooter", "chomper"]);
+const PLANT_TYPE_IDS = new Set(["sunflower", "nutwall", "peashooter", "repeater", "gatlingshooter", "chomper"]);
 const PVZ_GRID = { left: 90, right: 560, top: 72, bottom: 696, cols: 5, rows: 9 };
 const PVZ_START_UNLOCKED_CELLS = 9;
 const PVZ_EMPTY_CELL_COST = 150;
@@ -401,6 +401,64 @@ const rewardCardPool = [
   },
 ];
 
+const pvzRewardCardPool = [
+  {
+    id: "pvz_pea_damage",
+    kind: "damage",
+    pvz: true,
+    en: ["Sharper Peas", "Plant damage +15%.", "Simple and strong."],
+    zh: ["锋利豌豆", "植物伤害 +15%。", "简单直接的强化。"],
+    apply: () => { state.pvzMods.damageBonus += 0.15; for (const unit of state.units) if (unit.team === "blue" && PLANT_TYPE_IDS.has(unit.typeId)) unit.damage *= 1.15; },
+  },
+  {
+    id: "pvz_sun_boost",
+    kind: "other",
+    pvz: true,
+    en: ["Sunny Day", "Sunflowers make +20% gold.", "More economy."],
+    zh: ["阳光加成", "向日葵产金币 +20%。", "经济更快。"],
+    apply: () => { state.pvzMods.sunGoldBonus += 0.2; },
+  },
+  {
+    id: "pvz_hp_boost",
+    kind: "other",
+    pvz: true,
+    en: ["Thick Stems", "Plants gain +25% max HP.", "Better defense."],
+    zh: ["粗壮茎叶", "植物最大血量 +25%。", "防线更稳。"],
+    apply: () => { state.pvzMods.hpBonus += 0.25; for (const unit of state.units) if (unit.team === "blue" && PLANT_TYPE_IDS.has(unit.typeId)) { const gain = Math.round(unit.maxHp * 0.25); unit.maxHp += gain; unit.hp += gain; } },
+  },
+  {
+    id: "pvz_fast_fire",
+    kind: "damage",
+    pvz: true,
+    en: ["Rapid Sprouts", "Plants attack +18% faster.", "More peas in the air."],
+    zh: ["快速发芽", "植物攻击速度 +18%。", "豌豆更多。"],
+    apply: () => { state.pvzMods.attackSpeedBonus += 0.18; for (const unit of state.units) if (unit.team === "blue" && PLANT_TYPE_IDS.has(unit.typeId)) unit.cooldownTime = Math.max(0.05, unit.cooldownTime / 1.18); },
+  },
+  {
+    id: "pvz_cheap_plants",
+    kind: "upgrade",
+    pvz: true,
+    en: ["Seed Sale", "Plants cost 10% less.", "Works for later buys."],
+    zh: ["种子打折", "植物价格 -10%。", "之后购买生效。"],
+    apply: () => { state.pvzMods.plantDiscount += 0.1; },
+  },
+  {
+    id: "pvz_cell_sale",
+    kind: "upgrade",
+    pvz: true,
+    en: ["Garden Expansion", "Empty cells cost 30% less.", "Expand faster."],
+    zh: ["花园扩建", "购买空格价格 -30%。", "扩建更快。"],
+    apply: () => { state.pvzMods.cellDiscount += 0.3; },
+  },
+  {
+    id: "pvz_risky_harvest",
+    kind: "other",
+    pvz: true,
+    en: ["Risky Harvest", "+350 gold now, zombie waves +15% larger.", "Greedy but dangerous."],
+    zh: ["危险收割", "立刻 +350 金币，之后僵尸数量 +15%。", "贪，但危险。"],
+    apply: () => { state.budget += 350; state.pvzMods.zombieCountBonus += 0.15; },
+  },
+];
 const levelUnitUnlocks = [
   { maxLevel: 3, banned: ["dragonling", "adultdragon", "tiamat", "frostgiant", "giantzombie", "gatlingshooter", "chomper"] },
   { maxLevel: 7, banned: ["dragonling", "adultdragon", "tiamat", "giantzombie", "gatlingshooter"] },
@@ -1894,6 +1952,24 @@ const unitTypes = [
     color: "#f7ca42",
   },
   {
+    id: "nutwall",
+    name: "Wall-nut",
+    tag: "High HP Wall",
+    glyph: "WN",
+    price: 120,
+    hp: 520,
+    damage: 0,
+    range: 0,
+    stopDistance: 0,
+    speed: 0,
+    radius: 22,
+    cooldown: 999,
+    projectileSpeed: 0,
+    weapon: "club",
+    canAttackWalls: false,
+    skills: { rooted: true, wallNut: true },
+    color: "#b88945",
+  },  {
     id: "peashooter",
     name: "Peashooter",
     tag: "Rooted Ranged",
@@ -2107,6 +2183,8 @@ const state = {
   pvzNextWaveTimer: 0,
   pvzShovel: false,
   pvzUnlockedCells: PVZ_START_UNLOCKED_CELLS,
+  pvzRewardWave: 0,
+  pvzMods: { damageBonus: 0, hpBonus: 0, attackSpeedBonus: 0, sunGoldBonus: 0, plantDiscount: 0, cellDiscount: 0, zombieCountBonus: 0 },
   challengeMode: false,
   challengeBudget: 0,
   levelMode: false,
@@ -2144,8 +2222,18 @@ function isPvzMode() {
   return Boolean(state.pvzMode);
 }
 
+function pvzUnitCost(type) {
+  const discount = Math.min(0.75, Math.max(0, state.pvzMods?.plantDiscount || 0));
+  return Math.max(1, Math.ceil((type?.price || 0) * (1 - discount)));
+}
+
+function pvzCellCost() {
+  const discount = Math.min(0.8, Math.max(0, state.pvzMods?.cellDiscount || 0));
+  return Math.max(1, Math.ceil(PVZ_EMPTY_CELL_COST * (1 - discount)));
+}
+
 function pvzPlantCost(type) {
-  return Math.ceil((type?.price || 0) * 9);
+  return pvzUnitCost(type) * 9;
 }
 function pvzBuyCountValue() {
   const raw = Number(pvzBuyCountInput?.value) || 9;
@@ -2198,17 +2286,16 @@ function buyPvzEmptyCell() {
     updateUi();
     return;
   }
-  if (state.budget < PVZ_EMPTY_CELL_COST) {
-    setToast(state.language === "zh" ? `金币不够，需要 ${PVZ_EMPTY_CELL_COST}` : `Not enough gold: need ${PVZ_EMPTY_CELL_COST}`);
+  const cellCost = pvzCellCost();
+  if (state.budget < cellCost) {
+    setToast(state.language === "zh" ? `金币不够，需要 ${cellCost}` : `Not enough gold: need ${cellCost}`);
     return;
   }
-  state.budget -= PVZ_EMPTY_CELL_COST;
-  state.pvzUnlockedCells += 1;
-  setToast(state.language === "zh" ? `购买空格 -${PVZ_EMPTY_CELL_COST}` : `Empty cell bought -${PVZ_EMPTY_CELL_COST}`);
+  state.budget -= cellCost;
+  state.pvzUnlockedCells = Math.min(maxCells, state.pvzUnlockedCells + PVZ_CELLS_PER_PURCHASE);
+  setToast(state.language === "zh" ? `购买空格 x${PVZ_CELLS_PER_PURCHASE} -${cellCost}` : `Empty cells x${PVZ_CELLS_PER_PURCHASE} bought -${cellCost}`);
   updateUi();
 }
-
-
 function pvzCellOccupied(col, row) {
   const center = pvzCellCenter(col, row);
   return state.units.some((unit) => !unit.dead && unit.team === "blue" && Math.abs(unit.x - center.x) < 24 && Math.abs(unit.y - center.y) < 24);
@@ -2264,7 +2351,7 @@ function placePvzPlantBlock(point) {
     setToast(state.language === "zh" ? "附近格子已经满了" : "Nearby cells are full");
     return;
   }
-  const unitCost = type.price || 0;
+  const unitCost = isPvzMode() ? pvzUnitCost(type) : type.price || 0;
   const affordable = unitCost <= 0 ? chosenSpots.length : Math.min(chosenSpots.length, Math.floor(state.budget / unitCost));
   if (affordable <= 0) {
     setToast(state.language === "zh" ? `金币不够，需要 ${unitCost}` : `Not enough gold: need ${unitCost}`);
@@ -2287,6 +2374,11 @@ function resetPvzEndless() {
   state.pvzMode = true;
   state.pvzWave = 0;
   state.pvzNextWaveTimer = 0;
+  state.pvzRewardWave = 0;
+  state.pvzUnlockedCells = PVZ_START_UNLOCKED_CELLS;
+  state.pvzMods = { damageBonus: 0, hpBonus: 0, attackSpeedBonus: 0, sunGoldBonus: 0, plantDiscount: 0, cellDiscount: 0, zombieCountBonus: 0 };
+  state.pendingRewardChoices = [];
+  if (rewardModal) rewardModal.classList.add("hidden");
   state.challengeMode = false;
   state.challengeBudget = 0;
   state.levelMode = false;
@@ -2315,7 +2407,6 @@ function resetPvzEndless() {
   state.selectedItem = null;
   state.winnerShown = false;
 }
-
 function enterPvzMode() {
   resetPvzEndless();
   document.body.dataset.mode = "pvz";
@@ -2330,7 +2421,7 @@ function spawnPvzWave() {
   const wave = state.pvzWave;
   const typeId = wave >= 12 && Math.random() < 0.28 ? "giantzombie" : PVZ_ZOMBIES[Math.min(PVZ_ZOMBIES.length - 1, Math.floor((wave - 1) / 3 + Math.random() * 2))];
   const groups = Math.max(1, Math.floor(1 + wave / 3));
-  const count = Math.min(9 * groups, 9 + wave * 3);
+  const count = Math.ceil(Math.min(9 * groups, 9 + wave * 3) * (1 + (state.pvzMods?.zombieCountBonus || 0)));
   const rows = 9;
   for (let i = 0; i < count; i += 1) {
     const row = i % rows;
@@ -2350,10 +2441,25 @@ function spawnPvzWave() {
 
 function updatePvzEndless(dt) {
   if (!isPvzMode() || state.phase !== "battle") return;
+  const escaped = state.units.some((unit) => unit.team === "red" && !unit.dead && unit.x <= PVZ_GRID.left - 28);
+  if (escaped) {
+    state.winnerShown = true;
+    setPhase("ended");
+    setToast(state.language === "zh" ? `僵尸突破防线！你坚持到第 ${state.pvzWave} 波` : `Zombies broke through! You reached wave ${state.pvzWave}`);
+    return;
+  }
   const blueAlive = state.units.some((unit) => unit.team === "blue" && !unit.dead);
   if (!blueAlive) return;
   const redAlive = state.units.some((unit) => unit.team === "red" && !unit.dead);
   if (redAlive) return;
+  if (state.pendingRewardChoices.length) return;
+  if (state.pvzWave > 0 && state.pvzRewardWave < state.pvzWave) {
+    state.pvzRewardWave = state.pvzWave;
+    state.pendingRewardChoices = makePvzRewardChoices(state.pvzWave);
+    state.pvzNextWaveTimer = 4.5;
+    renderRewardModal();
+    return;
+  }
   state.pvzNextWaveTimer -= dt;
   if (state.pvzNextWaveTimer <= 0) {
     spawnPvzWave();
@@ -2962,9 +3068,12 @@ function addUnit(typeId, team, x, y) {
   const rangeBoost = 1 + level * 0.08;
   const speedBoost = 1 + level * 0.08;
   const rewardAttackSpeedBoost = state.levelMode && team === "blue" && !state.sandbox ? Math.max(0.1, 1 + (state.rewardMods.attackSpeedBonus || 0)) : 1;
-  const cooldownBoost = Math.max(0.55, 1 - level * 0.08) / rewardAttackSpeedBoost;
+  const pvzAttackSpeedBoost = isPvzMode() && team === "blue" ? Math.max(0.1, 1 + (state.pvzMods?.attackSpeedBonus || 0)) : 1;
+  const cooldownBoost = Math.max(0.55, 1 - level * 0.08) / rewardAttackSpeedBoost / pvzAttackSpeedBoost;
   const rewardDamageBoost = state.levelMode && team === "blue" && !state.sandbox ? Math.max(0.1, 1 + (state.rewardMods.damageBonus || 0)) : 1;
+  const pvzDamageBoost = isPvzMode() && team === "blue" ? Math.max(0.1, 1 + (state.pvzMods?.damageBonus || 0)) : 1;
   const rewardHpBoost = state.levelMode && team === "blue" && !state.sandbox ? Math.max(0.1, 1 + (state.rewardMods.hpBonus || 0)) : 1;
+  const pvzHpBoost = isPvzMode() && team === "blue" ? Math.max(0.1, 1 + (state.pvzMods?.hpBonus || 0)) : 1;
   const unit = {
     id: state.nextId++,
     team,
@@ -2978,9 +3087,9 @@ function addUnit(typeId, team, x, y) {
     y,
     vx: (Math.random() - 0.5) * 10,
     vy: (Math.random() - 0.5) * 10,
-    hp: Math.round(type.hp * statBoost * rewardHpBoost * enemyLevelBoost),
-    maxHp: Math.round(type.hp * statBoost * rewardHpBoost * enemyLevelBoost),
-    damage: type.damage * statBoost * rewardDamageBoost * enemyLevelBoost,
+    hp: Math.round(type.hp * statBoost * rewardHpBoost * pvzHpBoost * enemyLevelBoost),
+    maxHp: Math.round(type.hp * statBoost * rewardHpBoost * pvzHpBoost * enemyLevelBoost),
+    damage: type.damage * statBoost * rewardDamageBoost * pvzDamageBoost * enemyLevelBoost,
     range: type.range * rangeBoost,
     burstCount: type.burstCount || 1,
     burstCooldown: type.burstCooldown || 0,
@@ -3092,6 +3201,16 @@ function makeRewardChoices(levelNumber) {
   return choices.slice(0, 3);
 }
 
+function makePvzRewardChoices(waveNumber) {
+  const start = (waveNumber * 2) % pvzRewardCardPool.length;
+  const ordered = pvzRewardCardPool.map((_, index) => pvzRewardCardPool[(start + index) % pvzRewardCardPool.length]);
+  const choices = [];
+  for (const kind of ["damage", "upgrade", "other"]) {
+    const card = ordered.find((entry) => entry.kind === kind && !choices.includes(entry));
+    if (card) choices.push(card);
+  }
+  return choices.slice(0, 3);
+}
 function renderRewardModal() {
   const text = translations[state.language] || translations.en;
   if (!rewardModal || !rewardCards) return;
@@ -3099,8 +3218,9 @@ function renderRewardModal() {
     rewardModal.classList.add("hidden");
     return;
   }
-  rewardTitle.textContent = text.rewardTitle;
-  rewardSubtitle.textContent = text.rewardSubtitle;
+  const pvzReward = state.pendingRewardChoices.some((card) => card.pvz);
+  rewardTitle.textContent = pvzReward ? (state.language === "zh" ? "选择波次奖励" : "Choose Wave Reward") : text.rewardTitle;
+  rewardSubtitle.textContent = pvzReward ? (state.language === "zh" ? "选一张卡强化这局 PvZ。" : "Pick one card for this PvZ run.") : text.rewardSubtitle;
   rewardCards.innerHTML = "";
   state.pendingRewardChoices.forEach((card) => {
     const info = rewardText(card);
@@ -3113,19 +3233,17 @@ function renderRewardModal() {
   });
   rewardModal.classList.remove("hidden");
 }
-
 function chooseRewardCard(cardId) {
   const card = state.pendingRewardChoices.find((entry) => entry.id === cardId);
   if (!card) return;
   state.pendingRewardChoices = [];
   if (rewardModal) rewardModal.classList.add("hidden");
   card.apply();
-  saveRewardMods(state.rewardMods);
+  if (!card.pvz) saveRewardMods(state.rewardMods);
   updateLevelUi();
   updateUi();
   setToast(rewardText(card).title);
 }
-
 function ensureSelectedUnitAllowed() {
   const selectedType = typeById(state.selected);
   if (isUnitAllowedInCurrentLevel(selectedType)) return;
@@ -6017,11 +6135,11 @@ function updateUnit(unit, dt) {
     unit.sunTimer = Math.max(0, (unit.sunTimer || unit.skills.sunInterval || 5) - dt);
     if (unit.sunTimer <= 0) {
       unit.sunTimer += unit.skills.sunInterval || 5;
-      if (!state.sandbox) state.budget += unit.skills.sunGold || 50;
+      const sunGold = Math.round((unit.skills.sunGold || 50) * (isPvzMode() ? 1 + (state.pvzMods?.sunGoldBonus || 0) : 1));
+      if (!state.sandbox) state.budget += sunGold;
       state.particles.push({ x: unit.x, y: unit.y - unit.radius * 1.2, life: 0.9, startLife: 0.9, color: "#ffd95a", size: 36 });
-      setToast(`+${unit.skills.sunGold || 50} gold`);
-    }
-  }
+      setToast(`+${sunGold} gold`);
+    } }
   if (unit.airborneTimer > 0) {
     unit.airborneTimer = Math.max(0, unit.airborneTimer - dt);
     unit.vx *= 0.965;
@@ -7445,7 +7563,31 @@ function drawUnitSkin(unit) {
       ctx.stroke();
     }
   }
-  if (unit.typeId === "sunflower") {
+  if (unit.typeId === "nutwall") {
+    ctx.fillStyle = "#7c4f25";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.82, r * 1.04, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#b88945";
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.08, -r * 0.08, r * 0.68, r * 0.88, -0.05, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#4f2f19";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.86, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#2a1a10";
+    ctx.beginPath();
+    ctx.arc(-r * 0.24, -r * 0.18, r * 0.08, 0, Math.PI * 2);
+    ctx.arc(r * 0.22, -r * 0.18, r * 0.08, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#3a2415";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, r * 0.18, r * 0.28, 0.15, Math.PI - 0.15);
+    ctx.stroke();
+  }  if (unit.typeId === "sunflower") {
     ctx.fillStyle = "#2f8f46";
     ctx.beginPath();
     ctx.ellipse(0, r * 0.78, r * 0.46, r * 0.22, 0, 0, Math.PI * 2);
@@ -8331,7 +8473,7 @@ function updateUi() {
   if (pvzBuySlotBtn) {
     const maxCells = pvzMaxCells();
     const allUnlocked = (state.pvzUnlockedCells || 0) >= maxCells;
-    pvzBuySlotBtn.textContent = allUnlocked ? (state.language === "zh" ? "空格已满" : "All Cells") : (state.language === "zh" ? `购买空格 x${PVZ_CELLS_PER_PURCHASE} ${PVZ_EMPTY_CELL_COST}` : `Buy Cells x${PVZ_CELLS_PER_PURCHASE} ${PVZ_EMPTY_CELL_COST}`);
+    pvzBuySlotBtn.textContent = allUnlocked ? (state.language === "zh" ? "空格已满" : "All Cells") : (state.language === "zh" ? `购买空格 x${PVZ_CELLS_PER_PURCHASE} ${pvzCellCost()}` : `Buy Cells x${PVZ_CELLS_PER_PURCHASE} ${pvzCellCost()}`);
     pvzBuySlotBtn.disabled = !pvzClean || allUnlocked;
   }
   if (pvzSlotInfo) {
@@ -8930,6 +9072,19 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
