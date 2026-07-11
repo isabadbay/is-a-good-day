@@ -195,10 +195,12 @@ const UNIT_PACK_2_IDS = new Set([
   "peashooter",
   "repeater",
   "gatlingshooter",
+  "wildgatlingshooter",
+  "corncannon",
   "chomper",
 ]);
 
-const PLANT_TYPE_IDS = new Set(["sunflower", "nutwall", "peashooter", "repeater", "gatlingshooter", "chomper"]);
+const PLANT_TYPE_IDS = new Set(["sunflower", "nutwall", "peashooter", "repeater", "gatlingshooter", "wildgatlingshooter", "corncannon", "chomper"]);
 const PVZ_GRID = { left: 90, right: 560, top: 72, bottom: 696, cols: 5, rows: 9 };
 const PVZ_START_UNLOCKED_CELLS = 9;
 const PVZ_EMPTY_CELL_COST = 150;
@@ -733,9 +735,12 @@ const translations = {
       footballzombie: ["橄榄球僵尸", "高速重甲"],
       giantzombie: ["巨人僵尸", "Boss感染"],
       sunflower: ["向日葵", "产金币"],
+      nutwall: ["坚果墙", "高血防线"],
       peashooter: ["豌豆射手", "固定远程"],
       repeater: ["双发射手", "双发豌豆"],
       gatlingshooter: ["机枪射手", "狂暴扫射"],
+      wildgatlingshooter: ["狂野机枪射手", "永恒大招"],
+      corncannon: ["玉米加农炮", "核弹轰炸"],
       chomper: ["大嘴花", "吞咬爆发"],
       arrowtower: ["旧箭塔", "固定五连射"],
     },
@@ -980,9 +985,12 @@ const translations = {
       footballzombie: ["Football Zombie", "Fast Heavy"],
       giantzombie: ["Giant Zombie", "Boss Infection"],
       sunflower: ["Sunflower", "Gold Producer"],
+      nutwall: ["Wall-nut", "High HP Wall"],
       peashooter: ["Peashooter", "Rooted Ranged"],
       repeater: ["Repeater", "Double Pea"],
       gatlingshooter: ["Gatling Shooter", "Fan Barrage"],
+      wildgatlingshooter: ["Wild Gatling Shooter", "Forever Overdrive"],
+      corncannon: ["Corn Cannon", "Nuke Blast"],
       chomper: ["Chomper", "Bite Blast"],
       arrowtower: ["Old Arrow Tower", "Fixed Barrage"],
     },
@@ -1117,6 +1125,10 @@ function showHome() {
   document.body.dataset.mode = "home";
 }
 
+function resizeCanvas() {
+  canvas.width = 1280;
+  canvas.height = 760;
+}
 function showGame() {
   homeScreen?.classList.add("home-hidden");
   appShell?.classList.remove("app-hidden");
@@ -1969,7 +1981,8 @@ const unitTypes = [
     canAttackWalls: false,
     skills: { rooted: true, wallNut: true },
     color: "#b88945",
-  },  {
+  },
+  {
     id: "peashooter",
     name: "Peashooter",
     tag: "Rooted Ranged",
@@ -2027,6 +2040,46 @@ const unitTypes = [
     canAttackWalls: false,
     skills: { rooted: true, gatling: true, gatlingCheckInterval: 3 },
     color: "#5bd071",
+  },
+  {
+    id: "wildgatlingshooter",
+    name: "Wild Gatling Shooter",
+    tag: "Forever Overdrive",
+    glyph: "WG",
+    price: 2600,
+    hp: 130,
+    damage: 6,
+    range: 500000000,
+    stopDistance: 500000000,
+    speed: 0,
+    radius: 22,
+    cooldown: 0.1,
+    projectileSpeed: 580,
+    weapon: "bow",
+    burstCount: 60,
+    burstCooldown: 0.1,
+    canAttackWalls: false,
+    skills: { rooted: true, gatling: true, permanentGatling: true, wildGatling: true },
+    color: "#39f078",
+  },
+  {
+    id: "corncannon",
+    name: "Corn Cannon",
+    tag: "Nuke Blast",
+    glyph: "CC",
+    price: 1800,
+    hp: 180,
+    damage: 0,
+    range: 500000000,
+    stopDistance: 500000000,
+    speed: 0,
+    radius: 26,
+    cooldown: 9,
+    projectileSpeed: 0,
+    weapon: "cannon",
+    canAttackWalls: false,
+    skills: { rooted: true, cornCannon: true, cornNukeDamage: 1200, cornNukeCooldown: 9 },
+    color: "#e8c24a",
   },
   {
     id: "chomper",
@@ -3117,7 +3170,7 @@ function addUnit(typeId, team, x, y) {
     infectionTeam: null,
     stasisSourceId: null,
     sunTimer: type.skills?.sunProducer ? type.skills.sunInterval || 5 : 0,
-    gatlingBoosted: false,
+    gatlingBoosted: Boolean(type.skills?.permanentGatling),
     gatlingCheckTimer: type.skills?.gatling ? type.skills.gatlingCheckInterval || 3 : 0,
     chompCooldown: type.skills?.chompBlast ? 1.2 : 0,
     stasisCooldown: 1 + Math.random() * 2,
@@ -3943,6 +3996,114 @@ function explodeItemFireball(projectile) {
   addRingParticle(projectile.x, projectile.y, "#ff7838", projectile.splash);
 }
 
+function cornCannonAtPoint(point) {
+  let best = null;
+  let bestDistance = Infinity;
+  for (const unit of state.units) {
+    if (unit.dead || unit.team !== "blue" || !unit.skills.cornCannon) continue;
+    const distance = Math.hypot(unit.x - point.x, unit.y - point.y);
+    if (distance <= unit.radius + 24 && distance < bestDistance) {
+      best = unit;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
+function beginCornAim(unit) {
+  if (!unit || unit.dead || !unit.skills.cornCannon) return false;
+  if (unit.cooldown > 0) {
+    setToast(state.language === "zh" ? `玉米加农炮冷却中：${unit.cooldown.toFixed(1)}秒` : `Corn Cannon cooldown: ${unit.cooldown.toFixed(1)}s`);
+    return true;
+  }
+  state.cornAimId = unit.id;
+  state.selectedItem = null;
+  state.mapTool = null;
+  state.controlBuildMode = false;
+  setToast(state.language === "zh" ? "玉米加农炮瞄准中：再点一次发射核弹" : "Corn Cannon aiming: click again to fire the nuke");
+  updateUi();
+  return true;
+}
+
+function handleCornPointer(point) {
+  if (state.phase !== "battle") return false;
+  if (state.cornAimId) {
+    const cannon = state.units.find((item) => item.id === state.cornAimId && !item.dead);
+    if (cannon && fireCornNuke(cannon, point)) {
+      state.cornAimId = null;
+      updateUi();
+      return true;
+    }
+    state.cornAimId = null;
+    updateUi();
+    return true;
+  }
+  const cannon = cornCannonAtPoint(point);
+  return beginCornAim(cannon);
+}
+function fireCornNuke(unit, point) {
+  if (!unit || unit.dead || unit.cooldown > 0) return false;
+  const target = {
+    x: Math.max(0, Math.min(canvas.width, point.x)),
+    y: Math.max(0, Math.min(canvas.height, point.y)),
+  };
+  unit.cooldown = unit.skills.cornNukeCooldown || unit.cooldownTime || 9;
+  const angle = Math.atan2(target.y - unit.y, target.x - unit.x);
+  state.projectiles.push({
+    x: unit.x + Math.cos(angle) * unit.radius * 0.7,
+    y: unit.y + Math.sin(angle) * unit.radius * 0.7,
+    targetX: target.x,
+    targetY: target.y,
+    team: unit.team,
+    ownerId: unit.id,
+    damage: unit.skills.cornNukeDamage || 1200,
+    speed: 360,
+    radius: 15,
+    cornNuke: true,
+    life: 7,
+  });
+  state.particles.push({ x: unit.x, y: unit.y, life: 0.55, startLife: 0.55, color: "#ffe05a", size: unit.radius * 3.4 });
+  addRingParticle(unit.x, unit.y, "#ffe05a", unit.radius * 2.2);
+  return true;
+}
+
+function explodeCornNuke(projectile) {
+  const owner = projectile.ownerId ? state.units.find((unit) => unit.id === projectile.ownerId) : null;
+  for (const unit of state.units) {
+    if (unit.dead || unit.team === projectile.team) continue;
+    const angle = Math.atan2(unit.y - projectile.y, unit.x - projectile.x);
+    const adultDragonHit = unit.typeId === "adultdragon";
+    hurt(unit, adultDragonHit ? 200 : projectile.damage, {
+      x: projectile.x - Math.cos(angle) * 10,
+      y: projectile.y - Math.sin(angle) * 10,
+      knockback: 7.5,
+      ignoreDodge: true,
+      isRanged: true,
+      applyBurn: !adultDragonHit,
+      fireDuration: 6,
+      damageType: adultDragonHit ? "nuclear" : "fireball",
+      owner,
+    });
+    if (!adultDragonHit) burnUnit(unit, 6);
+  }
+  damageWallsAt(projectile.x, projectile.y, Math.max(canvas.width, canvas.height), projectile.damage * 0.25);
+  for (let i = 0; i < 120; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 120 + Math.random() * 520;
+    state.particles.push({
+      x: projectile.x,
+      y: projectile.y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.55 + Math.random() * 0.75,
+      startLife: 1.25,
+      color: Math.random() < 0.5 ? "#ff7a28" : Math.random() < 0.75 ? "#ffe05a" : "#ffffff",
+      size: 18 + Math.random() * 44,
+    });
+  }
+  addRingParticle(projectile.x, projectile.y, "#ff7a28", Math.max(canvas.width, canvas.height) * 0.72);
+  setToast(state.language === "zh" ? "玉米核弹爆炸：全屏 1200 伤害" : "Corn nuke detonated: 1200 screen damage");
+}
 function healItemAt(point, team, item) {
   let affected = 0;
   for (const unit of state.units) {
@@ -5283,6 +5444,10 @@ function selectControlledUnit(unit) {
 
 function controlledPrimaryAttack(unit) {
   if (!unit || unit.cooldown > 0) return;
+  if (unit.skills.cornCannon) {
+    beginCornAim(unit);
+    return;
+  }
   if (unit.projectileSpeed) {
     controlledRangedAttack(unit, {
       weapon: unit.weapon,
@@ -6097,7 +6262,12 @@ function updateUnit(unit, dt) {
   if (unit.skills.tiamatBoss) {
     if (updateTiamatBoss(unit, dt)) return;
   }
-  if (unit.skills.gatling) {
+  if (unit.skills.permanentGatling) {
+    unit.gatlingBoosted = true;
+    if (Math.random() < dt * 10) {
+      state.particles.push({ x: unit.x + (Math.random() - 0.5) * unit.radius * 2.2, y: unit.y + (Math.random() - 0.5) * unit.radius * 2.2, life: 0.22, startLife: 0.22, color: "#ffe05a", size: 10 + Math.random() * 18 });
+    }
+  } else if (unit.skills.gatling) {
     unit.gatlingCheckTimer = Math.max(0, (unit.gatlingCheckTimer || unit.skills.gatlingCheckInterval || 3) - dt);
     if (unit.gatlingCheckTimer <= 0) {
       unit.gatlingCheckTimer += unit.skills.gatlingCheckInterval || 3;
@@ -6114,6 +6284,15 @@ function updateUnit(unit, dt) {
         });
       }
     }
+  }
+  if (unit.skills.cornCannon) {
+    if (unit.team === "red" && unit.cooldown <= 0) {
+      const info = nearestEnemyFor(unit, unit.range || Infinity);
+      if (info?.target) fireCornNuke(unit, info.target);
+    }
+    unit.vx = 0;
+    unit.vy = 0;
+    return;
   }
   if (unit.skills.chompBlast) {
     unit.chompCooldown = Math.max(0, (unit.chompCooldown || 0) - dt);
@@ -6382,7 +6561,31 @@ function updateProjectiles(dt) {
       }
       continue;
     }
-    if (projectile.itemFireball) {
+    if (projectile.cornNuke) {
+      projectile.life -= dt;
+      const angle = Math.atan2(projectile.targetY - projectile.y, projectile.targetX - projectile.x);
+      projectile.x += Math.cos(angle) * projectile.speed * dt;
+      projectile.y += Math.sin(angle) * projectile.speed * dt;
+      for (let i = 0; i < 3; i += 1) {
+        state.particles.push({
+          x: projectile.x + (Math.random() - 0.5) * 18,
+          y: projectile.y + (Math.random() - 0.5) * 18,
+          vx: -Math.cos(angle) * (50 + Math.random() * 110),
+          vy: -Math.sin(angle) * (50 + Math.random() * 110),
+          life: 0.18 + Math.random() * 0.18,
+          startLife: 0.36,
+          color: Math.random() < 0.55 ? "#ffe05a" : "#ff8a28",
+          size: 16 + Math.random() * 20,
+        });
+      }
+      if (Math.hypot(projectile.targetX - projectile.x, projectile.targetY - projectile.y) < 22 || projectile.life <= 0) {
+        projectile.x = projectile.targetX;
+        projectile.y = projectile.targetY;
+        explodeCornNuke(projectile);
+        projectile.life = 0;
+      }
+      continue;
+    }    if (projectile.itemFireball) {
       projectile.life -= dt;
       const angle = Math.atan2(projectile.targetY - projectile.y, projectile.targetX - projectile.x);
       projectile.x += Math.cos(angle) * projectile.speed * dt;
@@ -7617,7 +7820,44 @@ function drawUnitSkin(unit) {
     ctx.arc(r * 0.14, -r * 0.42, r * 0.06, 0, Math.PI * 2);
     ctx.fill();
   }
-  if (unit.typeId === "chomper") {
+  if (unit.typeId === "corncannon") {
+    ctx.fillStyle = "#2f8f46";
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.28, r * 0.78, r * 0.52, r * 0.22, -0.45, 0, Math.PI * 2);
+    ctx.ellipse(r * 0.28, r * 0.78, r * 0.52, r * 0.22, 0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f3c64f";
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.08, -r * 0.02, r * 0.62, r * 0.9, -0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#8b5c18";
+    ctx.lineWidth = 4;
+    for (let i = -2; i <= 2; i += 1) {
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.42 + i * r * 0.18, -r * 0.72);
+      ctx.lineTo(-r * 0.12 + i * r * 0.18, r * 0.62);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#35633b";
+    ctx.save();
+    ctx.rotate(-0.18);
+    ctx.fillRect(r * 0.02, -r * 0.34, r * 1.15, r * 0.46);
+    ctx.fillStyle = "#1f3824";
+    ctx.fillRect(r * 0.95, -r * 0.4, r * 0.28, r * 0.58);
+    ctx.restore();
+    ctx.fillStyle = "#fff3a2";
+    ctx.beginPath();
+    ctx.arc(-r * 0.25, -r * 0.26, r * 0.11, 0, Math.PI * 2);
+    ctx.arc(r * 0.02, -r * 0.3, r * 0.11, 0, Math.PI * 2);
+    ctx.fill();
+    if (state.cornAimId === unit.id) {
+      ctx.strokeStyle = "#ffe05a";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.32, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }  if (unit.typeId === "chomper") {
     ctx.fillStyle = "#2f8f46";
     ctx.beginPath();
     ctx.ellipse(0, r * 0.82, r * 0.56, r * 0.24, 0, 0, Math.PI * 2);
@@ -7660,7 +7900,7 @@ function drawUnitSkin(unit) {
     ctx.arc(-r * 0.28, -r * 0.66, r * 0.09, 0, Math.PI * 2);
     ctx.fill();
   }
-  if (unit.typeId === "peashooter" || unit.typeId === "repeater" || unit.typeId === "gatlingshooter") {
+  if (unit.typeId === "peashooter" || unit.typeId === "repeater" || unit.typeId === "gatlingshooter" || unit.typeId === "wildgatlingshooter") {
     ctx.fillStyle = "#2f8f46";
     ctx.beginPath();
     ctx.ellipse(0, r * 0.7, r * 0.55, r * 0.24, -0.25, 0, Math.PI * 2);
@@ -7688,7 +7928,7 @@ function drawUnitSkin(unit) {
       ctx.ellipse(r * 0.82, -r * 0.48, r * 0.22, r * 0.12, 0, 0, Math.PI * 2);
       ctx.fill();
     }
-    if (unit.typeId === "gatlingshooter") {
+    if (unit.typeId === "gatlingshooter" || unit.typeId === "wildgatlingshooter") {
       if (unit.gatlingBoosted) {
         ctx.strokeStyle = "#ffe05a";
         ctx.lineWidth = 3;
@@ -8423,6 +8663,33 @@ function drawBossHealthBar() {
   ctx.restore();
 }
 
+function drawCornAim() {
+  const unit = state.units.find((item) => item.id === state.cornAimId && !item.dead);
+  if (!unit || !state.pointer) return;
+  ctx.save();
+  ctx.strokeStyle = "#ffe05a";
+  ctx.fillStyle = "rgba(255, 224, 90, 0.12)";
+  ctx.lineWidth = 4;
+  ctx.setLineDash([12, 8]);
+  ctx.beginPath();
+  ctx.arc(state.pointer.x, state.pointer.y, 74, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(state.pointer.x - 92, state.pointer.y);
+  ctx.lineTo(state.pointer.x + 92, state.pointer.y);
+  ctx.moveTo(state.pointer.x, state.pointer.y - 92);
+  ctx.lineTo(state.pointer.x, state.pointer.y + 92);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255, 224, 90, 0.55)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(unit.x, unit.y);
+  ctx.lineTo(state.pointer.x, state.pointer.y);
+  ctx.stroke();
+  ctx.restore();
+}
 function draw() {
   drawGround();
   drawTerrains();
@@ -8578,15 +8845,18 @@ function renderUnitList() {
     ? [{ title: state.language === "zh" ? "植物" : "Plants", types: unitTypes.filter((type) => PLANT_TYPE_IDS.has(type.id)) }]
     : [
     {
+      title: state.language === "zh" ? "植物" : "Plants",
+      types: unitTypes.filter((type) => PLANT_TYPE_IDS.has(type.id)),
+    },
+    {
       title: state.language === "zh" ? "兵种包 1" : "Unit Pack 1",
-      types: unitTypes.filter((type) => type.id !== "arrowtower" && !UNIT_PACK_2_IDS.has(type.id) && !type.id.startsWith("custom-")),
+      types: unitTypes.filter((type) => type.id !== "arrowtower" && !PLANT_TYPE_IDS.has(type.id) && !UNIT_PACK_2_IDS.has(type.id) && !type.id.startsWith("custom-")),
     },
     {
       title: state.language === "zh" ? "兵种包 2" : "Unit Pack 2",
       types: unitTypes.filter((type) => type.id !== "arrowtower" && (UNIT_PACK_2_IDS.has(type.id) || type.id.startsWith("custom-"))),
     },
-  ];
-  for (const pack of packs) {
+  ];  for (const pack of packs) {
     if (!pack.types.length) continue;
     const heading = document.createElement("div");
     heading.className = "unit-pack-title";
@@ -8659,6 +8929,9 @@ canvas.addEventListener("pointerdown", (event) => {
     updateUi();
     return;
   }
+  if (state.phase === "battle" && event.button === 0 && handleCornPointer(point)) {
+    return;
+  }
   if (state.phase === "battle" && state.mapTool === "command") {
     issueCommand(point);
     updateUi();
@@ -8674,6 +8947,7 @@ canvas.addEventListener("pointerdown", (event) => {
     updateUi();
     return;
   }
+
   if (state.phase === "battle" && state.selectedItem) {
     castItemAt(state.selectedItem, point);
     return;
@@ -9072,6 +9346,20 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
