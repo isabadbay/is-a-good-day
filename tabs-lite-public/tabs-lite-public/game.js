@@ -191,6 +191,7 @@ const UNIT_PACK_2_IDS = new Set([
   "bucketzombie",
   "footballzombie",
   "giantzombie",
+  "armoredgiantzombie",
   "sunflower",
   "peashooter",
   "repeater",
@@ -200,7 +201,7 @@ const UNIT_PACK_2_IDS = new Set([
   "chomper",
 ]);
 
-const PLANT_TYPE_IDS = new Set(["sunflower", "nutwall", "peashooter", "repeater", "gatlingshooter", "wildgatlingshooter", "corncannon", "chomper"]);
+const PLANT_TYPE_IDS = new Set(["sunflower", "nutwall", "obsidianwargod", "peashooter", "repeater", "gatlingshooter", "wildgatlingshooter", "corncannon", "chomper"]);
 const PVZ_GRID = { left: 90, right: 560, top: 72, bottom: 696, cols: 5, rows: 9 };
 const PVZ_START_UNLOCKED_CELLS = 9;
 const PVZ_EMPTY_CELL_COST = 150;
@@ -734,8 +735,10 @@ const translations = {
       bucketzombie: ["铁桶僵尸", "重甲感染"],
       footballzombie: ["橄榄球僵尸", "高速重甲"],
       giantzombie: ["巨人僵尸", "Boss感染"],
+      armoredgiantzombie: ["重甲武装巨人僵尸", "召唤冲锋"],
       sunflower: ["向日葵", "产金币"],
       nutwall: ["坚果墙", "高血防线"],
+      obsidianwargod: ["黑曜石战神", "不动战神"],
       peashooter: ["豌豆射手", "固定远程"],
       repeater: ["双发射手", "双发豌豆"],
       gatlingshooter: ["机枪射手", "狂暴扫射"],
@@ -984,8 +987,10 @@ const translations = {
       bucketzombie: ["Bucket Zombie", "Armored Infection"],
       footballzombie: ["Football Zombie", "Fast Heavy"],
       giantzombie: ["Giant Zombie", "Boss Infection"],
+      armoredgiantzombie: ["Armored Giant Zombie", "Summon Rush"],
       sunflower: ["Sunflower", "Gold Producer"],
       nutwall: ["Wall-nut", "High HP Wall"],
+      obsidianwargod: ["Obsidian War God", "Immovable Titan"],
       peashooter: ["Peashooter", "Rooted Ranged"],
       repeater: ["Repeater", "Double Pea"],
       gatlingshooter: ["Gatling Shooter", "Fan Barrage"],
@@ -1945,6 +1950,36 @@ const unitTypes = [
     color: "#4f7c48",
   },
   {
+    id: "armoredgiantzombie",
+    name: "Armored Giant Zombie",
+    tag: "Summon Rush",
+    glyph: "AG",
+    price: 7200,
+    hp: 10000,
+    damage: 285,
+    range: 74,
+    speed: 25,
+    radius: 52,
+    cooldown: 1.75,
+    knockback: 12,
+    weapon: "hammer",
+    areaAttack: { range: 125, damage: 95 },
+    skills: {
+      zombieBoss: true,
+      infectTouch: true,
+      infectSeconds: 10,
+      damageAura: true,
+      damageAuraRange: 95,
+      damageAuraDamage: 14,
+      knockbackImmune: true,
+      summonFootballOnAttack: true,
+      summonFootballCount: 3,
+      berserkHp: 2800,
+      berserkDamage: 0.45,
+      berserkHeal: 600,
+    },
+    color: "#314037",
+  },  {
     id: "sunflower",
     name: "Sunflower",
     tag: "Gold Producer",
@@ -1983,6 +2018,26 @@ const unitTypes = [
     color: "#b88945",
   },
   {
+    id: "obsidianwargod",
+    name: "Obsidian War God",
+    tag: "Immovable Titan",
+    glyph: "OW",
+    price: 6800,
+    hp: 13000,
+    damage: 550,
+    range: 86,
+    stopDistance: 0,
+    speed: 0,
+    radius: 36,
+    cooldown: 5,
+    projectileSpeed: 0,
+    weapon: "hammer",
+    knockback: 10,
+    areaAttack: { range: 120, damage: 550 },
+    canAttackWalls: true,
+    skills: { rooted: true, obsidianWarGod: true, immovable: true, knockbackImmune: true, spitOnAttack: true, spitDamage: 200, spitSplash: 120, spitSpeed: 430 },
+    color: "#1b1720",
+  },  {
     id: "peashooter",
     name: "Peashooter",
     tag: "Rooted Ranged",
@@ -6058,6 +6113,51 @@ function hurt(target, amount, source) {
   }
 }
 
+function spawnObsidianSpit(unit, target) {
+  if (!unit?.skills?.spitOnAttack || !target || target.dead) return;
+  const angle = Math.atan2(target.y - unit.y, target.x - unit.x);
+  state.projectiles.push({
+    x: unit.x + Math.cos(angle) * unit.radius * 0.65,
+    y: unit.y + Math.sin(angle) * unit.radius * 0.65,
+    tx: target.id,
+    team: unit.team,
+    ownerId: unit.id,
+    damage: unit.skills.spitDamage || 200,
+    speed: unit.skills.spitSpeed || 430,
+    splash: unit.skills.spitSplash || 120,
+    radius: 9,
+    isRanged: true,
+    color: "#6d4bff",
+    damageType: "obsidian",
+    continueOnTargetDeath: true,
+    life: 2.2,
+  });
+  state.particles.push({ x: unit.x, y: unit.y, life: 0.45, startLife: 0.45, color: "#7b5cff", size: unit.radius * 1.9 });
+}
+
+function summonFootballZombiesOnAttack(unit) {
+  if (!unit?.skills?.summonFootballOnAttack) return;
+  const type = typeById("footballzombie");
+  if (!type) return;
+  const count = Math.max(1, Math.floor(unit.skills.summonFootballCount || 3));
+  for (let i = 0; i < count; i += 1) {
+    const angle = (i / count) * Math.PI * 2 + Math.random() * 0.35;
+    const distance = unit.radius + 28 + Math.random() * 22;
+    const x = clamp(unit.x + Math.cos(angle) * distance, type.radius, canvas.width - type.radius);
+    const y = clamp(unit.y + Math.sin(angle) * distance, type.radius, canvas.height - type.radius);
+    const summoned = addUnit("footballzombie", unit.team, x, y);
+    summoned.vx += Math.cos(angle) * 120;
+    summoned.vy += Math.sin(angle) * 120;
+    summoned.summonedByBoss = true;
+    state.particles.push({ x, y, life: 0.55, startLife: 0.55, color: "#83d96f", size: 34 });
+  }
+}
+
+function afterUnitAttack(unit, target) {
+  if (!target || target.kind === "wall") return;
+  spawnObsidianSpit(unit, target);
+  summonFootballZombiesOnAttack(unit);
+}
 function attack(unit, target, mode = null) {
   const active = mode || {
     weapon: unit.weapon,
@@ -6172,6 +6272,7 @@ function attack(unit, target, mode = null) {
     });
   }
   applyAreaAttack(unit, target.x, target.y);
+  afterUnitAttack(unit, target);
   const moveTarget = wallAvoidancePoint(unit, target);
   const angle = Math.atan2(moveTarget.y - unit.y, moveTarget.x - unit.x);
   unit.vx -= Math.cos(angle) * 28;
@@ -6473,17 +6574,26 @@ function resolveCrowding() {
         infectUnit(b, a);
         infectUnit(a, b);
       }
-      const push = (min - distance) * 0.5;
+      const totalPush = min - distance;
       const nx = dx / distance;
       const ny = dy / distance;
-      a.x -= nx * push;
-      a.y -= ny * push;
-      b.x += nx * push;
-      b.y += ny * push;
-      a.vx -= nx * 10;
-      a.vy -= ny * 10;
-      b.vx += nx * 10;
-      b.vy += ny * 10;
+      const aFixed = Boolean(a.skills?.immovable);
+      const bFixed = Boolean(b.skills?.immovable);
+      if (aFixed && bFixed) continue;
+      const aPush = aFixed ? 0 : bFixed ? totalPush : totalPush * 0.5;
+      const bPush = bFixed ? 0 : aFixed ? totalPush : totalPush * 0.5;
+      a.x -= nx * aPush;
+      a.y -= ny * aPush;
+      b.x += nx * bPush;
+      b.y += ny * bPush;
+      if (!aFixed) {
+        a.vx -= nx * 10;
+        a.vy -= ny * 10;
+      }
+      if (!bFixed) {
+        b.vx += nx * 10;
+        b.vy += ny * 10;
+      }
     }
   }
 }
@@ -7672,7 +7782,7 @@ function drawUnitSkin(unit) {
     ctx.arc(r * 0.28, -r * 0.12, r * 0.12, 0, Math.PI * 2);
     ctx.fill();
   }
-  if (unit.typeId === "zombie" || unit.typeId === "coneheadzombie" || unit.typeId === "bucketzombie" || unit.typeId === "footballzombie" || unit.typeId === "giantzombie") {
+  if (unit.typeId === "zombie" || unit.typeId === "coneheadzombie" || unit.typeId === "bucketzombie" || unit.typeId === "footballzombie" || unit.typeId === "giantzombie" || unit.typeId === "armoredgiantzombie") {
     ctx.fillStyle = "#2d5b35";
     ctx.beginPath();
     ctx.arc(-r * 0.3, -r * 0.18, r * 0.12, 0, Math.PI * 2);
@@ -7731,8 +7841,8 @@ function drawUnitSkin(unit) {
       ctx.fillRect(-r * 0.88, -r * 0.04, r * 0.36, r * 0.34);
       ctx.fillRect(r * 0.52, -r * 0.04, r * 0.36, r * 0.34);
     }
-    if (unit.typeId === "giantzombie") {
-      ctx.fillStyle = "#31472f";
+    if (unit.typeId === "giantzombie" || unit.typeId === "armoredgiantzombie") {
+      ctx.fillStyle = unit.typeId === "armoredgiantzombie" ? "#22272a" : "#31472f";
       ctx.beginPath();
       ctx.ellipse(0, r * 0.08, r * 0.78, r * 1.02, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -7754,7 +7864,20 @@ function drawUnitSkin(unit) {
       ctx.stroke();
       ctx.fillStyle = "#d8d0a8";
       ctx.fillRect(r * 0.56, -r * 0.78, r * 0.62, r * 0.32);
-      ctx.fillStyle = "#94d47b";
+      if (unit.typeId === "armoredgiantzombie") {
+        ctx.fillStyle = "#4b5358";
+        ctx.fillRect(-r * 0.74, -r * 0.18, r * 1.48, r * 0.48);
+        ctx.fillRect(-r * 0.58, r * 0.28, r * 1.16, r * 0.34);
+        ctx.strokeStyle = "#cbd2d6";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(-r * 0.76, -r * 0.2, r * 1.52, r * 0.52);
+        ctx.fillStyle = "#111719";
+        ctx.fillRect(-r * 0.82, -r * 0.92, r * 1.64, r * 0.34);
+        ctx.fillStyle = "#b9c0c4";
+        for (let i = -2; i <= 2; i += 1) {
+          ctx.fillRect(i * r * 0.24 - r * 0.035, -r * 0.88, r * 0.07, r * 0.26);
+        }
+      }      ctx.fillStyle = "#94d47b";
       ctx.beginPath();
       ctx.arc(-r * 0.24, -r * 0.26, r * 0.1, 0, Math.PI * 2);
       ctx.arc(r * 0.24, -r * 0.26, r * 0.1, 0, Math.PI * 2);
@@ -7766,7 +7889,42 @@ function drawUnitSkin(unit) {
       ctx.stroke();
     }
   }
-  if (unit.typeId === "nutwall") {
+  if (unit.typeId === "obsidianwargod") {
+    ctx.fillStyle = "#09080d";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.95, r * 1.1, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#20142e";
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.08, -r * 0.08, r * 0.72, r * 0.9, -0.08, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#7b5cff";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.04, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "#b398ff";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.82, -r * 0.9);
+    ctx.lineTo(-r * 0.42, -r * 1.42);
+    ctx.lineTo(-r * 0.12, -r * 0.88);
+    ctx.moveTo(r * 0.82, -r * 0.9);
+    ctx.lineTo(r * 0.42, -r * 1.42);
+    ctx.lineTo(r * 0.12, -r * 0.88);
+    ctx.stroke();
+    ctx.fillStyle = "#c4b5ff";
+    ctx.beginPath();
+    ctx.arc(-r * 0.25, -r * 0.18, r * 0.09, 0, Math.PI * 2);
+    ctx.arc(r * 0.25, -r * 0.18, r * 0.09, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#4c2cff";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.68, r * 0.42);
+    ctx.lineTo(r * 0.74, -r * 0.46);
+    ctx.stroke();
+  }  if (unit.typeId === "nutwall") {
     ctx.fillStyle = "#7c4f25";
     ctx.beginPath();
     ctx.ellipse(0, 0, r * 0.82, r * 1.04, 0, 0, Math.PI * 2);
@@ -9346,6 +9504,11 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
+
+
+
+
 
 
 
