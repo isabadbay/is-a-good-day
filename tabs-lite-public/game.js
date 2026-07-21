@@ -1489,7 +1489,7 @@ const unitTypes = [
     tag: "Fivefold Dragon God",
     glyph: "T5",
     price: 9000,
-    hp: 7600,
+    hp: 10000,
     damage: 170,
     range: 135,
     stopDistance: 90,
@@ -5824,6 +5824,17 @@ function spawnRandomUnit(unit) {
     if (type.id.startsWith("custom-") || blockedSummons.has(type.id)) return false;
     return isUnitAllowedInCurrentLevel(type);
   });
+  const moddedPlantTickets = [
+    ["wildgatlingshooter", 3],
+    ["corncannon", 3],
+    ["chomper", 2],
+    ["obsidianwargod", 1],
+  ];
+  for (const [id, tickets] of moddedPlantTickets) {
+    const type = typeById(id);
+    if (!type || blockedSummons.has(id) || !isUnitAllowedInCurrentLevel(type)) continue;
+    for (let i = 0; i < tickets; i += 1) candidates.push(type);
+  }
   if (!candidates.length) return;
   const type = candidates[Math.floor(Math.random() * candidates.length)];
   const angle = Math.random() * Math.PI * 2;
@@ -6066,6 +6077,10 @@ function hurt(target, amount, source) {
     if (amount > 0) {
       target.tiamatRageSpeedTimer = Math.max(target.tiamatRageSpeedTimer || 0, 1.7);
     }
+  }
+  if (target.skills.tiamatBoss && (killer?.typeId === "obsidianwargod" || source.damageType === "obsidian")) {
+    amount *= 0.35;
+    state.particles.push({ x: target.x, y: target.y, life: 0.42, color: "#8b6cff", size: target.radius * 2.7 });
   }
   if (target.skills.tiamatBoss && target.tiamatBarrierTimer > 0) {
     amount *= 0.38;
@@ -9504,6 +9519,8 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
+
 
 
 
