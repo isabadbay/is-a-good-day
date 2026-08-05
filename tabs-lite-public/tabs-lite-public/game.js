@@ -192,6 +192,10 @@ const UNIT_PACK_2_IDS = new Set([
   "footballzombie",
   "giantzombie",
   "armoredgiantzombie",
+  "crystalbehemoth",
+  "stormogre",
+  "voidwardenboss",
+  "archmagelord",
   "sunflower",
   "peashooter",
   "repeater",
@@ -512,6 +516,27 @@ const INFECTABLE_TYPE_IDS = new Set([
   "whirlhammer",
 ]);
 
+
+const CHARMABLE_HUMAN_TYPE_IDS = new Set([
+  "clubber",
+  "shield",
+  "spear",
+  "archer",
+  "berserker",
+  "hammer",
+  "musketeer",
+  "cannon",
+  "knight",
+  "assassin",
+  "crossbow",
+  "bomber",
+  "paladin",
+  "flameknight",
+  "sharpshooter",
+  "bannerlord",
+  "stormlancer",
+  "unit67",
+]);
 const translations = {
   zh: {
     subtitle: "布阵、开战、看小人乱斗",
@@ -736,6 +761,10 @@ const translations = {
       footballzombie: ["橄榄球僵尸", "高速重甲"],
       giantzombie: ["巨人僵尸", "Boss感染"],
       armoredgiantzombie: ["重甲武装巨人僵尸", "召唤冲锋"],
+      crystalbehemoth: ["水晶巨兽", "震地护甲"],
+      stormogre: ["雷暴巨魔", "风暴炮击"],
+      voidwardenboss: ["虚空督军", "定身屏障"],
+      archmagelord: ["奥术魔王", "万法策反"],
       sunflower: ["向日葵", "产金币"],
       nutwall: ["坚果墙", "高血防线"],
       obsidianwargod: ["黑曜石战神", "不动战神"],
@@ -988,6 +1017,10 @@ const translations = {
       footballzombie: ["Football Zombie", "Fast Heavy"],
       giantzombie: ["Giant Zombie", "Boss Infection"],
       armoredgiantzombie: ["Armored Giant Zombie", "Summon Rush"],
+      crystalbehemoth: ["Crystal Behemoth", "Quake Armor"],
+      stormogre: ["Storm Ogre", "Storm Barrage"],
+      voidwardenboss: ["Void Warden", "Stasis Barrier"],
+      archmagelord: ["Archmage Lord", "All Magic"],
       sunflower: ["Sunflower", "Gold Producer"],
       nutwall: ["Wall-nut", "High HP Wall"],
       obsidianwargod: ["Obsidian War God", "Immovable Titan"],
@@ -1979,6 +2012,148 @@ const unitTypes = [
       berserkHeal: 600,
     },
     color: "#314037",
+  },
+  {
+    id: "crystalbehemoth",
+    name: "Crystal Behemoth",
+    tag: "Quake Armor",
+    glyph: "CB",
+    price: 4200,
+    hp: 3600,
+    damage: 120,
+    range: 68,
+    speed: 28,
+    radius: 38,
+    cooldown: 1.35,
+    knockback: 10,
+    weapon: "hammer",
+    areaAttack: { range: 118, damage: 52 },
+    skills: {
+      zombieBoss: true,
+      damageAura: true,
+      damageAuraRange: 88,
+      damageAuraDamage: 6,
+      knockbackImmune: true,
+      blockRangedChance: 0.32,
+      berserkHp: 1050,
+      berserkDamage: 0.35,
+      berserkHeal: 240,
+    },
+    color: "#4bc8d8",
+  },
+  {
+    id: "stormogre",
+    name: "Storm Ogre",
+    tag: "Storm Barrage",
+    glyph: "SO",
+    price: 5000,
+    hp: 3000,
+    damage: 92,
+    range: 285,
+    stopDistance: 210,
+    speed: 34,
+    radius: 36,
+    cooldown: 1.65,
+    knockback: 5,
+    weapon: "cannon",
+    projectileSpeed: 430,
+    splash: 82,
+    areaAttack: { range: 95, damage: 32 },
+    skills: {
+      zombieBoss: true,
+      tornado: true,
+      tornadoDamage: 9,
+      tornadoDuration: 3.8,
+      tornadoRange: 92,
+      damageAura: true,
+      damageAuraRange: 72,
+      damageAuraDamage: 5,
+      blockRangedChance: 0.18,
+    },
+    color: "#476cff",
+  },
+  {
+    id: "voidwardenboss",
+    name: "Void Warden",
+    tag: "Stasis Barrier",
+    glyph: "VW",
+    price: 5600,
+    hp: 3300,
+    damage: 78,
+    range: 260,
+    stopDistance: 190,
+    speed: 31,
+    radius: 35,
+    cooldown: 1.3,
+    knockback: 4.5,
+    weapon: "musket",
+    projectileSpeed: 520,
+    splash: 36,
+    skills: {
+      zombieBoss: true,
+      stasisGaze: true,
+      stasisRange: 230,
+      stasisDuration: 4.5,
+      stasisCooldown: 14,
+      blockRangedChance: 0.55,
+      damageAura: true,
+      damageAuraRange: 76,
+      damageAuraDamage: 7,
+      berserkHp: 900,
+      berserkDamage: 0.28,
+      berserkHeal: 180,
+    },
+    color: "#6f3cff",
+  },
+  {
+    id: "archmagelord",
+    name: "Archmage Lord",
+    tag: "All Magic",
+    glyph: "AM",
+    price: 8800,
+    hp: 6200,
+    damage: 88,
+    range: 310,
+    stopDistance: 235,
+    speed: 34,
+    radius: 42,
+    cooldown: 1.05,
+    knockback: 4.5,
+    weapon: "musket",
+    projectileSpeed: 560,
+    splash: 42,
+    areaAttack: { range: 118, damage: 36 },
+    skills: {
+      zombieBoss: true,
+      archmageBoss: true,
+      fireball: true,
+      fireballDamage: 125,
+      poisonSlime: true,
+      slimeChance: 0.45,
+      tornado: true,
+      tornadoDamage: 12,
+      tornadoDuration: 4.8,
+      tornadoRange: 105,
+      fireBreath: true,
+      fireDuration: 7,
+      fireRange: 150,
+      freezeAttack: true,
+      stasisGaze: true,
+      stasisRange: 230,
+      stasisDuration: 3.8,
+      stasisCooldown: 13,
+      holyShield: true,
+      holyShieldRange: 170,
+      holyShieldReduction: 0.35,
+      blockRangedChance: 0.42,
+      damageAura: true,
+      damageAuraRange: 92,
+      damageAuraDamage: 9,
+      berserkHp: 1800,
+      berserkDamage: 0.4,
+      berserkHeal: 450,
+    },
+    color: "#8f4cff",
   },  {
     id: "sunflower",
     name: "Sunflower",
@@ -4021,18 +4196,20 @@ function explodeItemFireball(projectile) {
     const distance = Math.hypot(unit.x - projectile.x, unit.y - projectile.y);
     if (distance > projectile.splash + unit.radius) continue;
     const falloff = Math.max(0.5, 1 - distance / projectile.splash);
+    const poisonFireball = Boolean(projectile.poisonFireball);
     hurt(unit, projectile.damage * falloff, {
       x: projectile.x,
       y: projectile.y,
       knockback: 4.2,
       ignoreDodge: true,
       isRanged: true,
-      applyBurn: true,
+      applyBurn: !poisonFireball,
       fireDuration: projectile.fireDuration || 4,
-      damageType: projectile.damageType || "fireball",
+      damageType: poisonFireball ? "poison" : projectile.damageType || "fireball",
       owner,
     });
-    burnUnit(unit, projectile.fireDuration || 4);
+    if (poisonFireball) poisonUnit(unit, projectile.poisonDuration || 8);
+    else burnUnit(unit, projectile.fireDuration || 4);
   }
   for (let i = 0; i < 42; i += 1) {
     const angle = Math.random() * Math.PI * 2;
@@ -4044,11 +4221,12 @@ function explodeItemFireball(projectile) {
       vy: Math.sin(angle) * speed,
       life: 0.45 + Math.random() * 0.35,
       startLife: 0.8,
-      color: Math.random() < 0.5 ? "#ff7838" : "#ffd15a",
+      color: projectile.poisonFireball ? (Math.random() < 0.5 ? "#70e071" : "#b8ff5a") : Math.random() < 0.5 ? "#ff7838" : "#ffd15a",
       size: 20 + Math.random() * 26,
     });
   }
-  addRingParticle(projectile.x, projectile.y, "#ff7838", projectile.splash);
+  if (projectile.poisonFireball) spawnSlime(projectile.x, projectile.y, projectile.team, Math.max(56, projectile.splash * 0.45));
+  addRingParticle(projectile.x, projectile.y, projectile.poisonFireball ? "#70e071" : "#ff7838", projectile.splash);
 }
 
 function cornCannonAtPoint(point) {
@@ -4307,7 +4485,7 @@ function castItemAt(itemId, point) {
         vy: Math.sin(angle) * 80,
         life: 0.35,
         startLife: 0.35,
-        color: Math.random() < 0.5 ? "#ff7838" : "#ffd15a",
+        color: projectile.poisonFireball ? (Math.random() < 0.5 ? "#70e071" : "#b8ff5a") : Math.random() < 0.5 ? "#ff7838" : "#ffd15a",
         size: 14 + Math.random() * 16,
       });
     }
@@ -4861,6 +5039,184 @@ function updateTiamatBoss(unit, dt) {
   }
 }
 
+function archmageEnemies(unit) {
+  return state.units.filter((other) => other.team !== unit.team && !other.dead && other.airborneTimer <= 0);
+}
+
+function archmageAllies(unit) {
+  return state.units.filter((other) => other.team === unit.team && !other.dead);
+}
+
+function nearestUnitFromList(unit, list) {
+  return list.sort((a, b) => Math.hypot(a.x - unit.x, a.y - unit.y) - Math.hypot(b.x - unit.x, b.y - unit.y))[0] || null;
+}
+
+function canArchmageCharm(unit) {
+  return !unit.dead && CHARMABLE_HUMAN_TYPE_IDS.has(unit.typeId) && !unit.skills?.tiamatBoss && !unit.skills?.zombieBoss && !unit.typeId.startsWith("custom-");
+}
+
+function charmHumanUnit(target, source) {
+  if (!target || target.dead || target.team === source.team || !canArchmageCharm(target)) return false;
+  target.team = source.team;
+  target.color = source.team === "blue" ? (typeById(target.typeId)?.color || target.color) : "#ff706c";
+  target.stasisTimer = Math.max(target.stasisTimer || 0, 0.45);
+  target.vx = 0;
+  target.vy = 0;
+  for (let i = 0; i < 22; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    state.particles.push({
+      x: target.x,
+      y: target.y,
+      vx: Math.cos(angle) * (40 + Math.random() * 100),
+      vy: Math.sin(angle) * (40 + Math.random() * 100),
+      life: 0.45 + Math.random() * 0.35,
+      startLife: 0.8,
+      color: "#d9b8ff",
+      size: 10 + Math.random() * 14,
+    });
+  }
+  addRingParticle(target.x, target.y, "#ae65ff", target.radius * 4.2);
+  return true;
+}
+
+function castArchmageCharm(unit, enemies) {
+  const radius = unit.skills.charmRange || 255;
+  const candidates = enemies
+    .filter(canArchmageCharm)
+    .filter((other) => Math.hypot(other.x - unit.x, other.y - unit.y) <= radius + other.radius)
+    .sort((a, b) => a.maxHp - b.maxHp || Math.hypot(a.x - unit.x, a.y - unit.y) - Math.hypot(b.x - unit.x, b.y - unit.y));
+  const max = unit.hp < unit.maxHp * 0.4 ? 3 : 2;
+  let changed = 0;
+  for (const target of candidates.slice(0, max)) {
+    if (charmHumanUnit(target, unit)) changed += 1;
+  }
+  if (changed > 0) {
+    addRingParticle(unit.x, unit.y, "#d9b8ff", radius);
+    state.particles.push({ x: unit.x, y: unit.y, life: 0.9, startLife: 0.9, color: "#4d146c", size: radius * 0.75 });
+  }
+  unit.archmageCharmTimer = unit.hp < unit.maxHp * 0.4 ? 7.5 : 10.5;
+}
+
+function castPoisonFireball(unit, target) {
+  if (!target) return;
+  const angle = Math.atan2(target.y - unit.y, target.x - unit.x);
+  state.projectiles.push({
+    x: unit.x + Math.cos(angle) * unit.radius * 0.65,
+    y: unit.y + Math.sin(angle) * unit.radius * 0.65,
+    tx: target.id,
+    targetX: target.x,
+    targetY: target.y,
+    team: unit.team,
+    ownerId: unit.id,
+    damage: damageFor(unit, unit.skills.poisonFireballDamage || 105),
+    speed: 450,
+    splash: unit.skills.poisonFireballSplash || 118,
+    radius: 13,
+    itemFireball: true,
+    poisonFireball: true,
+    damageType: "poison",
+    poisonDuration: unit.skills.poisonFireballDuration || 9,
+    color: "#70e071",
+    life: 2.1,
+  });
+  for (let i = 0; i < 14; i += 1) {
+    const a = Math.random() * Math.PI * 2;
+    state.particles.push({ x: unit.x, y: unit.y, vx: Math.cos(a) * 95, vy: Math.sin(a) * 95, life: 0.36, startLife: 0.36, color: "#70e071", size: 14 + Math.random() * 18 });
+  }
+  unit.archmagePoisonFireballTimer = unit.hp < unit.maxHp * 0.4 ? 3.8 : 5.2;
+}
+
+function spawnElementTornado(unit, target, elementId = "arcane") {
+  if (!target) return;
+  const colors = { fire: "#ff7838", ice: "#9bdcff", poison: "#70e071", lightning: "#d7ecff", arcane: "#b05cff" };
+  const baseRadius = unit.skills.tornadoRange || 105;
+  state.tornadoes.push({
+    x: unit.x + (target.x - unit.x) * 0.32,
+    y: unit.y + (target.y - unit.y) * 0.32,
+    team: unit.team,
+    vx: (target.x - unit.x) * 0.34,
+    vy: (target.y - unit.y) * 0.34,
+    radius: elementId === "lightning" ? baseRadius * 0.95 : baseRadius,
+    damage: unit.skills.tornadoDamage || 12,
+    spin: Math.random() < 0.5 ? -1 : 1,
+    life: unit.skills.tornadoDuration || 4.8,
+    poison: elementId === "poison",
+    element: elementId,
+    color: colors[elementId] || colors.arcane,
+  });
+  unit.archmageTornadoTimer = unit.hp < unit.maxHp * 0.4 ? 2.8 : 4.1;
+}
+
+function archmagePotionAt(point, team, itemId) {
+  const item = itemTypes[itemId];
+  if (!item) return 0;
+  let affected = 0;
+  for (const unit of state.units) {
+    if (unit.dead || unit.team !== team) continue;
+    const distance = Math.hypot(unit.x - point.x, unit.y - point.y);
+    if (distance > ITEM_RADIUS + unit.radius) continue;
+    unit[item.buff] = Math.max(unit[item.buff] || 0, ITEM_BUFF_SECONDS * 0.55);
+    affected += 1;
+  }
+  addRingParticle(point.x, point.y, item.color, ITEM_RADIUS);
+  return affected;
+}
+
+function archmageUseItem(unit, enemies) {
+  const allies = archmageAllies(unit);
+  const wounded = allies.filter((ally) => ally.hp < ally.maxHp * 0.62).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+  const target = nearestUnitFromList(unit, enemies);
+  const roll = Math.random();
+  if (wounded && roll < 0.22) {
+    healItemAt(wounded, unit.team, itemTypes.heal);
+  } else if (roll < 0.42) {
+    const point = nearestUnitFromList(unit, allies) || unit;
+    archmagePotionAt(point, unit.team, roll < 0.30 ? "power" : "speed");
+  } else if (roll < 0.62 && target) {
+    lightningItemAt(target, unit.team, itemTypes.lightning);
+  } else if (roll < 0.80 && target) {
+    meteorItemAt(target, unit.team, itemTypes.meteor);
+  } else if (target) {
+    const origin = { x: unit.x, y: unit.y };
+    state.projectiles.push({
+      x: origin.x,
+      y: origin.y,
+      targetX: target.x,
+      targetY: target.y,
+      team: unit.team,
+      ownerId: unit.id,
+      damage: 95,
+      speed: 620,
+      splash: ITEM_RADIUS,
+      radius: 13,
+      itemFireball: true,
+      fireball: true,
+      life: 1.8,
+    });
+  }
+  unit.archmageItemTimer = unit.hp < unit.maxHp * 0.4 ? 4.2 : 6.2;
+}
+
+function updateArchmageBoss(unit, dt) {
+  unit.archmagePoisonFireballTimer = Math.max(0, (unit.archmagePoisonFireballTimer || 1.4) - dt);
+  unit.archmageTornadoTimer = Math.max(0, (unit.archmageTornadoTimer || 1.9) - dt);
+  unit.archmageCharmTimer = Math.max(0, (unit.archmageCharmTimer || 3.5) - dt);
+  unit.archmageItemTimer = Math.max(0, (unit.archmageItemTimer || 4.4) - dt);
+  const enemies = archmageEnemies(unit);
+  if (!enemies.length) return;
+  const target = nearestUnitFromList(unit, enemies);
+  if (unit.archmageCharmTimer <= 0) castArchmageCharm(unit, enemies);
+  if (unit.archmagePoisonFireballTimer <= 0) castPoisonFireball(unit, target);
+  if (unit.archmageTornadoTimer <= 0) {
+    const elements = ["fire", "ice", "poison", "lightning", "arcane"];
+    spawnElementTornado(unit, target, elements[Math.floor(Math.random() * elements.length)]);
+  }
+  if (unit.archmageItemTimer <= 0) archmageUseItem(unit, enemies);
+  if (unit.fireBreathCooldown <= 0 && target && Math.hypot(target.x - unit.x, target.y - unit.y) <= 260) {
+    castFireBreathAtPoint(unit, target, true);
+    unit.fireBreathCooldown = unit.hp < unit.maxHp * 0.4 ? 3.2 : 4.8;
+  }
+}
 function spawnTornado(unit, target) {
   const baseRadius = unit.skills.tornadoRange || 82;
   const poison = Boolean(unit.skills.poisonSlime);
@@ -6378,6 +6734,9 @@ function updateUnit(unit, dt) {
   if (unit.skills.tiamatBoss) {
     if (updateTiamatBoss(unit, dt)) return;
   }
+  if (unit.skills.archmageBoss) {
+    updateArchmageBoss(unit, dt);
+  }
   if (unit.skills.permanentGatling) {
     unit.gatlingBoosted = true;
     if (Math.random() < dt * 10) {
@@ -6722,7 +7081,7 @@ function updateProjectiles(dt) {
         vy: -Math.sin(angle) * (45 + Math.random() * 90),
         life: 0.2 + Math.random() * 0.18,
         startLife: 0.38,
-        color: Math.random() < 0.5 ? "#ff7838" : "#ffd15a",
+        color: projectile.poisonFireball ? (Math.random() < 0.5 ? "#70e071" : "#b8ff5a") : Math.random() < 0.5 ? "#ff7838" : "#ffd15a",
         size: 18 + Math.random() * 14,
       });
       if (Math.hypot(projectile.targetX - projectile.x, projectile.targetY - projectile.y) < 18 || projectile.life <= 0) {
@@ -7009,8 +7368,20 @@ function updateTornadoes(dt) {
           unit.vy -= ny * 90 * controlFactor * dt;
         }
       }
-      hurt(unit, (tornado.damage || 6) * dt, { x: tornado.x, y: tornado.y, knockback: 0.35, damageType: "tornado" });
-      if (tornado.poison) poisonUnit(unit, 5);
+      const element = tornado.element || (tornado.poison ? "poison" : "arcane");
+      hurt(unit, (tornado.damage || 6) * dt, {
+        x: tornado.x,
+        y: tornado.y,
+        knockback: 0.35,
+        damageType: element === "fire" ? "fire" : element === "ice" ? "ice" : element === "poison" ? "poison" : element === "lightning" ? "magic" : "tornado",
+        applyBurn: element === "fire",
+        applyFreeze: element === "ice",
+        noKnockback: element === "fire",
+      });
+      if (element === "poison") poisonUnit(unit, 5);
+      if (element === "fire") burnUnit(unit, 2.5);
+      if (element === "ice") freezeUnit(unit, 0.8);
+      if (element === "lightning") unit.stasisTimer = Math.max(unit.stasisTimer || 0, 0.18);
     }
   }
   state.tornadoes = state.tornadoes.filter((tornado) => tornado.life > 0);
@@ -7904,7 +8275,153 @@ function drawUnitSkin(unit) {
       ctx.stroke();
     }
   }
-  if (unit.typeId === "obsidianwargod") {
+  if (unit.typeId === "crystalbehemoth") {
+    ctx.fillStyle = "#123947";
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.08, r * 0.95, r * 0.82, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#50e2f2";
+    for (let i = -3; i <= 3; i += 1) {
+      const x = i * r * 0.27;
+      const h = r * (0.85 + (3 - Math.abs(i)) * 0.14);
+      ctx.beginPath();
+      ctx.moveTo(x - r * 0.12, -r * 0.5);
+      ctx.lineTo(x, -h);
+      ctx.lineTo(x + r * 0.12, -r * 0.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "#c7fbff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    ctx.strokeStyle = "#a9f7ff";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(0, r * 0.05, r * 0.86, 0.1, Math.PI * 1.9);
+    ctx.stroke();
+    ctx.fillStyle = "#d6ffff";
+    ctx.beginPath();
+    ctx.arc(-r * 0.28, -r * 0.14, r * 0.1, 0, Math.PI * 2);
+    ctx.arc(r * 0.28, -r * 0.14, r * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (unit.typeId === "stormogre") {
+    ctx.fillStyle = "#202448";
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.06, r * 0.9, r * 1.05, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#6f7cff";
+    ctx.fillRect(-r * 0.72, -r * 0.18, r * 1.44, r * 0.42);
+    ctx.fillStyle = "#d7f5ff";
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.18, -r * 1.12);
+    ctx.lineTo(r * 0.08, -r * 0.45);
+    ctx.lineTo(-r * 0.14, -r * 0.45);
+    ctx.lineTo(r * 0.22, r * 0.25);
+    ctx.lineTo(-r * 0.24, -r * 0.22);
+    ctx.lineTo(-r * 0.02, -r * 0.22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#7ee7ff";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-r * 1.0, -r * 0.55);
+    ctx.lineTo(-r * 0.35, -r * 0.2);
+    ctx.lineTo(-r * 0.82, r * 0.18);
+    ctx.moveTo(r * 1.0, -r * 0.55);
+    ctx.lineTo(r * 0.35, -r * 0.2);
+    ctx.lineTo(r * 0.82, r * 0.18);
+    ctx.stroke();
+    ctx.fillStyle = "#e9fbff";
+    ctx.beginPath();
+    ctx.arc(-r * 0.28, -r * 0.34, r * 0.1, 0, Math.PI * 2);
+    ctx.arc(r * 0.28, -r * 0.34, r * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (unit.typeId === "voidwardenboss") {
+    ctx.fillStyle = "#11051f";
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.08, r * 0.88, r * 1.06, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#ae65ff";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.02, Math.PI * 0.08, Math.PI * 1.92);
+    ctx.stroke();
+    ctx.fillStyle = "#2e0b4b";
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.82, -r * 0.42);
+    ctx.lineTo(0, -r * 1.24);
+    ctx.lineTo(r * 0.82, -r * 0.42);
+    ctx.lineTo(r * 0.52, r * 0.8);
+    ctx.lineTo(-r * 0.52, r * 0.8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#d9b8ff";
+    ctx.beginPath();
+    ctx.ellipse(0, -r * 0.35, r * 0.38, r * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#190821";
+    ctx.beginPath();
+    ctx.arc(0, -r * 0.35, r * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#7b2dff";
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 3; i += 1) {
+      ctx.beginPath();
+      ctx.arc(0, 0, r * (0.46 + i * 0.22), i * 0.7, Math.PI + i * 0.7);
+      ctx.stroke();
+    }
+  }  if (unit.typeId === "archmagelord") {
+    ctx.fillStyle = "#16051f";
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.18, r * 0.9, r * 1.08, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#3a135c";
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.98, r * 0.88);
+    ctx.lineTo(-r * 0.48, -r * 0.52);
+    ctx.lineTo(0, -r * 0.92);
+    ctx.lineTo(r * 0.48, -r * 0.52);
+    ctx.lineTo(r * 0.98, r * 0.88);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#c48cff";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, -r * 0.03, r * 1.12, 0.12, Math.PI * 1.88);
+    ctx.stroke();
+    ctx.fillStyle = "#2b0a3d";
+    ctx.beginPath();
+    ctx.arc(0, -r * 0.6, r * 0.48, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#d9b8ff";
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.5, -r * 0.88);
+    ctx.lineTo(-r * 0.28, -r * 1.5);
+    ctx.lineTo(-r * 0.08, -r * 0.9);
+    ctx.lineTo(r * 0.12, -r * 1.6);
+    ctx.lineTo(r * 0.3, -r * 0.9);
+    ctx.lineTo(r * 0.52, -r * 1.42);
+    ctx.lineTo(r * 0.48, -r * 0.78);
+    ctx.closePath();
+    ctx.fill();
+    const orbColors = ["#ff7838", "#9bdcff", "#70e071", "#d7ecff", "#b05cff"];
+    for (let i = 0; i < orbColors.length; i += 1) {
+      const angle = performance.now() / 700 + (Math.PI * 2 * i) / orbColors.length;
+      const x = Math.cos(angle) * r * 1.28;
+      const y = Math.sin(angle) * r * 0.72 - r * 0.16;
+      ctx.fillStyle = orbColors[i];
+      ctx.beginPath();
+      ctx.arc(x, y, r * 0.13, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#f1ddff";
+    ctx.beginPath();
+    ctx.arc(-r * 0.18, -r * 0.62, r * 0.07, 0, Math.PI * 2);
+    ctx.arc(r * 0.18, -r * 0.62, r * 0.07, 0, Math.PI * 2);
+    ctx.fill();
+  }  if (unit.typeId === "obsidianwargod") {
     ctx.fillStyle = "#09080d";
     ctx.beginPath();
     ctx.ellipse(0, 0, r * 0.95, r * 1.1, 0, 0, Math.PI * 2);
@@ -8754,7 +9271,7 @@ function drawTornadoes() {
     ctx.save();
     ctx.translate(tornado.x, tornado.y);
     ctx.globalAlpha = Math.min(0.86, tornado.life / 2);
-    ctx.strokeStyle = tornado.poison ? "#67e078" : "#dce9ff";
+    ctx.strokeStyle = tornado.color || (tornado.poison ? "#67e078" : "#dce9ff");
     ctx.lineWidth = 5;
     for (let i = 0; i < 4; i += 1) {
       const r = tornado.radius * (0.28 + i * 0.18);
@@ -9519,6 +10036,19 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
