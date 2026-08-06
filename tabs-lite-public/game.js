@@ -196,6 +196,12 @@ const UNIT_PACK_2_IDS = new Set([
   "stormogre",
   "voidwardenboss",
   "archmagelord",
+  "ironrecruit",
+  "emberadept",
+  "venomdart",
+  "fieldpriest",
+  "sapper",
+  "runeling",
   "sunflower",
   "peashooter",
   "repeater",
@@ -536,6 +542,12 @@ const CHARMABLE_HUMAN_TYPE_IDS = new Set([
   "bannerlord",
   "stormlancer",
   "unit67",
+  "ironrecruit",
+  "emberadept",
+  "venomdart",
+  "fieldpriest",
+  "sapper",
+  "runeling",
 ]);
 const translations = {
   zh: {
@@ -765,6 +777,12 @@ const translations = {
       stormogre: ["雷暴巨魔", "风暴炮击"],
       voidwardenboss: ["虚空督军", "定身屏障"],
       archmagelord: ["奥术魔王", "万法策反"],
+      ironrecruit: ["铁盾新兵", "便宜格挡"],
+      emberadept: ["火花学徒", "小火球"],
+      venomdart: ["毒镖手", "毒液远程"],
+      fieldpriest: ["战地祭司", "小圣盾"],
+      sapper: ["爆破工兵", "拆墙自爆"],
+      runeling: ["符文小兵", "随机召唤"],
       sunflower: ["向日葵", "产金币"],
       nutwall: ["坚果墙", "高血防线"],
       obsidianwargod: ["黑曜石战神", "不动战神"],
@@ -1021,6 +1039,12 @@ const translations = {
       stormogre: ["Storm Ogre", "Storm Barrage"],
       voidwardenboss: ["Void Warden", "Stasis Barrier"],
       archmagelord: ["Archmage Lord", "All Magic"],
+      ironrecruit: ["Iron Recruit", "Cheap Block"],
+      emberadept: ["Ember Adept", "Small Fireball"],
+      venomdart: ["Venom Dart", "Poison Shot"],
+      fieldpriest: ["Field Priest", "Mini Shield"],
+      sapper: ["Sapper", "Wall Blast"],
+      runeling: ["Rune Minion", "Random Summon"],
       sunflower: ["Sunflower", "Gold Producer"],
       nutwall: ["Wall-nut", "High HP Wall"],
       obsidianwargod: ["Obsidian War God", "Immovable Titan"],
@@ -2154,6 +2178,116 @@ const unitTypes = [
       berserkHeal: 450,
     },
     color: "#8f4cff",
+  },
+  {
+    id: "ironrecruit",
+    name: "Iron Recruit",
+    tag: "Cheap Block",
+    glyph: "IR",
+    price: 140,
+    hp: 150,
+    damage: 12,
+    range: 31,
+    speed: 42,
+    radius: 16,
+    cooldown: 0.62,
+    knockback: 2.1,
+    weapon: "shield",
+    skills: { blockRangedChance: 0.38 },
+    color: "#91b8d8",
+  },
+  {
+    id: "emberadept",
+    name: "Ember Adept",
+    tag: "Small Fireball",
+    glyph: "EA",
+    price: 260,
+    hp: 64,
+    damage: 13,
+    range: 225,
+    stopDistance: 170,
+    speed: 28,
+    radius: 15,
+    cooldown: 1.2,
+    projectileSpeed: 360,
+    weapon: "bow",
+    splash: 18,
+    skills: { fireball: true, fireballDamage: 34, fireBreath: true, fireDuration: 3, fireRange: 72 },
+    color: "#ff9a4f",
+  },
+  {
+    id: "venomdart",
+    name: "Venom Dart",
+    tag: "Poison Shot",
+    glyph: "VD",
+    price: 245,
+    hp: 58,
+    damage: 11,
+    range: 235,
+    stopDistance: 180,
+    speed: 38,
+    radius: 14,
+    cooldown: 0.92,
+    projectileSpeed: 430,
+    weapon: "bow",
+    skills: { poisonSlime: true, slimeChance: 0.35 },
+    color: "#74d76d",
+  },
+  {
+    id: "fieldpriest",
+    name: "Field Priest",
+    tag: "Mini Shield",
+    glyph: "FP",
+    price: 330,
+    hp: 96,
+    damage: 10,
+    range: 200,
+    stopDistance: 145,
+    speed: 30,
+    radius: 16,
+    cooldown: 1.05,
+    projectileSpeed: 300,
+    weapon: "bow",
+    skills: { holyShield: true, holyShieldRange: 125, holyShieldReduction: 0.22, blockRangedChance: 0.18 },
+    color: "#ffe08a",
+  },
+  {
+    id: "sapper",
+    name: "Sapper",
+    tag: "Wall Blast",
+    glyph: "SP",
+    price: 275,
+    hp: 90,
+    damage: 18,
+    range: 30,
+    speed: 70,
+    radius: 15,
+    cooldown: 0.72,
+    knockback: 2.6,
+    weapon: "club",
+    areaAttack: { range: 42, damage: 8 },
+    canAttackWalls: true,
+    wallDamageMultiplier: 3.5,
+    skills: { explode: true, explodeDamage: 95, explodeRange: 82 },
+    color: "#d89a50",
+  },
+  {
+    id: "runeling",
+    name: "Rune Minion",
+    tag: "Random Summon",
+    glyph: "RL",
+    price: 360,
+    hp: 74,
+    damage: 12,
+    range: 210,
+    stopDistance: 160,
+    speed: 26,
+    radius: 15,
+    cooldown: 1.35,
+    projectileSpeed: 320,
+    weapon: "bow",
+    skills: { randomSpawn: true, randomSpawnInterval: 8.5, randomSpawnPool: ["clubber", "shield", "spear", "archer", "berserker", "ironrecruit", "venomdart"], blockRangedChance: 0.12 },
+    color: "#c48cff",
   },  {
     id: "sunflower",
     name: "Sunflower",
@@ -6176,8 +6310,10 @@ function applyDamageAura(unit, dt) {
 function spawnRandomUnit(unit) {
   if (!unit.skills.randomSpawn || unit.dead) return;
   const blockedSummons = new Set(["portalmage", "tiamat", "adultdragon", "giantzombie", "arrowtower"]);
+  const pool = Array.isArray(unit.skills.randomSpawnPool) ? new Set(unit.skills.randomSpawnPool) : null;
   const candidates = unitTypes.filter((type) => {
     if (type.id.startsWith("custom-") || blockedSummons.has(type.id)) return false;
+    if (pool && !pool.has(type.id)) return false;
     return isUnitAllowedInCurrentLevel(type);
   });
   const moddedPlantTickets = [
@@ -6186,10 +6322,12 @@ function spawnRandomUnit(unit) {
     ["chomper", 2],
     ["obsidianwargod", 1],
   ];
-  for (const [id, tickets] of moddedPlantTickets) {
-    const type = typeById(id);
-    if (!type || blockedSummons.has(id) || !isUnitAllowedInCurrentLevel(type)) continue;
-    for (let i = 0; i < tickets; i += 1) candidates.push(type);
+  if (!pool) {
+    for (const [id, tickets] of moddedPlantTickets) {
+      const type = typeById(id);
+      if (!type || blockedSummons.has(id) || !isUnitAllowedInCurrentLevel(type)) continue;
+      for (let i = 0; i < tickets; i += 1) candidates.push(type);
+    }
   }
   if (!candidates.length) return;
   const type = candidates[Math.floor(Math.random() * candidates.length)];
@@ -8044,7 +8182,89 @@ function drawUnitSkin(unit) {
     ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2);
     ctx.fill();
   }
-  if (unit.typeId === "wallcrusher") {
+  if (["ironrecruit", "fieldpriest", "sapper", "emberadept", "venomdart", "runeling"].includes(unit.typeId)) {
+    if (unit.typeId === "ironrecruit") {
+      ctx.fillStyle = "#c8d4de";
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.64, -r * 0.28);
+      ctx.lineTo(0, -r * 0.76);
+      ctx.lineTo(r * 0.64, -r * 0.28);
+      ctx.lineTo(r * 0.44, r * 0.48);
+      ctx.lineTo(0, r * 0.76);
+      ctx.lineTo(-r * 0.44, r * 0.48);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "#5f7180";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    if (unit.typeId === "emberadept") {
+      ctx.fillStyle = "#ffcf5f";
+      ctx.beginPath();
+      ctx.arc(0, -r * 0.75, r * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#ff7838";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.62, r * 0.58);
+      ctx.lineTo(r * 0.72, -r * 0.62);
+      ctx.stroke();
+    }
+    if (unit.typeId === "venomdart") {
+      ctx.fillStyle = "#70e071";
+      ctx.beginPath();
+      ctx.arc(-r * 0.38, -r * 0.58, r * 0.16, 0, Math.PI * 2);
+      ctx.arc(r * 0.38, -r * 0.58, r * 0.16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#204b25";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.9, r * 0.56);
+      ctx.lineTo(r * 0.92, -r * 0.36);
+      ctx.stroke();
+    }
+    if (unit.typeId === "fieldpriest") {
+      ctx.strokeStyle = "#fff0a8";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(0, -r * 0.36, r * 0.62, Math.PI * 0.1, Math.PI * 1.9);
+      ctx.stroke();
+      ctx.fillStyle = "#ffe08a";
+      ctx.fillRect(-r * 0.12, -r * 1.0, r * 0.24, r * 0.8);
+      ctx.fillRect(-r * 0.36, -r * 0.76, r * 0.72, r * 0.22);
+    }
+    if (unit.typeId === "sapper") {
+      ctx.fillStyle = "#3a2a1e";
+      ctx.fillRect(r * 0.28, -r * 0.54, r * 0.6, r * 0.44);
+      ctx.fillStyle = "#ffcf5f";
+      ctx.beginPath();
+      ctx.arc(r * 0.78, -r * 0.64, r * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#8b5a2b";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.82, r * 0.62);
+      ctx.lineTo(r * 0.52, -r * 0.28);
+      ctx.stroke();
+    }
+    if (unit.typeId === "runeling") {
+      ctx.strokeStyle = "#c48cff";
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 3; i += 1) {
+        ctx.beginPath();
+        ctx.arc(0, 0, r * (0.55 + i * 0.22), performance.now() / 900 + i, Math.PI + performance.now() / 900 + i);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "#e3c8ff";
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 0.85);
+      ctx.lineTo(r * 0.24, -r * 0.16);
+      ctx.lineTo(0, r * 0.18);
+      ctx.lineTo(-r * 0.24, -r * 0.16);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }  if (unit.typeId === "wallcrusher") {
     ctx.fillStyle = "#3f3b32";
     ctx.fillRect(r * 0.55, -r * 0.82, r * 1.05, r * 0.78);
     ctx.strokeStyle = "#f0dfae";
@@ -10036,6 +10256,10 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
+
+
+
 
 
 
