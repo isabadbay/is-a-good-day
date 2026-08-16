@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>TABS Lite</title>
-    <link rel="stylesheet" href="./styles.css?v=20260806-more-minions-1" />
+    <link rel="stylesheet" href="./styles.css?v=20260815-zvp-bosses-1" />
   </head>
   <body>
     <section id="homeScreen" class="home-screen" aria-label="Mode select">
@@ -373,6 +373,181 @@
               <label>
                 Berserk Heal
                 <input id="skillBerserkHeal" type="number" min="0" max="500000000" value="0" />
+              </label>              <label class="toggle-row inline-toggle">
+                <input id="skillPoisonFireball" type="checkbox" />
+                Poison Fireball
+              </label>
+              <label>
+                Poison Fireball Damage
+                <input id="skillPoisonFireballDamage" type="number" min="0" max="500000000" value="105" />
+              </label>
+              <label>
+                Poison Fireball Splash
+                <input id="skillPoisonFireballSplash" type="number" min="0" max="500000000" value="118" />
+              </label>
+              <label>
+                Poison Duration
+                <input id="skillPoisonFireballDuration" type="number" min="0" max="500000000" value="9" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillStasisGaze" type="checkbox" />
+                Stasis Gaze
+              </label>
+              <label>
+                Stasis Range
+                <input id="skillStasisRange" type="number" min="0" max="500000000" value="200" />
+              </label>
+              <label>
+                Stasis Duration
+                <input id="skillStasisDuration" type="number" min="0" max="500000000" step="0.1" value="5" />
+              </label>
+              <label>
+                Stasis Cooldown
+                <input id="skillStasisCooldown" type="number" min="0" max="500000000" step="0.1" value="20" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillRandomSpawn" type="checkbox" />
+                Random Spawn
+              </label>
+              <label>
+                Spawn Interval
+                <input id="skillRandomSpawnInterval" type="number" min="0" max="500000000" step="0.1" value="5" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillRandomSpawnBasicPool" type="checkbox" checked />
+                Random Spawn Basic Units Only
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillWhirlwindLeap" type="checkbox" />
+                Sky Slam Leap
+              </label>
+              <label>
+                Sky Slam Trigger Range
+                <input id="skillWhirlwindTriggerRange" type="number" min="0" max="500000000" value="92" />
+              </label>
+              <label>
+                Sky Slam Cooldown
+                <input id="skillWhirlwindCooldown" type="number" min="0" max="500000000" step="0.1" value="5" />
+              </label>
+              <label>
+                Sky Slam Damage
+                <input id="skillWhirlwindDamage" type="number" min="0" max="500000000" value="200" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillFiveElementBreath" type="checkbox" />
+                Five Element Breath
+              </label>
+              <label>
+                Five Element Damage
+                <input id="skillFiveElementBreathDamage" type="number" min="0" max="500000000" value="70" />
+              </label>
+              <label>
+                Five Element Range
+                <input id="skillFiveElementBreathRange" type="number" min="0" max="500000000" value="240" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillGatling" type="checkbox" />
+                Gatling Mode
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillPermanentGatling" type="checkbox" />
+                Permanent Gatling Boost
+              </label>
+              <label>
+                Gatling Check Interval
+                <input id="skillGatlingCheckInterval" type="number" min="0" max="500000000" step="0.1" value="3" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillCornCannon" type="checkbox" />
+                Corn Cannon Nuke
+              </label>
+              <label>
+                Corn Nuke Damage
+                <input id="skillCornNukeDamage" type="number" min="0" max="500000000" value="1200" />
+              </label>
+              <label>
+                Corn Nuke Cooldown
+                <input id="skillCornNukeCooldown" type="number" min="0" max="500000000" step="0.1" value="9" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillChompBlast" type="checkbox" />
+                Chomper Blast
+              </label>
+              <label>
+                Chomper Damage
+                <input id="skillChompDamage" type="number" min="0" max="500000000" value="450" />
+              </label>
+              <label>
+                Chomper Range
+                <input id="skillChompRange" type="number" min="0" max="500000000" value="200" />
+              </label>
+              <label>
+                Chomper Trigger Range
+                <input id="skillChompTriggerRange" type="number" min="0" max="500000000" value="120" />
+              </label>
+              <label>
+                Chomper Cooldown
+                <input id="skillChompCooldown" type="number" min="0" max="500000000" step="0.1" value="30" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillSpitOnAttack" type="checkbox" />
+                Spit Projectile On Attack
+              </label>
+              <label>
+                Spit Damage
+                <input id="skillSpitDamage" type="number" min="0" max="500000000" value="200" />
+              </label>
+              <label>
+                Spit Splash
+                <input id="skillSpitSplash" type="number" min="0" max="500000000" value="120" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillSummonFootballOnAttack" type="checkbox" />
+                Summon Football Zombies On Attack
+              </label>
+              <label>
+                Football Summon Count
+                <input id="skillSummonFootballCount" type="number" min="1" max="500000000" value="3" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillRooted" type="checkbox" />
+                Rooted / Cannot Move
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillImmovable" type="checkbox" />
+                Immovable Collision
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillKnockbackImmune" type="checkbox" />
+                Knockback Immune
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillBurnImmune" type="checkbox" />
+                Burn Immune
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillSunProducer" type="checkbox" />
+                Produce Gold
+              </label>
+              <label>
+                Gold Interval
+                <input id="skillSunInterval" type="number" min="0" max="500000000" step="0.1" value="5" />
+              </label>
+              <label>
+                Gold Amount
+                <input id="skillSunGold" type="number" min="0" max="500000000" value="50" />
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillZombieBoss" type="checkbox" />
+                Show Boss Health Bar
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillTiamatBoss" type="checkbox" />
+                Tiamat Boss AI
+              </label>
+              <label class="toggle-row inline-toggle">
+                <input id="skillArchmageBoss" type="checkbox" />
+                Archmage Boss AI
               </label>
             </div>
             <button id="createCustomBtn" class="wide-button">Create Unit</button>
@@ -498,9 +673,12 @@
       </div>
     </section>
 
-    <script src="./game.js?v=20260806-more-minions-1"></script>
+    <script src="./game.js?v=20260815-zvp-bosses-1"></script>
   </body>
 </html>
+
+
+
 
 
 

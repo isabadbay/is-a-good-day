@@ -128,6 +128,50 @@ const skillBlockRanged = document.querySelector("#skillBlockRanged");
 const skillBerserkHp = document.querySelector("#skillBerserkHp");
 const skillBerserkDamage = document.querySelector("#skillBerserkDamage");
 const skillBerserkHeal = document.querySelector("#skillBerserkHeal");
+const skillPoisonFireball = document.querySelector("#skillPoisonFireball");
+const skillPoisonFireballDamage = document.querySelector("#skillPoisonFireballDamage");
+const skillPoisonFireballSplash = document.querySelector("#skillPoisonFireballSplash");
+const skillPoisonFireballDuration = document.querySelector("#skillPoisonFireballDuration");
+const skillStasisGaze = document.querySelector("#skillStasisGaze");
+const skillStasisRange = document.querySelector("#skillStasisRange");
+const skillStasisDuration = document.querySelector("#skillStasisDuration");
+const skillStasisCooldown = document.querySelector("#skillStasisCooldown");
+const skillRandomSpawn = document.querySelector("#skillRandomSpawn");
+const skillRandomSpawnInterval = document.querySelector("#skillRandomSpawnInterval");
+const skillRandomSpawnBasicPool = document.querySelector("#skillRandomSpawnBasicPool");
+const skillWhirlwindLeap = document.querySelector("#skillWhirlwindLeap");
+const skillWhirlwindTriggerRange = document.querySelector("#skillWhirlwindTriggerRange");
+const skillWhirlwindCooldown = document.querySelector("#skillWhirlwindCooldown");
+const skillWhirlwindDamage = document.querySelector("#skillWhirlwindDamage");
+const skillFiveElementBreath = document.querySelector("#skillFiveElementBreath");
+const skillFiveElementBreathDamage = document.querySelector("#skillFiveElementBreathDamage");
+const skillFiveElementBreathRange = document.querySelector("#skillFiveElementBreathRange");
+const skillGatling = document.querySelector("#skillGatling");
+const skillPermanentGatling = document.querySelector("#skillPermanentGatling");
+const skillGatlingCheckInterval = document.querySelector("#skillGatlingCheckInterval");
+const skillCornCannon = document.querySelector("#skillCornCannon");
+const skillCornNukeDamage = document.querySelector("#skillCornNukeDamage");
+const skillCornNukeCooldown = document.querySelector("#skillCornNukeCooldown");
+const skillChompBlast = document.querySelector("#skillChompBlast");
+const skillChompDamage = document.querySelector("#skillChompDamage");
+const skillChompRange = document.querySelector("#skillChompRange");
+const skillChompTriggerRange = document.querySelector("#skillChompTriggerRange");
+const skillChompCooldown = document.querySelector("#skillChompCooldown");
+const skillSpitOnAttack = document.querySelector("#skillSpitOnAttack");
+const skillSpitDamage = document.querySelector("#skillSpitDamage");
+const skillSpitSplash = document.querySelector("#skillSpitSplash");
+const skillSummonFootballOnAttack = document.querySelector("#skillSummonFootballOnAttack");
+const skillSummonFootballCount = document.querySelector("#skillSummonFootballCount");
+const skillRooted = document.querySelector("#skillRooted");
+const skillImmovable = document.querySelector("#skillImmovable");
+const skillKnockbackImmune = document.querySelector("#skillKnockbackImmune");
+const skillBurnImmune = document.querySelector("#skillBurnImmune");
+const skillSunProducer = document.querySelector("#skillSunProducer");
+const skillSunInterval = document.querySelector("#skillSunInterval");
+const skillSunGold = document.querySelector("#skillSunGold");
+const skillZombieBoss = document.querySelector("#skillZombieBoss");
+const skillTiamatBoss = document.querySelector("#skillTiamatBoss");
+const skillArchmageBoss = document.querySelector("#skillArchmageBoss");
 const languageSelect = document.querySelector("#languageSelect");
 const itemsTitle = document.querySelector("#itemsTitle");
 const itemBar = document.querySelector("#itemBar");
@@ -196,6 +240,11 @@ const UNIT_PACK_2_IDS = new Set([
   "stormogre",
   "voidwardenboss",
   "archmagelord",
+  "zvp0457",
+  "zvp1526",
+  "zvp1526runner",
+  "rottingpuppet",
+  "smallrottingpuppet",
   "ironrecruit",
   "emberadept",
   "venomdart",
@@ -719,7 +768,50 @@ const translations = {
       skillBerserkHp: "狂暴触发血量",
       skillBerserkDamage: "狂暴攻击%",
       skillBerserkHeal: "狂暴回血",
-    },
+      skillPoisonFireball: "毒火球",
+      skillPoisonFireballDamage: "毒火球伤害",
+      skillPoisonFireballSplash: "毒火球范围",
+      skillPoisonFireballDuration: "中毒时间",
+      skillStasisGaze: "定身凝视",
+      skillStasisRange: "定身范围",
+      skillStasisDuration: "定身持续时间",
+      skillStasisCooldown: "定身冷却",
+      skillRandomSpawn: "随机召唤",
+      skillRandomSpawnInterval: "召唤间隔",
+      skillRandomSpawnBasicPool: "只召唤基础小兵",
+      skillWhirlwindLeap: "旋风跳砸",
+      skillWhirlwindTriggerRange: "跳砸触发范围",
+      skillWhirlwindCooldown: "跳砸冷却",
+      skillWhirlwindDamage: "跳砸伤害",
+      skillFiveElementBreath: "五元素吐息",
+      skillFiveElementBreathDamage: "五元素伤害",
+      skillFiveElementBreathRange: "五元素范围",
+      skillGatling: "机枪模式",
+      skillPermanentGatling: "永久机枪强化",
+      skillGatlingCheckInterval: "机枪切换间隔",
+      skillCornCannon: "玉米核弹",
+      skillCornNukeDamage: "玉米核弹伤害",
+      skillCornNukeCooldown: "玉米核弹冷却",
+      skillChompBlast: "大嘴花爆发",
+      skillChompDamage: "大嘴花伤害",
+      skillChompRange: "大嘴花范围",
+      skillChompTriggerRange: "大嘴花感应范围",
+      skillChompCooldown: "大嘴花冷却",
+      skillSpitOnAttack: "攻击后吐弹",
+      skillSpitDamage: "吐弹伤害",
+      skillSpitSplash: "吐弹范围",
+      skillSummonFootballOnAttack: "攻击召唤橄榄球僵尸",
+      skillSummonFootballCount: "橄榄球召唤数量",
+      skillRooted: "固定不动",
+      skillImmovable: "不会被挤动",
+      skillKnockbackImmune: "免疫击退",
+      skillBurnImmune: "免疫燃烧",
+      skillSunProducer: "产金币",
+      skillSunInterval: "产金币间隔",
+      skillSunGold: "产金币数量",
+      skillZombieBoss: "显示Boss血条",
+      skillTiamatBoss: "提亚马特Boss AI",
+      skillArchmageBoss: "奥术魔王Boss AI",    },
     weapons: {
       club: "木棒",
       spear: "长矛",
@@ -777,6 +869,11 @@ const translations = {
       stormogre: ["雷暴巨魔", "风暴炮击"],
       voidwardenboss: ["虚空督军", "定身屏障"],
       archmagelord: ["奥术魔王", "万法策反"],
+      zvp0457: ["ZVP-0457", "冰霜再生"],
+      zvp1526: ["ZVP-1526", "受击分裂"],
+      zvp1526runner: ["分裂小怪", "极速感染"],
+      rottingpuppet: ["腐烂傀儡", "腐烂爆发"],
+      smallrottingpuppet: ["小腐烂傀儡", "腐烂撕咬"],
       ironrecruit: ["铁盾新兵", "便宜格挡"],
       emberadept: ["火花学徒", "小火球"],
       venomdart: ["毒镖手", "毒液远程"],
@@ -810,7 +907,20 @@ const translations = {
       freeze: "冰冻",
       block: "远程格挡",
       berserk: "狂暴",
-    },
+      poisonFireball: "毒火球",
+      stasis: "定身",
+      randomSpawn: "随机召唤",
+      skySlam: "跳砸",
+      fiveElement: "五元素",
+      gatling: "机枪",
+      cornCannon: "核弹",
+      chompBlast: "吞咬爆发",
+      spit: "吐弹",
+      footballSummon: "召唤冲锋",
+      rooted: "固定",
+      immune: "免疫",
+      gold: "产金币",
+      bossAi: "Boss AI",    },
   },
   en: {
     subtitle: "Place units, start battle, watch chaos",
@@ -981,7 +1091,50 @@ const translations = {
       skillBerserkHp: "Berserk Trigger HP",
       skillBerserkDamage: "Berserk Damage%",
       skillBerserkHeal: "Berserk Heal",
-    },
+      skillPoisonFireball: "Poison Fireball",
+      skillPoisonFireballDamage: "Poison Fireball Damage",
+      skillPoisonFireballSplash: "Poison Fireball Splash",
+      skillPoisonFireballDuration: "Poison Duration",
+      skillStasisGaze: "Stasis Gaze",
+      skillStasisRange: "Stasis Range",
+      skillStasisDuration: "Stasis Duration",
+      skillStasisCooldown: "Stasis Cooldown",
+      skillRandomSpawn: "Random Spawn",
+      skillRandomSpawnInterval: "Spawn Interval",
+      skillRandomSpawnBasicPool: "Basic Units Only",
+      skillWhirlwindLeap: "Sky Slam Leap",
+      skillWhirlwindTriggerRange: "Sky Slam Trigger Range",
+      skillWhirlwindCooldown: "Sky Slam Cooldown",
+      skillWhirlwindDamage: "Sky Slam Damage",
+      skillFiveElementBreath: "Five Element Breath",
+      skillFiveElementBreathDamage: "Five Element Damage",
+      skillFiveElementBreathRange: "Five Element Range",
+      skillGatling: "Gatling Mode",
+      skillPermanentGatling: "Permanent Gatling Boost",
+      skillGatlingCheckInterval: "Gatling Check Interval",
+      skillCornCannon: "Corn Cannon Nuke",
+      skillCornNukeDamage: "Corn Nuke Damage",
+      skillCornNukeCooldown: "Corn Nuke Cooldown",
+      skillChompBlast: "Chomper Blast",
+      skillChompDamage: "Chomper Damage",
+      skillChompRange: "Chomper Range",
+      skillChompTriggerRange: "Chomper Trigger Range",
+      skillChompCooldown: "Chomper Cooldown",
+      skillSpitOnAttack: "Spit Projectile On Attack",
+      skillSpitDamage: "Spit Damage",
+      skillSpitSplash: "Spit Splash",
+      skillSummonFootballOnAttack: "Summon Football Zombies On Attack",
+      skillSummonFootballCount: "Football Summon Count",
+      skillRooted: "Rooted / Cannot Move",
+      skillImmovable: "Immovable Collision",
+      skillKnockbackImmune: "Knockback Immune",
+      skillBurnImmune: "Burn Immune",
+      skillSunProducer: "Produce Gold",
+      skillSunInterval: "Gold Interval",
+      skillSunGold: "Gold Amount",
+      skillZombieBoss: "Show Boss Health Bar",
+      skillTiamatBoss: "Tiamat Boss AI",
+      skillArchmageBoss: "Archmage Boss AI",    },
     weapons: {
       club: "Club",
       spear: "Spear",
@@ -1039,6 +1192,11 @@ const translations = {
       stormogre: ["Storm Ogre", "Storm Barrage"],
       voidwardenboss: ["Void Warden", "Stasis Barrier"],
       archmagelord: ["Archmage Lord", "All Magic"],
+      zvp0457: ["ZVP-0457", "Frost Regen"],
+      zvp1526: ["ZVP-1526", "Split on Hit"],
+      zvp1526runner: ["Split Fragment", "Hyper Infect"],
+      rottingpuppet: ["Rotting Puppet", "Rot Burst"],
+      smallrottingpuppet: ["Small Rotting Puppet", "Rot Bite"],
       ironrecruit: ["Iron Recruit", "Cheap Block"],
       emberadept: ["Ember Adept", "Small Fireball"],
       venomdart: ["Venom Dart", "Poison Shot"],
@@ -1072,7 +1230,20 @@ const translations = {
       freeze: "Freeze",
       block: "Ranged Block",
       berserk: "Berserk",
-    },
+      poisonFireball: "Poison Fireball",
+      stasis: "Stasis",
+      randomSpawn: "Random Spawn",
+      skySlam: "Sky Slam",
+      fiveElement: "Five Elements",
+      gatling: "Gatling",
+      cornCannon: "Nuke",
+      chompBlast: "Chomp Blast",
+      spit: "Spit",
+      footballSummon: "Summon Rush",
+      rooted: "Rooted",
+      immune: "Immune",
+      gold: "Gold",
+      bossAi: "Boss AI",    },
   },
 };
 
@@ -2180,6 +2351,131 @@ const unitTypes = [
     color: "#8f4cff",
   },
   {
+    id: "zvp0457",
+    name: "ZVP-0457",
+    tag: "Frost Regeneration",
+    glyph: "Z4",
+    price: 5200,
+    hp: 4200,
+    damage: 70,
+    range: 62,
+    speed: 34,
+    radius: 34,
+    cooldown: 1.05,
+    knockback: 5,
+    weapon: "hammer",
+    areaAttack: { range: 90, damage: 22 },
+    skills: {
+      zombieBoss: true,
+      frostZombieBoss: true,
+      regenPerSecond: 10,
+      freezeAttack: true,
+      damageAura: true,
+      damageAuraRange: 86,
+      damageAuraDamage: 5,
+      knockbackImmune: true,
+      blockRangedChance: 0.22,
+    },
+    color: "#8ee8ff",
+  },
+  {
+    id: "zvp1526",
+    name: "ZVP-1526",
+    tag: "Split Body",
+    glyph: "Z15",
+    price: 6500,
+    hp: 5200,
+    damage: 0,
+    range: 0,
+    stopDistance: 0,
+    speed: 0,
+    radius: 48,
+    cooldown: 999,
+    knockback: 0,
+    weapon: "club",
+    canAttackWalls: false,
+    skills: {
+      zombieBoss: true,
+      splitOnHit: true,
+      shrinkWithHp: true,
+      minRadius: 22,
+      rooted: true,
+      immovable: true,
+      knockbackImmune: true,
+      damageAura: true,
+      damageAuraRange: 80,
+      damageAuraDamage: 4,
+    },
+    color: "#3b234f",
+  },
+  {
+    id: "zvp1526runner",
+    name: "ZVP-1526 Fragment",
+    tag: "Hyper Split",
+    glyph: "ZF",
+    price: 120,
+    hp: 46,
+    damage: 10,
+    range: 24,
+    speed: 175,
+    radius: 10,
+    cooldown: 0.28,
+    knockback: 1.2,
+    dodgeChance: 0.18,
+    weapon: "club",
+    skills: { infectTouch: true, infectSeconds: 4 },
+    color: "#b05cff",
+  },
+  {
+    id: "rottingpuppet",
+    name: "Rotting Puppet",
+    tag: "Rot Burst",
+    glyph: "RP",
+    price: 5900,
+    hp: 4800,
+    damage: 90,
+    range: 58,
+    speed: 30,
+    radius: 40,
+    cooldown: 1.4,
+    knockback: 6,
+    weapon: "hammer",
+    areaAttack: { range: 100, damage: 35 },
+    skills: {
+      zombieBoss: true,
+      rotPulse: true,
+      rotPulseInterval: 15,
+      rotPulseDamage: 220,
+      rotPulseRange: 160,
+      halfHpSummon: true,
+      halfHpSummonType: "smallrottingpuppet",
+      halfHpSummonCount: 6,
+      damageAura: true,
+      damageAuraRange: 75,
+      damageAuraDamage: 6,
+      poisonSlime: true,
+      slimeChance: 0.25,
+      knockbackImmune: true,
+    },
+    color: "#6f6a43",
+  },
+  {
+    id: "smallrottingpuppet",
+    name: "Small Rotting Puppet",
+    tag: "Rot Bite",
+    glyph: "SR",
+    price: 170,
+    hp: 150,
+    damage: 18,
+    range: 28,
+    speed: 62,
+    radius: 15,
+    cooldown: 0.55,
+    knockback: 2,
+    weapon: "club",
+    skills: { poisonSlime: true, slimeChance: 0.25 },
+    color: "#7f8a45",
+  },  {
     id: "ironrecruit",
     name: "Iron Recruit",
     tag: "Cheap Block",
@@ -2912,6 +3208,20 @@ function displayType(type) {
   if (skills.freezeAttack) tags.push(text.tags.freeze);
   if (skills.blockRangedChance > 0) tags.push(text.tags.block);
   if (skills.berserkHp > 0) tags.push(text.tags.berserk);
+  if (skills.poisonFireball) tags.push(text.tags.poisonFireball);
+  if (skills.stasisGaze) tags.push(text.tags.stasis);
+  if (skills.randomSpawn) tags.push(text.tags.randomSpawn);
+  if (skills.whirlwindLeap) tags.push(text.tags.skySlam);
+  if (skills.fiveElementBreath) tags.push(text.tags.fiveElement);
+  if (skills.gatling) tags.push(text.tags.gatling);
+  if (skills.cornCannon) tags.push(text.tags.cornCannon);
+  if (skills.chompBlast) tags.push(text.tags.chompBlast);
+  if (skills.spitOnAttack) tags.push(text.tags.spit);
+  if (skills.summonFootballOnAttack) tags.push(text.tags.footballSummon);
+  if (skills.rooted) tags.push(text.tags.rooted);
+  if (skills.immovable || skills.knockbackImmune || skills.burnImmune) tags.push(text.tags.immune);
+  if (skills.sunProducer) tags.push(text.tags.gold);
+  if (skills.tiamatBoss || skills.archmageBoss || skills.zombieBoss) tags.push(text.tags.bossAi);
   return { name: type.name, tag: [mode, weapon, ...tags].join("/") };
 }
 
@@ -3386,7 +3696,55 @@ function createCustomUnitType() {
     berserkHp: clamp(Number(skillBerserkHp.value) || 0, 0, CUSTOM_LIMIT),
     berserkDamage: clamp(Number(skillBerserkDamage.value) || 50, 0, CUSTOM_LIMIT) / 100,
     berserkHeal: clamp(Number(skillBerserkHeal.value) || 0, 0, CUSTOM_LIMIT),
-  };
+    poisonFireball: skillPoisonFireball.checked,
+    poisonFireballDamage: clamp(Number(skillPoisonFireballDamage.value) || 105, 0, CUSTOM_LIMIT),
+    poisonFireballSplash: clamp(Number(skillPoisonFireballSplash.value) || 118, 0, CUSTOM_LIMIT),
+    poisonFireballDuration: clamp(Number(skillPoisonFireballDuration.value) || 9, 0, CUSTOM_LIMIT),
+    stasisGaze: skillStasisGaze.checked,
+    stasisRange: clamp(Number(skillStasisRange.value) || 200, 0, CUSTOM_LIMIT),
+    stasisDuration: clamp(Number(skillStasisDuration.value) || 5, 0, CUSTOM_LIMIT),
+    stasisCooldown: clamp(Number(skillStasisCooldown.value) || 20, 0, CUSTOM_LIMIT),
+    randomSpawn: skillRandomSpawn.checked,
+    randomSpawnInterval: clamp(Number(skillRandomSpawnInterval.value) || 5, 0.1, CUSTOM_LIMIT),
+    randomSpawnPool: skillRandomSpawnBasicPool.checked ? ["clubber", "shield", "spear", "archer", "berserker", "ironrecruit", "venomdart"] : null,
+    whirlwindLeap: skillWhirlwindLeap.checked,
+    whirlwindTriggerRange: clamp(Number(skillWhirlwindTriggerRange.value) || 92, 0, CUSTOM_LIMIT),
+    whirlwindCooldown: clamp(Number(skillWhirlwindCooldown.value) || 5, 0, CUSTOM_LIMIT),
+    whirlwindDamage: clamp(Number(skillWhirlwindDamage.value) || 200, 0, CUSTOM_LIMIT),
+    fiveElementBreath: skillFiveElementBreath.checked,
+    fiveElementBreathDamage: clamp(Number(skillFiveElementBreathDamage.value) || 70, 0, CUSTOM_LIMIT),
+    fiveElementBreathRange: clamp(Number(skillFiveElementBreathRange.value) || 240, 0, CUSTOM_LIMIT),
+    gatling: skillGatling.checked || skillPermanentGatling.checked,
+    permanentGatling: skillPermanentGatling.checked,
+    wildGatling: skillPermanentGatling.checked,
+    gatlingCheckInterval: clamp(Number(skillGatlingCheckInterval.value) || 3, 0.1, CUSTOM_LIMIT),
+    cornCannon: skillCornCannon.checked,
+    cornNukeDamage: clamp(Number(skillCornNukeDamage.value) || 1200, 0, CUSTOM_LIMIT),
+    cornNukeCooldown: clamp(Number(skillCornNukeCooldown.value) || 9, 0.1, CUSTOM_LIMIT),
+    chompBlast: skillChompBlast.checked,
+    chompDamage: clamp(Number(skillChompDamage.value) || 450, 0, CUSTOM_LIMIT),
+    chompRange: clamp(Number(skillChompRange.value) || 200, 0, CUSTOM_LIMIT),
+    chompTriggerRange: clamp(Number(skillChompTriggerRange.value) || 120, 0, CUSTOM_LIMIT),
+    chompCooldown: clamp(Number(skillChompCooldown.value) || 30, 0.1, CUSTOM_LIMIT),
+    spitOnAttack: skillSpitOnAttack.checked,
+    spitDamage: clamp(Number(skillSpitDamage.value) || 200, 0, CUSTOM_LIMIT),
+    spitSplash: clamp(Number(skillSpitSplash.value) || 120, 0, CUSTOM_LIMIT),
+    spitSpeed: 430,
+    summonFootballOnAttack: skillSummonFootballOnAttack.checked,
+    summonFootballCount: Math.max(1, Math.floor(clamp(Number(skillSummonFootballCount.value) || 3, 1, CUSTOM_LIMIT))),
+    rooted: skillRooted.checked || skillCornCannon.checked,
+    immovable: skillImmovable.checked,
+    knockbackImmune: skillKnockbackImmune.checked,
+    burnImmune: skillBurnImmune.checked,
+    sunProducer: skillSunProducer.checked,
+    sunInterval: clamp(Number(skillSunInterval.value) || 5, 0.1, CUSTOM_LIMIT),
+    sunGold: clamp(Number(skillSunGold.value) || 50, 0, CUSTOM_LIMIT),
+    zombieBoss: skillZombieBoss.checked || skillTiamatBoss.checked || skillArchmageBoss.checked,
+    tiamatBoss: skillTiamatBoss.checked,
+    archmageBoss: skillArchmageBoss.checked,
+    defensePercent: skillTiamatBoss.checked ? 100 : 0,
+    defensePerHundredHp: skillTiamatBoss.checked,
+    hitSpeedBoost: skillTiamatBoss.checked ? 10 : 1,  };
   const ranged = customRanged.checked;
   const canAttackWalls = customAttackWalls.checked;
   const secondProfile = weaponProfiles[customSecondWeapon.value] || null;
@@ -3438,7 +3796,24 @@ function createCustomUnitType() {
       (skills.freezeAttack ? 140 : 0) +
       skills.blockRangedChance * 220 +
       (skills.berserkHp > 0 ? skills.berserkDamage * 180 + skills.berserkHeal * 0.8 : 0) +
-      (secondAttack ? secondAttack.damage * 5 + secondAttack.range * 0.22 + (secondAttack.ranged ? 80 : 0) + (secondBurstCount > 1 ? secondBurstCount * 45 + secondBurstCooldown * 16 : 0) : 0) +
+      (skills.poisonFireball ? 150 + skills.poisonFireballDamage * 2.4 + skills.poisonFireballSplash * 0.35 + skills.poisonFireballDuration * 15 : 0) +
+      (skills.stasisGaze ? 180 + skills.stasisRange * 0.4 + skills.stasisDuration * 45 + Math.max(0, 20 - skills.stasisCooldown) * 30 : 0) +
+      (skills.randomSpawn ? 280 + Math.max(0, 10 - skills.randomSpawnInterval) * 75 : 0) +
+      (skills.whirlwindLeap ? 220 + skills.whirlwindDamage * 0.8 + skills.whirlwindTriggerRange * 0.4 : 0) +
+      (skills.fiveElementBreath ? 260 + skills.fiveElementBreathDamage * 2.2 + skills.fiveElementBreathRange * 0.35 : 0) +
+      (skills.gatling ? 260 + (skills.permanentGatling ? 520 : 0) : 0) +
+      (skills.cornCannon ? 450 + skills.cornNukeDamage * 0.8 + Math.max(0, 10 - skills.cornNukeCooldown) * 80 : 0) +
+      (skills.chompBlast ? 280 + skills.chompDamage * 0.7 + skills.chompRange * 0.35 : 0) +
+      (skills.spitOnAttack ? 180 + skills.spitDamage * 0.7 + skills.spitSplash * 0.35 : 0) +
+      (skills.summonFootballOnAttack ? 260 + skills.summonFootballCount * 180 : 0) +
+      (skills.rooted ? -40 : 0) +
+      (skills.immovable ? 160 : 0) +
+      (skills.knockbackImmune ? 220 : 0) +
+      (skills.burnImmune ? 160 : 0) +
+      (skills.sunProducer ? 220 + skills.sunGold * 4 + Math.max(0, 8 - skills.sunInterval) * 45 : 0) +
+      (skills.tiamatBoss ? 5200 : 0) +
+      (skills.archmageBoss ? 4200 : 0) +
+      (skills.zombieBoss && !skills.tiamatBoss && !skills.archmageBoss ? 450 : 0) +      (secondAttack ? secondAttack.damage * 5 + secondAttack.range * 0.22 + (secondAttack.ranged ? 80 : 0) + (secondBurstCount > 1 ? secondBurstCount * 45 + secondBurstCooldown * 16 : 0) : 0) +
       (ranged ? 95 : 0) +
       splash * 1.5,
   );
@@ -3513,6 +3888,7 @@ function addUnit(typeId, team, x, y) {
     stopDistance: (type.stopDistance ?? type.range) * rangeBoost,
     speed: type.speed * speedBoost,
     radius: type.radius,
+    baseRadius: type.radius,
     cooldownTime: type.cooldown * cooldownBoost,
     projectileSpeed: type.projectileSpeed || 0,
     splash: type.splash || 0,
@@ -6086,6 +6462,12 @@ function controlledSpecials(unit) {
   if (unit.skills.fireball) {
     specials.push({ name: "Fireball", cd: unit.fireballCooldown, ready: unit.fireballCooldown <= 0, cast: () => castFireballAtPoint(unit, controlAimPoint(unit, 520)) });
   }
+  if (unit.skills.poisonFireball) {
+    specials.push({ name: "Poison Fireball", cd: unit.archmagePoisonFireballTimer || 0, ready: (unit.archmagePoisonFireballTimer || 0) <= 0, cast: () => castPoisonFireball(unit, controlAimPoint(unit, 520)) });
+  }
+  if (unit.skills.fiveElementBreath) {
+    specials.push({ name: "Five Elements", cd: unit.fiveElementBreathCooldown || 0, ready: (unit.fiveElementBreathCooldown || 0) <= 0, cast: () => { dragonFiveElementBreath(unit, controlAimPoint(unit, unit.skills.fiveElementBreathRange || 240)); unit.fiveElementBreathCooldown = 5.8; } });
+  }
   if (unit.skills.tornado) {
     specials.push({
       name: "Tornado",
@@ -6512,6 +6894,72 @@ function finishWhirlwindLeap(unit) {
   state.particles.push({ x: unit.x, y: unit.y, life: 0.85, startLife: 0.85, color: "#8ab4ff", size: radius * 1.25 });
 }
 
+function spawnZvp1526Fragment(unit) {
+  const type = typeById("zvp1526runner");
+  if (!unit || unit.dead || !type) return;
+  const angle = Math.random() * Math.PI * 2;
+  const distance = unit.radius + 12 + Math.random() * 18;
+  const x = clamp(unit.x + Math.cos(angle) * distance, type.radius, canvas.width - type.radius);
+  const y = clamp(unit.y + Math.sin(angle) * distance, type.radius, canvas.height - type.radius);
+  const fragment = addUnit("zvp1526runner", unit.team, x, y);
+  fragment.vx += Math.cos(angle) * 170;
+  fragment.vy += Math.sin(angle) * 170;
+  state.particles.push({ x, y, life: 0.45, startLife: 0.45, color: "#b05cff", size: 34 });
+}
+
+function triggerSplitOnHit(target, source) {
+  if (!target?.skills?.splitOnHit || target.dead || source?.noSplitSummon) return;
+  const damageType = source?.damageType || "physical";
+  if (["poison", "fire", "burn", "aura"].includes(damageType)) return;
+  spawnZvp1526Fragment(target);
+}
+
+function triggerRotPulse(unit) {
+  const radius = unit.skills.rotPulseRange || 160;
+  const damage = unit.skills.rotPulseDamage || 180;
+  for (const other of state.units) {
+    if (other.team === unit.team || other.dead || other.airborneTimer > 0) continue;
+    const distance = Math.hypot(other.x - unit.x, other.y - unit.y);
+    if (distance <= radius + other.radius) {
+      hurt(other, damage, { x: unit.x, y: unit.y, owner: unit, knockback: 5, forceKnockback: true, ignoreDodge: true, damageType: "poison" });
+      other.poisonTimer = Math.max(other.poisonTimer || 0, 4);
+      other.poisonTick = Math.min(other.poisonTick || 1, 1);
+    }
+  }
+  damageWallsAt(unit.x, unit.y, radius, damage * 0.28);
+  addRingParticle(unit.x, unit.y, "#8f9a45", radius);
+  for (let i = 0; i < 18; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const distance = Math.random() * radius;
+    state.particles.push({
+      x: unit.x + Math.cos(angle) * distance,
+      y: unit.y + Math.sin(angle) * distance,
+      life: 0.7,
+      startLife: 0.7,
+      color: i % 2 ? "#7f8a45" : "#b6c05e",
+      size: 14 + Math.random() * 24,
+    });
+  }
+}
+
+function triggerHalfHpSummon(unit) {
+  if (!unit?.skills?.halfHpSummon || unit.halfHpSummoned) return;
+  unit.halfHpSummoned = true;
+  const typeId = unit.skills.halfHpSummonType || "smallrottingpuppet";
+  const type = typeById(typeId);
+  if (!type) return;
+  const count = Math.max(1, Math.floor(unit.skills.halfHpSummonCount || 4));
+  for (let i = 0; i < count; i += 1) {
+    const angle = (i / count) * Math.PI * 2 + Math.random() * 0.25;
+    const distance = unit.radius + 20 + Math.random() * 26;
+    const x = clamp(unit.x + Math.cos(angle) * distance, type.radius, canvas.width - type.radius);
+    const y = clamp(unit.y + Math.sin(angle) * distance, type.radius, canvas.height - type.radius);
+    const minion = addUnit(typeId, unit.team, x, y);
+    minion.vx += Math.cos(angle) * 90;
+    minion.vy += Math.sin(angle) * 90;
+  }
+  addRingParticle(unit.x, unit.y, "#b6c05e", unit.radius * 3.2);
+}
 function hurt(target, amount, source) {
   if (target.airborneTimer > 0) {
     state.particles.push({ x: target.x, y: target.y, life: 0.28, color: "#d7ecff", size: target.radius * 1.6 });
@@ -6589,6 +7037,7 @@ function hurt(target, amount, source) {
     killer.statsDamage += Math.max(0, Math.min(amount, target.hp));
   }
   target.hp -= amount;
+  if (amount > 0 && target.hp > 0) triggerSplitOnHit(target, source);
   updateBerserk(target);
   const angle = Math.atan2(target.y - source.y, target.x - source.x);
   const forceKnockback = source.forceKnockback || source.skills?.forceKnockback || source.owner?.skills?.forceKnockback;
@@ -6795,6 +7244,7 @@ function updateUnit(unit, dt) {
   unit.stasisCooldown = Math.max(0, unit.stasisCooldown - dt);
   unit.fireBreathCooldown = Math.max(0, (unit.fireBreathCooldown || 0) - dt);
   unit.fireballCooldown = Math.max(0, unit.fireballCooldown - dt);
+  unit.archmagePoisonFireballTimer = Math.max(0, (unit.archmagePoisonFireballTimer || 0) - dt);
   unit.fiveElementBreathCooldown = Math.max(0, (unit.fiveElementBreathCooldown || 0) - dt);
   unit.randomSpawnCooldown = Math.max(0, unit.randomSpawnCooldown - dt);
   unit.whirlwindCooldown = Math.max(0, unit.whirlwindCooldown - dt);
@@ -6862,7 +7312,28 @@ function updateUnit(unit, dt) {
       return;
     }
   }
-  if (unit.dead) {
+  if (!unit.dead && unit.skills.regenPerSecond && unit.hp < unit.maxHp) {
+    unit.hp = Math.min(unit.maxHp, unit.hp + unit.skills.regenPerSecond * dt);
+    unit.regenParticleTimer = Math.max(0, (unit.regenParticleTimer || 0) - dt);
+    if (unit.regenParticleTimer <= 0) {
+      unit.regenParticleTimer = 0.55;
+      state.particles.push({ x: unit.x, y: unit.y - unit.radius * 0.45, life: 0.5, startLife: 0.5, color: "#bdf7ff", size: unit.radius * 1.8 });
+    }
+  }
+  if (!unit.dead && unit.skills.shrinkWithHp) {
+    const ratio = clamp(unit.hp / Math.max(1, unit.maxHp), 0, 1);
+    unit.radius = Math.max(unit.skills.minRadius || 16, (unit.baseRadius || unit.radius) * (0.42 + ratio * 0.58));
+  }
+  if (!unit.dead && unit.skills.rotPulse) {
+    unit.rotPulseTimer = Math.max(0, (unit.rotPulseTimer ?? unit.skills.rotPulseInterval ?? 15) - dt);
+    if (unit.rotPulseTimer <= 0) {
+      unit.rotPulseTimer += unit.skills.rotPulseInterval || 15;
+      triggerRotPulse(unit);
+    }
+  }
+  if (!unit.dead && unit.skills.halfHpSummon && !unit.halfHpSummoned && unit.hp <= unit.maxHp * 0.5) {
+    triggerHalfHpSummon(unit);
+  }  if (unit.dead) {
     unit.vx *= 0.972;
     unit.vy *= 0.972;
     unit.x += unit.vx * dt;
@@ -7013,6 +7484,9 @@ function updateUnit(unit, dt) {
   }
   if (target.kind !== "wall" && unit.skills.fireball && unit.fireballCooldown <= 0 && distance <= 320) {
     castFireball(unit, target);
+  }
+  if (target.kind !== "wall" && unit.skills.poisonFireball && unit.archmagePoisonFireballTimer <= 0 && distance <= 380) {
+    castPoisonFireball(unit, target);
   }
   if (target.kind !== "wall" && unit.skills.fiveElementBreath && unit.fiveElementBreathCooldown <= 0 && distance <= (unit.skills.fiveElementBreathRange || 180)) {
     dragonFiveElementBreath(unit, target);
@@ -8068,6 +8542,100 @@ function drawUnitSkin(unit) {
   ctx.save();
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+  if (unit.typeId === "zvp0457") {
+    ctx.fillStyle = "#bdf7ff";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.82, r * 1.05, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#e9fbff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.58, -r * 0.82);
+    ctx.lineTo(-r * 0.32, -r * 1.35);
+    ctx.lineTo(-r * 0.08, -r * 0.86);
+    ctx.lineTo(r * 0.18, -r * 1.42);
+    ctx.lineTo(r * 0.42, -r * 0.78);
+    ctx.stroke();
+    ctx.fillStyle = "#73dfff";
+    for (let i = 0; i < 5; i += 1) {
+      ctx.beginPath();
+      ctx.arc((i - 2) * r * 0.24, r * 0.28 + Math.sin(unit.wobble + i) * 2, r * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = "#4fb7e6";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.18, Math.PI * 0.1, Math.PI * 1.8);
+    ctx.stroke();
+  }
+  if (unit.typeId === "zvp1526") {
+    const pulse = 0.75 + Math.sin(performance.now() / 180) * 0.12;
+    ctx.fillStyle = "#251335";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.95, r * 1.08, 0.12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#b05cff";
+    ctx.lineWidth = Math.max(3, r * 0.08);
+    ctx.beginPath();
+    ctx.arc(0, 0, r * (1.05 + pulse * 0.08), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "#e0c0ff";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 5; i += 1) {
+      const a = i * 1.25 + performance.now() / 500;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * r * 0.18, Math.sin(a) * r * 0.18);
+      ctx.lineTo(Math.cos(a + 0.25) * r * 0.82, Math.sin(a + 0.25) * r * 0.82);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#b05cff";
+    for (let i = 0; i < 4; i += 1) {
+      const a = i * Math.PI * 0.5 + performance.now() / 420;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * r * 1.35, Math.sin(a) * r * 1.35, r * 0.14, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  if (unit.typeId === "zvp1526runner") {
+    ctx.fillStyle = "#2a1138";
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 1.25);
+    ctx.lineTo(r * 1.1, -r * 0.15);
+    ctx.lineTo(r * 0.28, r * 1.05);
+    ctx.lineTo(-r * 1.05, r * 0.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#d8a8ff";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  if (unit.typeId === "rottingpuppet" || unit.typeId === "smallrottingpuppet") {
+    const big = unit.typeId === "rottingpuppet";
+    ctx.fillStyle = big ? "#6f6a43" : "#7f8a45";
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.05, r * 0.78, r * 0.98, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#2a2416";
+    ctx.lineWidth = Math.max(2, r * 0.08);
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.5, -r * 1.35);
+    ctx.lineTo(-r * 0.3, -r * 0.25);
+    ctx.moveTo(r * 0.5, -r * 1.35);
+    ctx.lineTo(r * 0.3, -r * 0.25);
+    ctx.moveTo(0, -r * 1.55);
+    ctx.lineTo(0, -r * 0.15);
+    ctx.stroke();
+    ctx.fillStyle = "#b6c05e";
+    ctx.beginPath();
+    ctx.arc(-r * 0.28, -r * 0.18, r * 0.12, 0, Math.PI * 2);
+    ctx.arc(r * 0.32, -r * 0.1, r * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#9aa24a";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * (big ? 1.22 : 1.05), Math.PI * 0.08, Math.PI * 1.8);
+    ctx.stroke();
+  }
   if (unit.typeId === "shield" || unit.typeId === "knight") {
     ctx.fillStyle = unit.typeId === "knight" ? "#d8d0a8" : "#d9edf8";
     ctx.beginPath();
@@ -10256,6 +10824,20 @@ spawnEnemyArmy();
 applyLanguage(languageSelect.value);
 setInterval(syncLanguage, 200);
 requestAnimationFrame(loop);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
